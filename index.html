@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire Hunter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: monospace;
+        }
+        
+        canvas {
+            border: 2px solid #444;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        ARROW KEYS: Move | SPACE: Jump | Z: Attack | X: Sub-weapon
+    </div>
+    <canvas id="gameCanvas" width="512" height="480"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        const game = {
+            keys: {},
+            camera: { x: 0, y: 0 },
+            time: 0,
+            currentScreen: 0,
+            transitioning: false,
+            transitionTimer: 0
+        };
+        
+        // Player object
+        const player = {
+            x: 100,
+            y: 300,
+            width: 16,
+            height: 24,
+            vx: 0,
+            vy: 0,
+            onGround: false,
+            facing: 1, // 1 = right, -1 = left
+            health: 16,
+            attacking: false,
+            attackTimer: 0,
+            invulnerable: 0,
+            subWeapon: 'dagger',
+            hearts: 5
+        };
+        
+        // Enemies per screen
+        const screenEnemies = [
+            // Screen 0 enemies
+            [
+                { x: 300, y: 320, width: 16, height: 16, type: 'bat', health: 1, vx: -1, vy: 0, timer: 0 },
+                { x: 450, y: 340, width: 16, height: 20, type: 'skeleton', health: 2, vx: -0.5, facing: -1, timer: 0 }
+            ],
+            // Screen 1 enemies
+            [
+                { x: 100, y: 300, width: 16, height: 16, type: 'bat', health: 1, vx: 1, vy: 0, timer: 0 },
+                { x: 200, y: 340, width: 16, height: 20, type: 'skeleton', health: 2, vx: 0.5, facing: 1, timer: 0 },
+                { x: 350, y: 280, width: 16, height: 16, type: 'bat', health: 1, vx: -1, vy: 0, timer: 30 }
+            ],
+            // Screen 2 enemies (platform area)
+            [
+                { x: 120, y: 250, width: 16, height: 16, type: 'bat', health: 1, vx: 1, vy: 0, timer: 0 },
+                { x: 300, y: 180, width: 16, height: 20, type: 'skeleton', health: 2, vx: -0.3, facing: -1, timer: 0 },
+                { x: 400, y: 100, width: 16, height: 16, type: 'bat', health: 1, vx: -1, vy: 0, timer: 15 },
+                { x: 180, y: 120, width: 16, height: 16, type: 'bat', health: 1, vx: 1, vy: 0, timer: 45 }
+            ]
+        ];
+        
+        // Current screen enemies
+        let enemies = [...screenEnemies[0]];
+        
+        // Projectiles
+        const projectiles = [];
+        
+        // Items and pickups
+        const items = [];
+        
+        // Particles
+        const particles = [];
+
+        // Candles (destructible objects per screen)
+        const screenCandles = [
+            // Screen 0 candles
+            [
+                { x: 100, y: 315, width: 8, height: 20, destroyed: false },
+                { x: 400, y: 315, width: 8, height: 20, destroyed: false }
+            ],
+            // Screen 1 candles  
+            [
+                { x: 80, y: 305, width: 12, height: 30, destroyed: false },
+                { x: 420, y: 295, width: 12, height: 35, destroyed: false }
+            ],
+            // Screen 2 candles
+            [
+                { x: 120, y: 70, width: 8, height: 20, destroyed: false },
+                { x: 350, y: 90, width: 8, height: 20, destroyed: false },
+                { x: 200, y: 270, width: 8, height: 20, destroyed: false }
+            ]
+        ];
+        
+        // Platforms per screen
+        const screenPlatforms = [
+            // Screen 0 - no platforms (ground level)
+            [],
+            // Screen 1 - no platforms (ground level) 
+            [],
+            // Screen 2 - multi-level platforming
+            [
+                // Lower platforms
+                { x: 80, y: 250, width: 80, height: 16 },
+                { x: 200, y: 280, width: 60, height: 16 },
+                { x: 320, y: 250, width: 100, height: 16 },
+                
+                // Middle platforms  
+                { x: 50, y: 180, width: 70, height: 16 },
+                { x: 160, y: 140, width: 80, height: 16 },
+                { x: 280, y: 180, width: 90, height: 16 },
+                { x: 420, y: 160, width: 60, height: 16 },
+                
+                // Upper platforms
+                { x: 120, y: 80, width: 60, height: 16 },
+                { x: 220, y: 60, width: 80, height: 16 },
+                { x: 350, y: 100, width: 70, height: 16 }
+            ]
+        ];
+        
+        // Current screen platforms
+        let platforms = [...screenPlatforms[0]];
+        
+        // Current screen candles
+        let candles = screenCandles[0] ? [...screenCandles[0]] : [];
+        
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            game.keys[e.code] = true;
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            game.keys[e.code] = false;
+        });
+        
+        // Collision detection
+        function checkCollision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+        
+        // Draw pixel art sprite
+        function drawSprite(x, y, width, height, color, pattern = null) {
+            ctx.fillStyle = color;
+            if (pattern) {
+                for (let py = 0; py < height; py++) {
+                    for (let px = 0; px < width; px++) {
+                        if (pattern[py] && pattern[py][px]) {
+                            ctx.fillStyle = pattern[py][px];
+                            ctx.fillRect(x + px * 2, y + py * 2, 2, 2);
+                        }
+                    }
+                }
+            } else {
+                ctx.fillRect(x, y, width, height);
+            }
+        }
+        
+        // Player sprites (simplified pixel art)
+        const playerSprites = {
+            idle: [
+                ['#8B4513', '#8B4513', '#8B4513', '#8B4513', null, null, null, null],
+                ['#FFDBAC', '#FFDBAC', '#FFDBAC', '#FFDBAC', null, null, null, null],
+                ['#000', '#FFDBAC', '#FFDBAC', '#000', null, null, null, null],
+                ['#FFDBAC', '#FFDBAC', '#FFDBAC', '#FFDBAC', null, null, null, null],
+                ['#8B0000', '#8B0000', '#8B0000', '#8B0000', null, null, null, null],
+                ['#8B0000', '#8B0000', '#8B0000', '#8B0000', null, null, null, null],
+                ['#000080', '#000080', '#000080', '#000080', null, null, null, null],
+                ['#000080', '#000080', '#000080', '#000080', null, null, null, null],
+                ['#654321', '#654321', null, null, '#654321', '#654321', null, null],
+                ['#8B4513', '#8B4513', null, null, '#8B4513', '#8B4513', null, null],
+                ['#654321', '#654321', null, null, '#654321', '#654321', null, null],
+                ['#000', '#000', null, null, '#000', '#000', null, null]
+            ]
+        };
+        
+        function updatePlayer() {
+            // Handle input
+            if (game.keys['ArrowLeft']) {
+                player.vx = -1;
+                player.facing = -1;
+            } else if (game.keys['ArrowRight']) {
+                player.vx = 1;
+                player.facing = 1;
+            } else {
+                player.vx = 0;
+            }
+            
+            // Jumping
+            if (game.keys['Space'] && player.onGround) {
+                player.vy = -6;
+                player.onGround = false;
+            }
+            
+            // Attacking
+            if (game.keys['KeyZ'] && !player.attacking) {
+                player.attacking = true;
+                player.attackTimer = 30;
+            }
+            
+            // Sub-weapon
+            if (game.keys['KeyX'] && player.hearts > 0) {
+                player.hearts--;
+                projectiles.push({
+                    x: player.x + (player.facing > 0 ? player.width : -8),
+                    y: player.y + 8,
+                    vx: player.facing * 4,
+                    vy: -2,
+                    width: 8,
+                    height: 8,
+                    type: 'dagger',
+                    damage: 2
+                });
+                game.keys['KeyX'] = false; // Prevent spam
+            }
+            
+            // Physics
+            player.vy += 0.25; // gravity
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // Platform collision
+            player.onGround = false;
+            
+            // Check ground collision first
+            if (player.y + player.height > 360) {
+                player.y = 360 - player.height;
+                player.vy = 0;
+                player.onGround = true;
+            }
+            
+            // Check platform collisions
+            if (platforms && platforms.length > 0) {
+                platforms.forEach(platform => {
+                    if (checkCollision(player, platform)) {
+                        // Landing on top of platform
+                        if (player.vy > 0 && player.y < platform.y) {
+                            player.y = platform.y - player.height;
+                            player.vy = 0;
+                            player.onGround = true;
+                        }
+                        // Hit platform from below
+                        else if (player.vy < 0 && player.y > platform.y) {
+                            player.y = platform.y + platform.height;
+                            player.vy = 0;
+                        }
+                        // Hit platform from side (simple side collision)
+                        else if (player.vx !== 0) {
+                            if (player.vx > 0) {
+                                player.x = platform.x - player.width;
+                            } else {
+                                player.x = platform.x + platform.width;
+                            }
+                            player.vx = 0;
+                        }
+                    }
+                });
+            }
+            
+            // Screen boundaries and transitions
+            if (!game.transitioning) {
+                if (player.x + player.width < 0 && game.currentScreen > 0) {
+                    // Go to previous screen
+                    game.transitioning = true;
+                    game.transitionTimer = 30;
+                    game.currentScreen--;
+                    player.x = canvas.width - player.width - 5;
+                    enemies.length = 0;
+                    enemies.push(...(screenEnemies[game.currentScreen] || []).map(e => ({...e})));
+                    candles.length = 0;
+                    candles.push(...(screenCandles[game.currentScreen] || []).map(c => ({...c})));
+                    platforms.length = 0;
+                    platforms.push(...(screenPlatforms[game.currentScreen] || []).map(p => ({...p})));
+                    projectiles.length = 0;
+                } else if (player.x > canvas.width && game.currentScreen < screenEnemies.length - 1) {
+                    // Go to next screen
+                    game.transitioning = true;
+                    game.transitionTimer = 30;
+                    game.currentScreen++;
+                    player.x = 5;
+                    enemies.length = 0;
+                    enemies.push(...(screenEnemies[game.currentScreen] || []).map(e => ({...e})));
+                    candles.length = 0;
+                    candles.push(...(screenCandles[game.currentScreen] || []).map(c => ({...c})));
+                    platforms.length = 0;
+                    platforms.push(...(screenPlatforms[game.currentScreen] || []).map(p => ({...p})));
+                    projectiles.length = 0;
+                }
+            }
+            
+            // Keep player on screen during normal gameplay
+            if (!game.transitioning) {
+                if (player.x < 0 && game.currentScreen === 0) player.x = 0;
+                if (player.x + player.width > canvas.width && game.currentScreen === screenEnemies.length - 1) {
+                    player.x = canvas.width - player.width;
+                }
+            }
+            
+            // Update timers
+            if (player.attackTimer > 0) {
+                player.attackTimer--;
+                if (player.attackTimer === 0) {
+                    player.attacking = false;
+                }
+            }
+            
+            if (player.invulnerable > 0) {
+                player.invulnerable--;
+            }
+            
+            // Check candle attacks
+            if (player.attacking && player.attackTimer > 20) {
+                const attackBox = {
+                    x: player.x + (player.facing > 0 ? player.width : -16),
+                    y: player.y,
+                    width: 16,
+                    height: player.height
+                };
+                
+                if (candles && candles.length > 0) {
+                    candles.forEach(candle => {
+                        if (!candle.destroyed && checkCollision(attackBox, candle)) {
+                            candle.destroyed = true;
+                            
+                            // Drop heart
+                            items.push({
+                                x: candle.x + candle.width / 2 - 4,
+                                y: candle.y + candle.height / 2 - 4,
+                                width: 8,
+                                height: 8,
+                                type: 'heart',
+                                vy: -2,
+                                bounces: 3
+                            });
+                            
+                            // Destruction particles
+                            for (let i = 0; i < 8; i++) {
+                                particles.push({
+                                    x: candle.x + candle.width / 2,
+                                    y: candle.y + candle.height / 2,
+                                    vx: (Math.random() - 0.5) * 6,
+                                    vy: (Math.random() - 0.5) * 6,
+                                    life: 20,
+                                    color: '#FFD700'
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Handle screen transition
+            if (game.transitioning) {
+                game.transitionTimer--;
+                if (game.transitionTimer <= 0) {
+                    game.transitioning = false;
+                }
+            }
+        }
+        
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                enemy.timer++;
+                
+                if (enemy.type === 'bat') {
+                    enemy.x += enemy.vx;
+                    enemy.vy = Math.sin(enemy.timer * 0.1) * 0.5;
+                    enemy.y += enemy.vy;
+                    
+                    // Reverse direction at screen edges or platforms
+                    if (enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
+                        enemy.vx *= -1;
+                    }
+                    
+                    // Simple platform avoidance for bats
+                    if (platforms && platforms.length > 0) {
+                        platforms.forEach(platform => {
+                            if (checkCollision(enemy, platform)) {
+                                enemy.y = platform.y - enemy.height - 5;
+                            }
+                        });
+                    }
+                    
+                } else if (enemy.type === 'skeleton') {
+                    // Check if skeleton will walk off platform or hit wall
+                    let willFall = true;
+                    let futureX = enemy.x + enemy.vx * 10; // Look ahead
+                    
+                    // Check ground
+                    if (enemy.y + enemy.height >= 360) {
+                        willFall = false;
+                    }
+                    
+                    // Check platforms
+                    if (platforms && platforms.length > 0) {
+                        platforms.forEach(platform => {
+                            if (enemy.y + enemy.height >= platform.y && 
+                                enemy.y + enemy.height <= platform.y + platform.height + 5 &&
+                                futureX + enemy.width > platform.x && 
+                                futureX < platform.x + platform.width) {
+                                willFall = false;
+                            }
+                        });
+                    }
+                    
+                    // Turn around if will fall or hit edge
+                    if (willFall || enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
+                        enemy.vx *= -1;
+                        enemy.facing *= -1;
+                    } else {
+                        enemy.x += enemy.vx;
+                    }
+                    
+                    // Apply gravity to skeletons on platforms
+                    let onPlatform = false;
+                    if (platforms && platforms.length > 0) {
+                        platforms.forEach(platform => {
+                            if (checkCollision(enemy, platform) && enemy.vy >= 0) {
+                                enemy.y = platform.y - enemy.height;
+                                onPlatform = true;
+                            }
+                        });
+                    }
+                    
+                    if (!onPlatform && enemy.y + enemy.height < 360) {
+                        enemy.y += 2; // Gravity for skeletons
+                    }
+                    
+                    // Ground collision for skeletons
+                    if (enemy.y + enemy.height > 360) {
+                        enemy.y = 360 - enemy.height;
+                    }
+                }
+                
+                // Check collision with player
+                if (checkCollision(player, enemy) && player.invulnerable === 0) {
+                    player.health--;
+                    player.invulnerable = 60;
+                    player.vx += (player.x < enemy.x ? -3 : 3); // Knockback
+                }
+                
+                // Check collision with player attack
+                if (player.attacking && player.attackTimer > 20) {
+                    const attackBox = {
+                        x: player.x + (player.facing > 0 ? player.width : -16),
+                        y: player.y,
+                        width: 16,
+                        height: player.height
+                    };
+                    
+                    if (checkCollision(attackBox, enemy)) {
+                        enemy.health--;
+                        if (enemy.health <= 0) {
+                            // Death particles
+                            for (let i = 0; i < 5; i++) {
+                                particles.push({
+                                    x: enemy.x + enemy.width / 2,
+                                    y: enemy.y + enemy.height / 2,
+                                    vx: (Math.random() - 0.5) * 4,
+                                    vy: (Math.random() - 0.5) * 4,
+                                    life: 30,
+                                    color: '#FF4444'
+                                });
+                            }
+                            enemies.splice(index, 1);
+                        }
+                    }
+                }
+                
+                // Check collision with projectiles
+                projectiles.forEach((proj, projIndex) => {
+                    if (checkCollision(proj, enemy)) {
+                        enemy.health -= proj.damage;
+                        projectiles.splice(projIndex, 1);
+                        
+                        if (enemy.health <= 0) {
+                            for (let i = 0; i < 3; i++) {
+                                particles.push({
+                                    x: enemy.x + enemy.width / 2,
+                                    y: enemy.y + enemy.height / 2,
+                                    vx: (Math.random() - 0.5) * 3,
+                                    vy: (Math.random() - 0.5) * 3,
+                                    life: 25,
+                                    color: '#FFFF44'
+                                });
+                            }
+                            enemies.splice(index, 1);
+                        }
+                    }
+                });
+            });
+        }
+        
+        function updateProjectiles() {
+            projectiles.forEach((proj, index) => {
+                proj.x += proj.vx;
+                proj.y += proj.vy;
+                proj.vy += 0.2; // gravity
+                
+                // Platform collision for projectiles
+                if (platforms && platforms.length > 0) {
+                    platforms.forEach(platform => {
+                        if (checkCollision(proj, platform)) {
+                            projectiles.splice(index, 1);
+                        }
+                    });
+                }
+                
+                // Remove if off screen
+                if (proj.x < -20 || proj.x > canvas.width + 20 || proj.y > canvas.height + 20) {
+                    projectiles.splice(index, 1);
+                }
+            });
+        }
+        
+        function updateParticles() {
+            particles.forEach((particle, index) => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                
+                if (particle.life <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+        }
+        
+        function updateItems() {
+            items.forEach((item, index) => {
+                if (item.type === 'heart') {
+                    // Item physics
+                    item.vy += 0.3; // gravity
+                    item.y += item.vy;
+                    
+                    // Bounce on ground
+                    if (item.y + item.height > 360) {
+                        item.y = 360 - item.height;
+                        if (item.bounces > 0) {
+                            item.vy = -item.vy * 0.6;
+                            item.bounces--;
+                        } else {
+                            item.vy = 0;
+                        }
+                    }
+                    
+                    // Check player collection
+                    if (checkCollision(player, item)) {
+                        player.hearts = Math.min(player.hearts + 1, 99);
+                        items.splice(index, 1);
+                        
+                        // Collection sparkle
+                        for (let i = 0; i < 5; i++) {
+                            particles.push({
+                                x: item.x + item.width / 2,
+                                y: item.y + item.height / 2,
+                                vx: (Math.random() - 0.5) * 3,
+                                vy: (Math.random() - 0.5) * 3,
+                                life: 15,
+                                color: '#FF1493'
+                            });
+                        }
+                    }
+                }
+            });
+        }
+        
+        function drawBackground() {
+            // Gothic castle background
+            ctx.fillStyle = '#1a0d26';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Stone floor
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 360, canvas.width, 120);
+            
+            // Stone blocks pattern
+            ctx.fillStyle = '#444';
+            for (let x = 0; x < canvas.width; x += 32) {
+                for (let y = 360; y < canvas.height; y += 16) {
+                    if ((x + y) % 32 === 0) {
+                        ctx.fillRect(x, y, 32, 16);
+                    }
+                }
+            }
+            
+            // Different background elements per screen
+            if (game.currentScreen === 0) {
+                // Castle walls
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(0, 0, 50, 360);
+                ctx.fillRect(canvas.width - 50, 0, 50, 360);
+                
+                // Windows
+                ctx.fillStyle = '#000';
+                ctx.fillRect(15, 50, 20, 30);
+                ctx.fillRect(15, 120, 20, 30);
+                ctx.fillRect(canvas.width - 35, 80, 20, 30);
+                
+                // Torches (only draw if candles not destroyed)
+                ctx.fillStyle = '#8B4513';
+                if (candles && candles.length > 0) {
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y, 4, 20);
+                        }
+                    });
+                    
+                    // Torch flames (only if candles exist)
+                    ctx.fillStyle = '#FF4500';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x - 2, candle.y, 8, 8);
+                        }
+                    });
+                    ctx.fillStyle = '#FFD700';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y + 2, 4, 4);
+                        }
+                    });
+                }
+            } else if (game.currentScreen === 1) {
+                // Different room - more open with pillars
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(150, 200, 40, 160);
+                ctx.fillRect(320, 180, 40, 180);
+                
+                // Arched doorways
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 250, 30, 110);
+                ctx.fillRect(canvas.width - 30, 270, 30, 90);
+                
+                // Candelabras (only draw if not destroyed)
+                ctx.fillStyle = '#8B4513';
+                if (candles && candles.length > 0) {
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y, 6, candle.height);
+                        }
+                    });
+                    
+                    // Candle flames (only if candles exist)
+                    ctx.fillStyle = '#FF4500';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x - 3, candle.y - 5, 12, 10);
+                        }
+                    });
+                    ctx.fillStyle = '#FFD700';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y - 2, 6, 4);
+                        }
+                    });
+                }
+            } else if (game.currentScreen === 2) {
+                // Platform area - tower-like structure
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(0, 0, 30, 360);
+                ctx.fillRect(canvas.width - 30, 0, 30, 360);
+                
+                // Draw platforms
+                ctx.fillStyle = '#444';
+                platforms.forEach(platform => {
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                    // Platform edges
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(platform.x, platform.y, platform.width, 2);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(platform.x, platform.y + platform.height - 2, platform.width, 2);
+                    ctx.fillStyle = '#444';
+                });
+                
+                // Background details for platform area
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(60, 50, 20, 80);
+                ctx.fillRect(450, 80, 20, 60);
+                
+                // Candles on platforms (only draw if not destroyed)
+                ctx.fillStyle = '#8B4513';
+                if (candles && candles.length > 0) {
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y, 4, candle.height);
+                        }
+                    });
+                    
+                    // Candle flames
+                    ctx.fillStyle = '#FF4500';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x - 2, candle.y - 5, 8, 8);
+                        }
+                    });
+                    ctx.fillStyle = '#FFD700';
+                    candles.forEach(candle => {
+                        if (!candle.destroyed) {
+                            ctx.fillRect(candle.x, candle.y - 2, 4, 4);
+                        }
+                    });
+                }
+            }
+        }
+        
+        function drawPlayer() {
+            let sprite = playerSprites.idle;
+            
+            // Flash when invulnerable
+            if (player.invulnerable > 0 && Math.floor(game.time / 5) % 2) {
+                ctx.globalAlpha = 0.5;
+            }
+            
+            // Flip sprite if facing left
+            if (player.facing < 0) {
+                ctx.save();
+                ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+                ctx.scale(-1, 1);
+                ctx.translate(-player.width / 2, -player.height / 2);
+                drawSprite(0, 0, 8, 12, '#8B4513', sprite);
+                ctx.restore();
+            } else {
+                drawSprite(player.x, player.y, 8, 12, '#8B4513', sprite);
+            }
+            
+            ctx.globalAlpha = 1;
+            
+            // Draw whip when attacking
+            if (player.attacking && player.attackTimer > 10) {
+                ctx.fillStyle = '#8B4513';
+                const whipX = player.x + (player.facing > 0 ? player.width : -16);
+                ctx.fillRect(whipX, player.y + 8, 16, 2);
+            }
+        }
+        
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                if (enemy.type === 'bat') {
+                    ctx.fillStyle = '#4A0E4E';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    // Wings
+                    ctx.fillStyle = '#2F0A30';
+                    ctx.fillRect(enemy.x - 4, enemy.y + 4, 4, 8);
+                    ctx.fillRect(enemy.x + enemy.width, enemy.y + 4, 4, 8);
+                } else if (enemy.type === 'skeleton') {
+                    ctx.fillStyle = '#F5F5DC';
+                    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                    // Simple skeleton details
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(enemy.x + 4, enemy.y + 2, 2, 2); // Eye
+                    ctx.fillRect(enemy.x + 10, enemy.y + 2, 2, 2); // Eye
+                    ctx.fillRect(enemy.x + 6, enemy.y + 6, 4, 2); // Mouth
+                }
+            });
+        }
+        
+        function drawProjectiles() {
+            projectiles.forEach(proj => {
+                if (proj.type === 'dagger') {
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.fillRect(proj.x, proj.y, proj.width, proj.height);
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(proj.x + 2, proj.y + 6, 4, 2);
+                }
+            });
+        }
+        
+        function drawItems() {
+            items.forEach(item => {
+                if (item.type === 'heart') {
+                    ctx.fillStyle = '#FF1493';
+                    // Draw heart shape (simplified)
+                    ctx.fillRect(item.x, item.y + 2, item.width, item.height - 4);
+                    ctx.fillRect(item.x + 2, item.y, item.width - 4, item.height);
+                    ctx.fillStyle = '#FF69B4';
+                    ctx.fillRect(item.x + 2, item.y + 2, item.width - 4, item.height - 4);
+                }
+            });
+        }
+        
+        function drawParticles() {
+            particles.forEach(particle => {
+                ctx.fillStyle = particle.color;
+                ctx.globalAlpha = particle.life / 30;
+                ctx.fillRect(particle.x, particle.y, 2, 2);
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        function drawUI() {
+            // Health bar
+            ctx.fillStyle = '#8B0000';
+            ctx.fillRect(10, 10, 160, 12);
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(12, 12, (player.health / 16) * 156, 8);
+            
+            // Hearts
+            ctx.fillStyle = '#FF1493';
+            for (let i = 0; i < player.hearts; i++) {
+                ctx.fillRect(10 + i * 15, 30, 10, 8);
+                ctx.fillRect(12 + i * 15, 28, 6, 4);
+            }
+            
+            // Labels
+            ctx.fillStyle = '#FFF';
+            ctx.font = '12px monospace';
+            ctx.fillText('HEALTH', 180, 20);
+            ctx.fillText('HEARTS', 10, 50);
+            ctx.fillText(`ROOM ${game.currentScreen + 1}`, canvas.width - 80, 20);
+            
+            // Screen transition effect
+            if (game.transitioning) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${game.transitionTimer / 30})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+        
+        function gameLoop() {
+            game.time++;
+            
+            updatePlayer();
+            updateEnemies();
+            updateProjectiles();
+            updateParticles();
+            updateItems();
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+            drawPlayer();
+            drawEnemies();
+            drawProjectiles();
+            drawItems();
+            drawParticles();
+            drawUI();
+            
+            // Game over check
+            if (player.health <= 0) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FF0000';
+                ctx.font = '32px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                ctx.fillStyle = '#FFF';
+                ctx.font = '16px monospace';
+                ctx.fillText('Refresh to restart', canvas.width / 2, canvas.height / 2 + 40);
+                ctx.textAlign = 'left';
+                return;
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
