@@ -4,6 +4,7 @@ import { Platform } from '../objects/platform';
 import { HitSpark } from '../objects/hitSpark';
 import { Input } from './Input';
 import { Camera } from './Camera';
+import { Item, PowerUpType } from '../objects/item';
 
 export class GameState {
     player: Player;
@@ -16,6 +17,10 @@ export class GameState {
     hitPauseDuration: number;
     spawnTimer: number;
     spawnInterval: number;
+    items: Item[]; // Power-up items
+    activePowerUps: Item[]; // Currently active power-ups
+    powerUpTimer: number; // Timer for power-up spawning
+    powerUpInterval: number; // Interval for power-up spawning
 
     constructor() {
         this.platforms = []; // Initialize platforms first
@@ -26,12 +31,16 @@ export class GameState {
         
         this.enemies = [];
         this.hitSparks = [];
+        this.items = []; // Initialize items array
+        this.activePowerUps = []; // Initialize active power-ups
         this.input = new Input();
         this.camera = new Camera();
         this.hitPauseTimer = 0;
         this.hitPauseDuration = 0;
         this.spawnTimer = 0;
         this.spawnInterval = 3;
+        this.powerUpTimer = 0;
+        this.powerUpInterval = 15; // Power-ups spawn every 15 seconds
         
         this.spawnInitialEnemies();
     }
@@ -135,8 +144,86 @@ export class GameState {
             }
         }
         
+        this.updatePowerUps(deltaTime);
+        
         this.camera.update(deltaTime);
         this.input.update();
+    }
+    
+    addActivePowerUp(powerUp: Item): void {
+        if (powerUp.duration > 0) {
+            // Only add non-instant power-ups to the active list
+            this.activePowerUps.push(powerUp);
+        }
+    }
+
+    updatePowerUps(deltaTime: number): void {
+        // Update active power-ups and handle expiration
+        for (let i = this.activePowerUps.length - 1; i >= 0; i--) {
+            const powerUp = this.activePowerUps[i];
+            
+            // Skip permanent power-ups
+            if (powerUp.duration < 0) continue;
+            
+            // Reduce duration
+            powerUp.duration -= deltaTime;
+            
+            // Remove expired power-ups and undo their effects
+            if (powerUp.duration <= 0) {
+                powerUp.removeEffect(this.player);
+                this.activePowerUps.splice(i, 1);
+            }
+        }
+        
+        // Update power-up timer and spawn power-ups
+        this.powerUpTimer += deltaTime;
+        if (this.powerUpTimer >= this.powerUpInterval) {
+            this.powerUpTimer = 0;
+            this.spawnPowerUp();
+        }
+        
+        // Update power-up items in the world
+        for (let i = this.items.length - 1; i >= 0; i--) {
+            const item = this.items[i];
+            if (item.active) {
+                item.update(deltaTime, this);
+            } else {
+                // Remove collected or inactive items
+                this.items.splice(i, 1);
+            }
+        }
+    }
+
+    spawnPowerUp(): void {
+        // Don't spawn too many power-ups
+        if (this.items.length >= 3) return;
+        
+        // Spawn a power-up item on a random platform
+        const platformOptions = this.platforms.filter((p) => 
+            p.position.y < 400 && p.position.y > 150);
+        
+        if (platformOptions.length > 0) {
+            // Choose random platform
+            const platform = platformOptions[Math.floor(Math.random() * platformOptions.length)];
+            
+            // Position power-up above the platform
+            const x = platform.position.x + Math.random() * (platform.size.x - 24);
+            const y = platform.position.y - 40; // Above the platform
+            
+            // Choose a random power-up type
+            const powerUpTypes = [
+                PowerUpType.SPEED_BOOST,
+                PowerUpType.JUMP_BOOST,
+                PowerUpType.HEALTH_BOOST,
+                PowerUpType.DAMAGE_BOOST,
+                PowerUpType.SHIELD
+            ];
+            const randomType = powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+            
+            // Create the power-up
+            const powerUp = new Item(x, y, randomType);
+            this.items.push(powerUp);
+        }
     }
     
     hitPause(duration: number): void {
@@ -180,6 +267,11 @@ export class GameState {
             }
         }
         
+        // Draw power-up items
+        for (let item of this.items) {
+            item.render(ctx);
+        }
+        
         // Reset camera
         this.camera.reset(ctx);
         
@@ -198,21 +290,67 @@ export class GameState {
         
         // Castle towers
         ctx.fillStyle = '#0F0A07';
-        ctx.fillRect(0, 400, 40, 50);
-        ctx.fillRect(760, 400, 40, 50);
-        ctx.fillRect(380, 350, 40, 100);
+        ctx.fillRect(0, 400, 40, 48); // Adjusted height to multiple of 8
+        ctx.fillRect(760, 400, 40, 48); // Adjusted height to multiple of 8
+        ctx.fillRect(384, 352, 40, 96); // Adjusted x,y,height to multiples of 8
         
         // Moon
         ctx.fillStyle = '#FFFACD';
         ctx.beginPath();
-        ctx.arc(700, 80, 30, 0, Math.PI * 2);
+        ctx.arc(704, 80, 32, 0, Math.PI * 2); // Adjusted to multiples of 8
         ctx.fill();
     }
     
     drawUI(ctx: CanvasRenderingContext2D): void {
-        // Score/status could go here
+        // Save the current context state
+        ctx.save();
+        
+        // Draw a semi-transparent background for the UI
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(16, 16, 200, 88); // Adjusted to multiples of 8
+        
+        // Ensure consistent text alignment for all UI text
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        
+        // Draw UI text
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '16px monospace';
-        ctx.fillText(`Enemies: ${this.enemies.length}`, 10, 50);
+        ctx.font = '16px monospace'; // Adjusted to multiple of 8
+        ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 32); // Adjusted position
+        
+        // Draw player health/energy bar
+        const healthBarWidth = 160; // Already a multiple of 8
+        const healthBarHeight = 8; // Adjusted to multiple of 8
+        const healthPercentage = this.player.health / this.player.maxHealth;
+        
+        // Draw the empty bar background
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+        
+        // Draw the filled portion of the health bar
+        // Color changes based on health: green > yellow > red
+        if (healthPercentage > 0.6) {
+            ctx.fillStyle = '#00FF00'; // Green for good health
+        } else if (healthPercentage > 0.3) {
+            ctx.fillStyle = '#FFFF00'; // Yellow for medium health
+        } else {
+            ctx.fillStyle = '#FF0000'; // Red for low health
+        }
+        
+        ctx.fillRect(32, 56, healthBarWidth * healthPercentage, healthBarHeight); // Adjusted x to multiple of 8
+        
+        // Draw border around health bar
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+        
+        // Show active power-ups if any
+        if (this.activePowerUps.length > 0) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(`Power-ups: ${this.activePowerUps.length}`, 32, 80); // Adjusted to multiples of 8
+        }
+        
+        // Restore the context state
+        ctx.restore();
     }
 }

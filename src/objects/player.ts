@@ -211,10 +211,5 @@ export class Player extends GameObject {
         
         ctx.restore();
         
-        // Health bar
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(10, 10, 100, 10);
-        ctx.fillStyle = '#00FF00';
-        ctx.fillRect(10, 10, (this.health / this.maxHealth) * 100, 10);
     }
 }
