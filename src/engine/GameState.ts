@@ -1,6 +1,7 @@
 import { Player } from '../objects/player';
 import { Enemy } from '../objects/enemy';
 import { Platform } from '../objects/platform';
+import { HitSpark } from '../objects/hitSpark';
 import { Input } from './Input';
 import { Camera } from './Camera';
 
@@ -8,6 +9,7 @@ export class GameState {
     player: Player;
     enemies: Enemy[];
     platforms: Platform[];
+    hitSparks: HitSpark[];
     input: Input;
     camera: Camera;
     hitPauseTimer: number;
@@ -23,6 +25,7 @@ export class GameState {
         this.player = new Player(100, 330); // Position player on the left platform
         
         this.enemies = [];
+        this.hitSparks = [];
         this.input = new Input();
         this.camera = new Camera();
         this.hitPauseTimer = 0;
@@ -96,8 +99,16 @@ export class GameState {
             }
         }
         
-        // Remove inactive enemies
+        // Update hit sparks
+        for (let spark of this.hitSparks) {
+            if (spark.active) {
+                spark.update(deltaTime, this);
+            }
+        }
+        
+        // Remove inactive enemies and hit sparks
         this.enemies = this.enemies.filter(enemy => enemy.active);
+        this.hitSparks = this.hitSparks.filter(spark => spark.active);
         
         // Spawn new enemies
         this.spawnTimer += deltaTime;
@@ -133,6 +144,10 @@ export class GameState {
         this.hitPauseDuration = duration;
     }
     
+    createHitSpark(x: number, y: number): void {
+        this.hitSparks.push(new HitSpark(x, y));
+    }
+    
     render(ctx: CanvasRenderingContext2D): void {
         // Clear screen
         ctx.fillStyle = '#2C1810';
@@ -155,6 +170,13 @@ export class GameState {
         for (let enemy of this.enemies) {
             if (enemy.active) {
                 enemy.render(ctx);
+            }
+        }
+        
+        // Draw hit sparks (on top of other game objects)
+        for (let spark of this.hitSparks) {
+            if (spark.active) {
+                spark.render(ctx);
             }
         }
         

@@ -125,6 +125,11 @@ export class Enemy extends GameObject {
             this.velocity.x = direction * 200;
             this.velocity.y = -150;
             
+            // Create hit spark at the point of impact
+            const sparkX = this.position.x + (direction < 0 ? this.size.x : 0); // Spawn at the side of impact
+            const sparkY = this.position.y + this.size.y / 2; // Centered vertically
+            gameState.createHitSpark(sparkX, sparkY);
+            
             // Hit pause effect
             gameState.hitPause(0.1);
             gameState.camera.shake(0.2, 3);
