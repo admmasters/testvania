@@ -2,6 +2,7 @@ import { Player } from "../objects/player";
 import { Enemy } from "../objects/enemy";
 import { Platform } from "../objects/platform";
 import { HitSpark } from "../objects/hitSpark";
+import { Candle } from "../objects/candle";
 import { Input } from "./Input";
 import { Camera } from "./Camera";
 
@@ -10,6 +11,7 @@ export class GameState {
   enemies: Enemy[];
   platforms: Platform[];
   hitSparks: HitSpark[];
+  candles: Candle[];
   input: Input;
   camera: Camera;
   hitPauseTimer: number;
@@ -26,6 +28,10 @@ export class GameState {
 
     this.enemies = [];
     this.hitSparks = [];
+    this.candles = [];
+
+    // Add some candles to the level
+    this.spawnCandles();
     this.input = new Input();
     this.camera = new Camera();
     this.hitPauseTimer = 0;
@@ -83,12 +89,74 @@ export class GameState {
     }
   }
 
+  spawnCandles(): void {
+    // Add candles to various platforms
+    const platformIndices = [1, 3, 5, 7, 9]; // Platforms to place candles on
+
+    for (const index of platformIndices) {
+      if (this.platforms[index]) {
+        const platform = this.platforms[index];
+        // Position candle on top of the platform
+        const x = platform.position.x + platform.size.x / 2 - 8; // Center on platform
+        const y = platform.position.y - 24; // On top of platform
+        const candle = new Candle(x, y);
+        this.candles.push(candle);
+      }
+    }
+  }
+
+  checkCandleCollisions(): void {
+    if (this.player.attacking) {
+      const attackBounds = this.player.getAttackBounds();
+
+      if (!attackBounds) return;
+
+      for (const candle of this.candles) {
+        if (candle.active && !candle.isBreaking) {
+          const candleBounds = candle.getBounds();
+
+          const candleLeft = candleBounds.x;
+          const candleRight = candleBounds.x + candleBounds.width;
+          const candleTop = candleBounds.y;
+          const candleBottom = candleBounds.y + candleBounds.height;
+
+          const isColliding =
+            attackBounds.left < candleRight &&
+            attackBounds.right > candleLeft &&
+            attackBounds.top < candleBottom &&
+            attackBounds.bottom > candleTop;
+
+          if (isColliding) {
+            candle.break();
+            this.createHitSpark(
+              candle.position.x + candle.size.x / 2,
+              candle.position.y
+            );
+          }
+        }
+      }
+    }
+  }
+
   update(deltaTime: number): void {
     // Handle hit pause
     if (this.hitPauseTimer > 0) {
       this.hitPauseTimer -= deltaTime;
       return; // Skip all updates during hit pause
     }
+
+    // Update candles
+    for (const candle of this.candles) {
+      if (candle.active) {
+        candle.update(deltaTime);
+      }
+    }
+
+    // Remove inactive candles
+    this.candles = this.candles.filter((candle) => candle.active);
+
+    // Check for candle collisions
+    this.checkCandleCollisions();
 
     this.player.update(deltaTime, this);
 
@@ -167,6 +235,13 @@ export class GameState {
 
     // Draw game objects
     this.player.render(ctx);
+
+    // Draw candles
+    for (const candle of this.candles) {
+      if (candle.active) {
+        candle.render(ctx);
+      }
+    }
 
     for (const enemy of this.enemies) {
       if (enemy.active) {
