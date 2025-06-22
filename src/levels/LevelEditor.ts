@@ -1,9 +1,9 @@
-import { GameState } from "../engine/GameState";
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2";
-import { LevelManager } from "./LevelManager";
-import { Platform } from "../objects/platform";
 import { Candle } from "../objects/candle";
 import { Enemy } from "../objects/enemy";
+import { Platform } from "../objects/platform";
+import { LevelManager } from "./LevelManager";
 
 export enum EditorMode {
   PLATFORM,
@@ -32,6 +32,9 @@ export class LevelEditor {
   private selectedObject: any = null;
   private platformColor: string = "#654321";
 
+  private undoStack: any[] = [];
+  private redoStack: any[] = [];
+
   constructor(gameState: GameState, canvas: HTMLCanvasElement) {
     this.gameState = gameState;
     this.canvas = canvas;
@@ -54,19 +57,15 @@ export class LevelEditor {
 
   deactivate(): void {
     if (!this.isActive) return;
-
     this.isActive = false;
-
-    // Remove event listeners
     this.canvas.removeEventListener("mousedown", this.handleMouseDown);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.canvas.removeEventListener("mouseup", this.handleMouseUp);
-
-    // Remove editor UI
     if (this.editorContainer && this.editorContainer.parentElement) {
       this.editorContainer.parentElement.removeChild(this.editorContainer);
       this.editorContainer = null;
     }
+    window.removeEventListener("keydown", this.handleUndoRedoKeys);
   }
 
   isEditorActive(): boolean {
@@ -153,6 +152,32 @@ export class LevelEditor {
     // Save/Load buttons
     const actionContainer = document.createElement("div");
 
+    // Undo button
+    const undoButton = document.createElement("button");
+    undoButton.textContent = "Undo";
+    undoButton.style.margin = "0 5px 0 0";
+    undoButton.style.padding = "5px 10px";
+    undoButton.style.cursor = "pointer";
+    undoButton.style.backgroundColor = "#ffc107";
+    undoButton.style.border = "none";
+    undoButton.style.borderRadius = "3px";
+    undoButton.style.color = "black";
+    undoButton.addEventListener("click", () => this.undo());
+    actionContainer.appendChild(undoButton);
+
+    // Redo button
+    const redoButton = document.createElement("button");
+    redoButton.textContent = "Redo";
+    redoButton.style.margin = "0 5px 0 0";
+    redoButton.style.padding = "5px 10px";
+    redoButton.style.cursor = "pointer";
+    redoButton.style.backgroundColor = "#17a2b8";
+    redoButton.style.border = "none";
+    redoButton.style.borderRadius = "3px";
+    redoButton.style.color = "white";
+    redoButton.addEventListener("click", () => this.redo());
+    actionContainer.appendChild(redoButton);
+
     const saveButton = document.createElement("button");
     saveButton.textContent = "Save Level";
     saveButton.style.margin = "0 5px 0 0";
@@ -188,6 +213,80 @@ export class LevelEditor {
     // Add container to page
     document.body.appendChild(container);
     this.editorContainer = container;
+
+    // Keyboard shortcuts
+    window.addEventListener("keydown", this.handleUndoRedoKeys);
+  }
+
+  private undo() {
+    if (this.undoStack.length === 0) return;
+    this.redoStack.push(this.captureCurrentState());
+    const prev = this.undoStack.pop();
+    this.restoreState(prev);
+  }
+
+  private redo() {
+    if (this.redoStack.length === 0) return;
+    this.undoStack.push(this.captureCurrentState());
+    const next = this.redoStack.pop();
+    this.restoreState(next);
+  }
+
+  private pushUndoState() {
+    // Deep copy relevant arrays and player position
+    this.undoStack.push({
+      platforms: this.gameState.platforms.map((p) => ({
+        position: p.position.copy(),
+        size: p.size.copy(),
+        color: p.color,
+      })),
+      candles: this.gameState.candles.map((c) => ({
+        position: c.position.copy(),
+      })),
+      enemies: this.gameState.enemies.map((e) => ({
+        position: e.position.copy(),
+      })),
+      player: { position: this.gameState.player.position.copy() },
+    });
+    // Limit stack size
+    if (this.undoStack.length > 100) this.undoStack.shift();
+    this.redoStack = [];
+  }
+
+  private captureCurrentState() {
+    return {
+      platforms: this.gameState.platforms.map((p) => ({
+        position: p.position.copy(),
+        size: p.size.copy(),
+        color: p.color,
+      })),
+      candles: this.gameState.candles.map((c) => ({
+        position: c.position.copy(),
+      })),
+      enemies: this.gameState.enemies.map((e) => ({
+        position: e.position.copy(),
+      })),
+      player: { position: this.gameState.player.position.copy() },
+    };
+  }
+
+  private restoreState(state: any) {
+    // Restore platforms
+    this.gameState.platforms = state.platforms.map(
+      (p) =>
+        new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color)
+    );
+    // Restore candles
+    this.gameState.candles = state.candles.map(
+      (c) => new Candle(c.position.x, c.position.y)
+    );
+    // Restore enemies
+    this.gameState.enemies = state.enemies.map(
+      (e) => new Enemy(e.position.x, e.position.y)
+    );
+    // Restore player
+    this.gameState.player.position.x = state.player.position.x;
+    this.gameState.player.position.y = state.player.position.y;
   }
 
   private handleMouseDown = (e: MouseEvent) => {
@@ -202,22 +301,27 @@ export class LevelEditor {
         break;
 
       case EditorMode.PLATFORM:
+        this.pushUndoState();
         this.startPlatformMode(pos);
         break;
 
       case EditorMode.CANDLE:
+        this.pushUndoState();
         this.placeCandle(pos);
         break;
 
       case EditorMode.ENEMY:
+        this.pushUndoState();
         this.placeEnemy(pos);
         break;
 
       case EditorMode.PLAYER:
+        this.pushUndoState();
         this.placePlayer(pos);
         break;
 
       case EditorMode.DELETE:
+        this.pushUndoState();
         this.startDeleteMode(pos);
         break;
     }
@@ -319,8 +423,9 @@ export class LevelEditor {
   }
 
   private startPlatformMode(pos: Vector2): void {
+    const snapped = this.snapVec2(pos);
     this.currentPlatform = {
-      position: new Vector2(pos.x, pos.y),
+      position: snapped,
       size: new Vector2(0, 0),
       color: this.platformColor,
     };
@@ -328,18 +433,15 @@ export class LevelEditor {
 
   private updatePlatformSize(pos: Vector2): void {
     if (!this.currentPlatform || !this.startPosition) return;
-
-    this.currentPlatform.size.x = pos.x - this.startPosition.x;
-    this.currentPlatform.size.y = pos.y - this.startPosition.y;
-
-    // Handle negative sizes (dragging left/up)
+    const snapped = this.snapVec2(pos);
+    this.currentPlatform.size.x = snapped.x - this.currentPlatform.position.x;
+    this.currentPlatform.size.y = snapped.y - this.currentPlatform.position.y;
     if (this.currentPlatform.size.x < 0) {
-      this.currentPlatform.position.x = pos.x;
+      this.currentPlatform.position.x = snapped.x;
       this.currentPlatform.size.x = Math.abs(this.currentPlatform.size.x);
     }
-
     if (this.currentPlatform.size.y < 0) {
-      this.currentPlatform.position.y = pos.y;
+      this.currentPlatform.position.y = snapped.y;
       this.currentPlatform.size.y = Math.abs(this.currentPlatform.size.y);
     }
   }
@@ -357,27 +459,30 @@ export class LevelEditor {
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
         this.currentPlatform.size.y,
-        this.currentPlatform.color,
-      ),
+        this.currentPlatform.color
+      )
     );
 
     this.currentPlatform = null;
   }
 
   private placeCandle(pos: Vector2): void {
+    const snapped = this.snapVec2(pos);
     // Create new candle at position
-    this.gameState.candles.push(new Candle(pos.x - 8, pos.y - 12));
+    this.gameState.candles.push(new Candle(snapped.x - 8, snapped.y - 12));
   }
 
   private placeEnemy(pos: Vector2): void {
+    const snapped = this.snapVec2(pos);
     // Create new enemy at position
-    this.gameState.enemies.push(new Enemy(pos.x - 12, pos.y - 16));
+    this.gameState.enemies.push(new Enemy(snapped.x - 12, snapped.y - 16));
   }
 
   private placePlayer(pos: Vector2): void {
+    const snapped = this.snapVec2(pos);
     // Update player position
-    this.gameState.player.position.x = pos.x - 16;
-    this.gameState.player.position.y = pos.y - 20;
+    this.gameState.player.position.x = snapped.x - 16;
+    this.gameState.player.position.y = snapped.y - 20;
   }
 
   private startDeleteMode(pos: Vector2): void {
@@ -436,7 +541,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
 
       ctx.strokeStyle = "#FFFFFF";
@@ -444,7 +549,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
     }
 
@@ -453,7 +558,12 @@ export class LevelEditor {
       const obj = this.selectedObject;
       ctx.strokeStyle = "#FF0000";
       ctx.lineWidth = 2;
-      ctx.strokeRect(obj.position.x - 2, obj.position.y - 2, obj.size.x + 4, obj.size.y + 4);
+      ctx.strokeRect(
+        obj.position.x - 2,
+        obj.position.y - 2,
+        obj.size.x + 4,
+        obj.size.y + 4
+      );
       ctx.lineWidth = 1;
     }
 
@@ -471,7 +581,7 @@ export class LevelEditor {
     ctx.lineWidth = 0.5;
 
     // Draw vertical lines
-    for (let x = 0; x < this.canvas.width; x += 20) {
+    for (let x = 0; x < this.canvas.width; x += 16) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, this.canvas.height);
@@ -479,7 +589,7 @@ export class LevelEditor {
     }
 
     // Draw horizontal lines
-    for (let y = 0; y < this.canvas.height; y += 20) {
+    for (let y = 0; y < this.canvas.height; y += 16) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(this.canvas.width, y);
@@ -497,7 +607,7 @@ export class LevelEditor {
     // Generate a level ID
     const levelId = prompt(
       "Enter a level ID (e.g., 'level3'):",
-      "level" + (this.gameState.levelManager.getLevelIds().length + 1),
+      "level" + (this.gameState.levelManager.getLevelIds().length + 1)
     );
 
     if (!levelId) return;
@@ -505,13 +615,17 @@ export class LevelEditor {
     // Generate a level name
     const levelName = prompt(
       "Enter a level name:",
-      "Custom Level " + (this.gameState.levelManager.getLevelIds().length + 1),
+      "Custom Level " + (this.gameState.levelManager.getLevelIds().length + 1)
     );
 
     if (!levelName) return;
 
     // Create level data from current game state
-    const levelData = LevelManager.createLevelFromGameState(this.gameState, levelId, levelName);
+    const levelData = LevelManager.createLevelFromGameState(
+      this.gameState,
+      levelId,
+      levelName
+    );
 
     // Convert Vector2 objects to vec2() function calls for code compatibility
     const formatForCodeOutput = (obj: any): any => {
@@ -533,7 +647,7 @@ export class LevelEditor {
 
       const result: any = {};
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.hasOwn(obj, key)) {
           result[key] = formatForCodeOutput(obj[key]);
         }
       }
@@ -543,37 +657,68 @@ export class LevelEditor {
     const formattedData = formatForCodeOutput(levelData);
 
     // Convert to JSON, then replace the stringified vec2 function calls with actual function calls
-    let jsonStr = JSON.stringify(formattedData, null, 2).replace(
+    const jsonStr = JSON.stringify(formattedData, null, 2).replace(
       /"vec2\((\d+\.?\d*),\s*(\d+\.?\d*)\)"/g,
-      "vec2($1, $2)",
+      "vec2($1, $2)"
     );
 
     // Format as a valid JavaScript object for levels.ts
     const platformsMatch = jsonStr.match(/"platforms": \[([\s\S]*?)\],/);
     const candlesMatch = jsonStr.match(/"candles": \[([\s\S]*?)\],/);
     const enemiesMatch = jsonStr.match(/"enemies": \[([\s\S]*?)\],/);
-    const playerMatch = jsonStr.match(/"player": \{[\s\S]*?"position": ([^}]*)/);
+    const playerMatch = jsonStr.match(
+      /"player": \{[\s\S]*?"position": ([^}]*)/
+    );
+
+    const platforms = (levelData.platforms || [])
+      .map(
+        (p) =>
+          `  { position: vec2(${this.snap16(p.position.x)}, ${this.snap16(
+            p.position.y
+          )}), size: vec2(${this.snap16(p.size.x)}, ${this.snap16(
+            p.size.y
+          )}), color: "${p.color}" },`
+      )
+      .join("\n");
+    const candles = (levelData.candles || [])
+      .map(
+        (c) =>
+          `  { position: vec2(${this.snap16(c.position.x)}, ${this.snap16(
+            c.position.y
+          )}) },`
+      )
+      .join("\n");
+    const enemies = (levelData.enemies || [])
+      .map(
+        (e) =>
+          `  { position: vec2(${this.snap16(e.position.x)}, ${this.snap16(
+            e.position.y
+          )}) },`
+      )
+      .join("\n");
+    const player = `  position: vec2(${this.snap16(
+      levelData.player.position.x
+    )}, ${this.snap16(levelData.player.position.y)})`;
 
     const formattedLevelCode = `{
-    id: "${levelId}",
-    name: "${levelName}",
-    background: {
-      color: "${levelData.background.color}",
-    },
-    platforms: ${
-      platformsMatch
-        ? platformsMatch[1]
-            .replace(/"position":/g, "position:")
-            .replace(/"size":/g, "size:")
-            .replace(/"color":/g, "color:")
-        : "[]"
-    },
-    candles: ${candlesMatch ? candlesMatch[1].replace(/"position":/g, "position:") : "[]"},
-    enemies: ${enemiesMatch ? enemiesMatch[1].replace(/"position":/g, "position:") : "[]"},
-    player: {
-      position: ${playerMatch ? playerMatch[1] : "vec2(50, 360)"},
-    },
-  },`;
+  id: "${levelId}",
+  name: "${levelName}",
+  background: {
+    color: "${levelData.background.color}",
+  },
+  platforms: [
+${platforms}
+  ],
+  candles: [
+${candles}
+  ],
+  enemies: [
+${enemies}
+  ],
+  player: {
+${player}
+  },
+},`;
 
     // Create a modal to display the JSON
     const modal = document.createElement("div");
@@ -621,5 +766,32 @@ export class LevelEditor {
     modal.appendChild(closeButton);
 
     document.body.appendChild(modal);
+  }
+
+  private handleUndoRedoKeys = (e: KeyboardEvent) => {
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    if (
+      (isMac ? e.metaKey : e.ctrlKey) &&
+      !e.shiftKey &&
+      e.key.toLowerCase() === "z"
+    ) {
+      e.preventDefault();
+      this.undo();
+    } else if (
+      ((isMac && e.metaKey && e.shiftKey) ||
+        (!isMac && e.ctrlKey && e.key.toLowerCase() === "y")) &&
+      e.key.toLowerCase() === (isMac ? "z" : "y")
+    ) {
+      e.preventDefault();
+      this.redo();
+    }
+  };
+
+  // Snap to 16x16 grid
+  private snap16(n: number) {
+    return Math.round(n / 16) * 16;
+  }
+  private snapVec2(v: Vector2) {
+    return new Vector2(this.snap16(v.x), this.snap16(v.y));
   }
 }

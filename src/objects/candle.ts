@@ -12,7 +12,7 @@ export class Candle {
 
   constructor(x: number, y: number) {
     this.position = new Vector2(x, y);
-    this.size = new Vector2(16, 24);
+    this.size = new Vector2(16, 32);
     this.velocity = new Vector2(0, 0);
     this.active = true;
     this.animationFrame = 0;
@@ -61,18 +61,35 @@ export class Candle {
 
       // Draw candle wax
       ctx.fillStyle = "#FF4444";
-      ctx.fillRect(this.position.x + 2, this.position.y + 2, this.size.x - 4, this.size.y - 4);
+      ctx.fillRect(
+        this.position.x + 2,
+        this.position.y + 2,
+        this.size.x - 4,
+        this.size.y - 4
+      );
 
       // Draw flame
       if (this.animationFrame === 0) {
         ctx.fillStyle = "#FFFF00";
         ctx.beginPath();
-        ctx.arc(this.position.x + this.size.x / 2, this.position.y - 4, 3, 0, Math.PI * 2);
+        ctx.arc(
+          this.position.x + this.size.x / 2,
+          this.position.y - 4,
+          3,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
       } else {
         ctx.fillStyle = "#FF8800";
         ctx.beginPath();
-        ctx.arc(this.position.x + this.size.x / 2, this.position.y - 6, 2, 0, Math.PI * 2);
+        ctx.arc(
+          this.position.x + this.size.x / 2,
+          this.position.y - 6,
+          2,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
       }
     }
