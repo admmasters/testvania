@@ -12,7 +12,7 @@ export const levels: LevelData[] = [
     id: "level1",
     name: "Castle Entrance",
     background: {
-      color: "#007bff",
+      color: "",
     },
     platforms: [
       // Ground
@@ -93,6 +93,96 @@ export const levels: LevelData[] = [
     ],
     player: {
       position: vec2(50, 360),
+    },
+  },
+  {
+    id: "level3",
+    name: "Castle Entrance",
+    background: {
+      color: "",
+    },
+    platforms: [
+      // Ground
+      {
+        position: vec2(0, 550),
+        size: vec2(800, 150),
+        color: "#654321"
+      },
+      {
+        position: vec2(50, 350),
+        size: vec2(100, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(180, 280),
+        size: vec2(120, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(80, 200),
+        size: vec2(90, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(350, 320),
+        size: vec2(100, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(320, 230),
+        size: vec2(80, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(300, 140),
+        size: vec2(70, 20),
+        color: "#765432"
+      },
+      {
+        position: vec2(500, 370),
+        size: vec2(110, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(580, 290),
+        size: vec2(100, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(650, 200),
+        size: vec2(90, 20),
+        color: "#654321"
+      },
+      {
+        position: vec2(450, 100),
+        size: vec2(60, 15),
+        color: "#8B4513"
+      },
+      {
+        position: vec2(200, 100),
+        size: vec2(60, 15),
+        color: "#8B4513"
+      },
+      {
+        position: vec2(210, 483),
+        size: vec2(428, 31),
+        color: "#654321"
+      }
+    ],
+    candles: [
+      { position: vec2(100, 326) },
+      { position: vec2(400, 296) },
+      { position: vec2(360, 206) },
+      { position: vec2(630, 346) },
+      { position: vec2(650, 176) },
+    ],
+    enemies: [
+      { position: vec2(240, 248) },
+      { position: vec2(360, 198) },
+      { position: vec2(630, 258) },
+    ],
+    player: {
+      position: vec2(100, 330),
     },
   },
 ];

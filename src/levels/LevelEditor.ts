@@ -522,8 +522,63 @@ export class LevelEditor {
       levelName
     );
 
-    // Display the level data as JSON
-    const jsonStr = JSON.stringify(levelData, null, 2);
+    // Convert Vector2 objects to vec2() function calls for code compatibility
+    const formatForCodeOutput = (obj: any): any => {
+      if (obj === null || obj === undefined) {
+        return obj;
+      } 
+      
+      if (obj instanceof Vector2) {
+        return `vec2(${obj.x}, ${obj.y})`;
+      }
+      
+      if (typeof obj !== 'object') {
+        return obj;
+      }
+      
+      if (Array.isArray(obj)) {
+        return obj.map(item => formatForCodeOutput(item));
+      }
+      
+      const result: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          result[key] = formatForCodeOutput(obj[key]);
+        }
+      }
+      return result;
+    };
+    
+    const formattedData = formatForCodeOutput(levelData);
+    
+    // Convert to JSON, then replace the stringified vec2 function calls with actual function calls
+    let jsonStr = JSON.stringify(formattedData, null, 2)
+      .replace(/"vec2\((\d+\.?\d*),\s*(\d+\.?\d*)\)"/g, 'vec2($1, $2)');
+    
+    // Format as a valid JavaScript object for levels.ts
+    const platformsMatch = jsonStr.match(/"platforms": \[([\s\S]*?)\],/);
+    const candlesMatch = jsonStr.match(/"candles": \[([\s\S]*?)\],/);
+    const enemiesMatch = jsonStr.match(/"enemies": \[([\s\S]*?)\],/);
+    const playerMatch = jsonStr.match(/"player": \{[\s\S]*?"position": ([^}]*)/);
+    
+    const formattedLevelCode = `{
+    id: "${levelId}",
+    name: "${levelName}",
+    background: {
+      color: "${levelData.background.color}",
+    },
+    platforms: ${platformsMatch ? platformsMatch[1]
+      .replace(/"position":/g, 'position:')
+      .replace(/"size":/g, 'size:')
+      .replace(/"color":/g, 'color:') : '[]'},
+    candles: ${candlesMatch ? candlesMatch[1]
+      .replace(/"position":/g, 'position:') : '[]'},
+    enemies: ${enemiesMatch ? enemiesMatch[1]
+      .replace(/"position":/g, 'position:') : '[]'},
+    player: {
+      position: ${playerMatch ? playerMatch[1] : 'vec2(50, 360)'},
+    },
+  },`;
 
     // Create a modal to display the JSON
     const modal = document.createElement("div");
@@ -550,7 +605,7 @@ export class LevelEditor {
     modal.appendChild(info);
 
     const textarea = document.createElement("textarea");
-    textarea.value = jsonStr;
+    textarea.value = formattedLevelCode;
     textarea.style.width = "100%";
     textarea.style.height = "300px";
     textarea.style.backgroundColor = "#222";
