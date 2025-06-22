@@ -28,30 +28,23 @@ export class Level {
           platformData.position.y,
           platformData.size.x,
           platformData.size.y,
-          platformData.color
-        )
+          platformData.color,
+        ),
       );
     }
 
     // Create candles
     for (const candleData of this.data.candles) {
-      gameState.candles.push(
-        new Candle(candleData.position.x, candleData.position.y)
-      );
+      gameState.candles.push(new Candle(candleData.position.x, candleData.position.y));
     }
 
     // Create enemies
     for (const enemyData of this.data.enemies) {
-      gameState.enemies.push(
-        new Enemy(enemyData.position.x, enemyData.position.y)
-      );
+      gameState.enemies.push(new Enemy(enemyData.position.x, enemyData.position.y));
     }
 
     // Create player at defined start position
-    gameState.player = new Player(
-      this.data.player.position.x,
-      this.data.player.position.y
-    );
+    gameState.player = new Player(this.data.player.position.x, this.data.player.position.y);
 
     // Reset game state timers
     gameState.hitPauseTimer = 0;

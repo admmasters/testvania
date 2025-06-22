@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { defineConfig } from "vite";
+import { resolve } from "path";
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      "@": resolve(__dirname, "src"),
     },
   },
   server: {
@@ -12,8 +12,8 @@ export default defineConfig({
     port: 3000, // Default port
   },
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
+    outDir: "dist",
+    assetsDir: "assets",
     sourcemap: true,
   },
 });

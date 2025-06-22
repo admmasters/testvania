@@ -42,11 +42,7 @@ export class LevelManager {
   }
 
   // Helper method to create a level from current GameState (for level editor)
-  static createLevelFromGameState(
-    gameState: GameState,
-    id: string,
-    name: string
-  ): LevelData {
+  static createLevelFromGameState(gameState: GameState, id: string, name: string): LevelData {
     const levelData: LevelData = {
       id,
       name,
@@ -57,10 +53,7 @@ export class LevelManager {
       candles: [],
       enemies: [],
       player: {
-        position: new Vector2(
-          gameState.player.position.x,
-          gameState.player.position.y
-        ),
+        position: new Vector2(gameState.player.position.x, gameState.player.position.y),
       },
     };
 

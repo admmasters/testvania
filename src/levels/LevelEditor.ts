@@ -357,8 +357,8 @@ export class LevelEditor {
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
         this.currentPlatform.size.y,
-        this.currentPlatform.color
-      )
+        this.currentPlatform.color,
+      ),
     );
 
     this.currentPlatform = null;
@@ -436,7 +436,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
 
       ctx.strokeStyle = "#FFFFFF";
@@ -444,7 +444,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
     }
 
@@ -453,12 +453,7 @@ export class LevelEditor {
       const obj = this.selectedObject;
       ctx.strokeStyle = "#FF0000";
       ctx.lineWidth = 2;
-      ctx.strokeRect(
-        obj.position.x - 2,
-        obj.position.y - 2,
-        obj.size.x + 4,
-        obj.size.y + 4
-      );
+      ctx.strokeRect(obj.position.x - 2, obj.position.y - 2, obj.size.x + 4, obj.size.y + 4);
       ctx.lineWidth = 1;
     }
 
@@ -502,7 +497,7 @@ export class LevelEditor {
     // Generate a level ID
     const levelId = prompt(
       "Enter a level ID (e.g., 'level3'):",
-      "level" + (this.gameState.levelManager.getLevelIds().length + 1)
+      "level" + (this.gameState.levelManager.getLevelIds().length + 1),
     );
 
     if (!levelId) return;
@@ -510,36 +505,32 @@ export class LevelEditor {
     // Generate a level name
     const levelName = prompt(
       "Enter a level name:",
-      "Custom Level " + (this.gameState.levelManager.getLevelIds().length + 1)
+      "Custom Level " + (this.gameState.levelManager.getLevelIds().length + 1),
     );
 
     if (!levelName) return;
 
     // Create level data from current game state
-    const levelData = LevelManager.createLevelFromGameState(
-      this.gameState,
-      levelId,
-      levelName
-    );
+    const levelData = LevelManager.createLevelFromGameState(this.gameState, levelId, levelName);
 
     // Convert Vector2 objects to vec2() function calls for code compatibility
     const formatForCodeOutput = (obj: any): any => {
       if (obj === null || obj === undefined) {
         return obj;
-      } 
-      
+      }
+
       if (obj instanceof Vector2) {
         return `vec2(${obj.x}, ${obj.y})`;
       }
-      
-      if (typeof obj !== 'object') {
+
+      if (typeof obj !== "object") {
         return obj;
       }
-      
+
       if (Array.isArray(obj)) {
-        return obj.map(item => formatForCodeOutput(item));
+        return obj.map((item) => formatForCodeOutput(item));
       }
-      
+
       const result: any = {};
       for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
@@ -548,35 +539,39 @@ export class LevelEditor {
       }
       return result;
     };
-    
+
     const formattedData = formatForCodeOutput(levelData);
-    
+
     // Convert to JSON, then replace the stringified vec2 function calls with actual function calls
-    let jsonStr = JSON.stringify(formattedData, null, 2)
-      .replace(/"vec2\((\d+\.?\d*),\s*(\d+\.?\d*)\)"/g, 'vec2($1, $2)');
-    
+    let jsonStr = JSON.stringify(formattedData, null, 2).replace(
+      /"vec2\((\d+\.?\d*),\s*(\d+\.?\d*)\)"/g,
+      "vec2($1, $2)",
+    );
+
     // Format as a valid JavaScript object for levels.ts
     const platformsMatch = jsonStr.match(/"platforms": \[([\s\S]*?)\],/);
     const candlesMatch = jsonStr.match(/"candles": \[([\s\S]*?)\],/);
     const enemiesMatch = jsonStr.match(/"enemies": \[([\s\S]*?)\],/);
     const playerMatch = jsonStr.match(/"player": \{[\s\S]*?"position": ([^}]*)/);
-    
+
     const formattedLevelCode = `{
     id: "${levelId}",
     name: "${levelName}",
     background: {
       color: "${levelData.background.color}",
     },
-    platforms: ${platformsMatch ? platformsMatch[1]
-      .replace(/"position":/g, 'position:')
-      .replace(/"size":/g, 'size:')
-      .replace(/"color":/g, 'color:') : '[]'},
-    candles: ${candlesMatch ? candlesMatch[1]
-      .replace(/"position":/g, 'position:') : '[]'},
-    enemies: ${enemiesMatch ? enemiesMatch[1]
-      .replace(/"position":/g, 'position:') : '[]'},
+    platforms: ${
+      platformsMatch
+        ? platformsMatch[1]
+            .replace(/"position":/g, "position:")
+            .replace(/"size":/g, "size:")
+            .replace(/"color":/g, "color:")
+        : "[]"
+    },
+    candles: ${candlesMatch ? candlesMatch[1].replace(/"position":/g, "position:") : "[]"},
+    enemies: ${enemiesMatch ? enemiesMatch[1].replace(/"position":/g, "position:") : "[]"},
     player: {
-      position: ${playerMatch ? playerMatch[1] : 'vec2(50, 360)'},
+      position: ${playerMatch ? playerMatch[1] : "vec2(50, 360)"},
     },
   },`;
 
