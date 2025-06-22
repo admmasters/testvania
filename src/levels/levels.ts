@@ -11,6 +11,8 @@ export const levels: LevelData[] = [
   {
     id: "level1",
     name: "Custom Level 1",
+    width: 1600,
+    height: 600,
     background: {
       color: "#2C1810",
     },
@@ -19,6 +21,7 @@ export const levels: LevelData[] = [
       { position: vec2(240, 336), size: vec2(128, 32), color: "#654321" },
       { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
       { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
+      { position: vec2(800, 448), size: vec2(704, 160), color: "#654321" },
     ],
     candles: [
       { position: vec2(192, 416) },
@@ -26,12 +29,12 @@ export const levels: LevelData[] = [
       { position: vec2(464, 224) },
     ],
     enemies: [
-      { position: vec2(800, 169056) },
-      { position: vec2(800, 125696) },
-      { position: vec2(800, 89424) },
-      { position: vec2(800, 16176) },
-      { position: vec2(800, 38816) },
-      { position: vec2(528, 320) },
+      { position: vec2(800, 169840) },
+      { position: vec2(800, 126480) },
+      { position: vec2(800, 90208) },
+      { position: vec2(800, 16960) },
+      { position: vec2(800, 39600) },
+      { position: vec2(592, 416) },
     ],
     player: {
       position: vec2(32, 400),
@@ -40,6 +43,8 @@ export const levels: LevelData[] = [
   {
     id: "level2",
     name: "Castle Entrance",
+    width: 2000, // Example: much wider level
+    height: 600,
     background: {
       color: "#2C1810",
       elements: [
@@ -99,8 +104,10 @@ export const levels: LevelData[] = [
     },
   },
   {
-    id: "level2",
+    id: "level3",
     name: "Upper Chambers",
+    width: 1800,
+    height: 700,
     background: {
       color: "#1A1010",
     },
@@ -147,6 +154,8 @@ export const levels: LevelData[] = [
   {
     id: "level4",
     name: "Custom Level 4",
+    width: 1200,
+    height: 704,
     background: {
       color: "#2C1810",
     },

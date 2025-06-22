@@ -1,11 +1,19 @@
-import { GameState } from "../engine/GameState";
-import { LevelData } from "./LevelData";
-import { Level } from "./Level";
-import { levels } from "./levels";
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2";
+import { Level } from "./Level";
+import type { LevelData } from "./LevelData";
+import { levels } from "./levels";
 
 export class LevelManager {
   private levels: Map<string, Level>;
+  /**
+   * Get the LevelData for a given levelId, or undefined if not found.
+   */
+  public getLevelData(levelId: string): LevelData | undefined {
+    const level = this.levels.get(levelId);
+    // @ts-ignore: access private for engine use
+    return level ? ((level as any).data as LevelData) : undefined;
+  }
   private currentLevelId: string | null = null;
 
   constructor() {
@@ -42,10 +50,16 @@ export class LevelManager {
   }
 
   // Helper method to create a level from current GameState (for level editor)
-  static createLevelFromGameState(gameState: GameState, id: string, name: string): LevelData {
+  static createLevelFromGameState(
+    gameState: GameState,
+    id: string,
+    name: string
+  ): LevelData {
     const levelData: LevelData = {
       id,
       name,
+      width: 1600, // Default, should be set appropriately
+      height: 608,
       background: {
         color: "#2C1810", // Default background color
       },
@@ -53,7 +67,10 @@ export class LevelManager {
       candles: [],
       enemies: [],
       player: {
-        position: new Vector2(gameState.player.position.x, gameState.player.position.y),
+        position: new Vector2(
+          gameState.player.position.x,
+          gameState.player.position.y
+        ),
       },
     };
 

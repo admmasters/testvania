@@ -1,4 +1,4 @@
-import { Vector2 } from "../engine/Vector2";
+import type { Vector2 } from "../engine/Vector2";
 
 // Define the structure for platform data
 export interface PlatformData {
@@ -26,6 +26,8 @@ export interface PlayerStartData {
 export interface LevelData {
   id: string;
   name: string;
+  width: number; // Level width in pixels
+  height: number; // Level height in pixels
   background: {
     color: string;
     elements?: {

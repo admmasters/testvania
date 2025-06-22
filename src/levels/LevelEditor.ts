@@ -20,31 +20,56 @@ interface EditorPlatform {
   color: string;
 }
 
+interface EditorState {
+  platforms: { position: Vector2; size: Vector2; color: string }[];
+  candles: { position: Vector2 }[];
+  enemies: { position: Vector2 }[];
+  player: { position: Vector2 };
+  scrollPosition: Vector2;
+}
+
 export class LevelEditor {
   private gameState: GameState;
   private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
   private isActive: boolean = false;
   private mode: EditorMode = EditorMode.SELECT;
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
   private editorContainer: HTMLDivElement | null = null;
-  private selectedObject: any = null;
+  private selectedObject: Platform | Candle | Enemy | object | null = null; // Using object type for player
   private platformColor: string = "#654321";
 
-  private undoStack: any[] = [];
-  private redoStack: any[] = [];
+  // Scrolling properties
+  private isScrolling: boolean = false;
+  private scrollStart: Vector2 | null = null;
+  private scrollPosition: Vector2 = new Vector2(0, 0);
+  private scrollIndicator: HTMLDivElement | null = null;
+  private dragButton: number = 1; // Middle mouse button (1)
+
+  private undoStack: EditorState[] = [];
+  private redoStack: EditorState[] = [];
+
+  private levelWidth: number = 800;
+  private levelHeight: number = 600;
 
   constructor(gameState: GameState, canvas: HTMLCanvasElement) {
     this.gameState = gameState;
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
   }
 
   activate(): void {
     if (this.isActive) return;
-
     this.isActive = true;
+
+    // Initialize level size from current level if available
+    if ((this.gameState as any).levelData) {
+      this.levelWidth = (this.gameState as any).levelData.width || 800;
+      this.levelHeight = (this.gameState as any).levelData.height || 600;
+    }
+
+    // Synchronize editor scroll position with game camera
+    this.scrollPosition.x = this.gameState.camera.position.x;
+    this.scrollPosition.y = this.gameState.camera.position.y;
 
     // Create editor UI
     this.createEditorUI();
@@ -53,19 +78,41 @@ export class LevelEditor {
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
     this.canvas.addEventListener("mousemove", this.handleMouseMove);
     this.canvas.addEventListener("mouseup", this.handleMouseUp);
+
+    // Add scroll wheel support
+    this.canvas.addEventListener("wheel", this.handleWheel);
+
+    // Add keyboard navigation support
+    window.addEventListener("keydown", this.handleKeyDown);
+
+    // Initialize scroll indicator
+    this.createScrollIndicator();
   }
 
   deactivate(): void {
     if (!this.isActive) return;
     this.isActive = false;
+
+    // Synchronize game camera with editor scroll position
+    this.gameState.camera.position.x = this.scrollPosition.x;
+    this.gameState.camera.position.y = this.scrollPosition.y;
+
     this.canvas.removeEventListener("mousedown", this.handleMouseDown);
     this.canvas.removeEventListener("mousemove", this.handleMouseMove);
     this.canvas.removeEventListener("mouseup", this.handleMouseUp);
-    if (this.editorContainer && this.editorContainer.parentElement) {
+    this.canvas.removeEventListener("wheel", this.handleWheel);
+    window.removeEventListener("keydown", this.handleKeyDown);
+    window.removeEventListener("keydown", this.handleUndoRedoKeys);
+
+    if (this.editorContainer?.parentElement) {
       this.editorContainer.parentElement.removeChild(this.editorContainer);
       this.editorContainer = null;
     }
-    window.removeEventListener("keydown", this.handleUndoRedoKeys);
+
+    if (this.scrollIndicator?.parentElement) {
+      this.scrollIndicator.parentElement.removeChild(this.scrollIndicator);
+      this.scrollIndicator = null;
+    }
   }
 
   isEditorActive(): boolean {
@@ -91,6 +138,63 @@ export class LevelEditor {
     title.textContent = "Level Editor";
     title.style.margin = "0 0 10px 0";
     container.appendChild(title);
+
+    // Level size controls
+    const sizeContainer = document.createElement("div");
+    sizeContainer.style.marginBottom = "10px";
+    sizeContainer.style.display = "flex";
+    sizeContainer.style.gap = "10px";
+    sizeContainer.style.alignItems = "center";
+
+    const widthLabel = document.createElement("label");
+    widthLabel.textContent = "Width: ";
+    sizeContainer.appendChild(widthLabel);
+    const widthInput = document.createElement("input");
+    widthInput.type = "number";
+    widthInput.min = "320";
+    widthInput.max = "10000";
+    widthInput.value = String(this.levelWidth);
+    widthInput.style.width = "70px";
+    widthInput.addEventListener("change", () => {
+      const val = Math.max(
+        320,
+        Math.min(10000, parseInt(widthInput.value, 10))
+      );
+      widthInput.value = String(val);
+      this.levelWidth = val;
+    });
+    sizeContainer.appendChild(widthInput);
+
+    const heightLabel = document.createElement("label");
+    heightLabel.textContent = "Height: ";
+    sizeContainer.appendChild(heightLabel);
+    const heightInput = document.createElement("input");
+    heightInput.type = "number";
+    heightInput.min = "240";
+    heightInput.max = "2000";
+    heightInput.value = String(this.levelHeight);
+    heightInput.style.width = "70px";
+    heightInput.addEventListener("change", () => {
+      const val = Math.max(
+        240,
+        Math.min(2000, parseInt(heightInput.value, 10))
+      );
+      heightInput.value = String(val);
+      this.levelHeight = val;
+    });
+    sizeContainer.appendChild(heightInput);
+
+    container.appendChild(sizeContainer);
+
+    // Create instructions for scrolling
+    const scrollInstructions = document.createElement("div");
+    scrollInstructions.style.fontSize = "12px";
+    scrollInstructions.style.marginBottom = "10px";
+    scrollInstructions.style.color = "#aaa";
+    scrollInstructions.innerHTML =
+      "Scroll: Middle mouse drag, mouse wheel, or arrow keys<br>" +
+      "Hold Shift + arrows for faster scrolling";
+    container.appendChild(scrollInstructions);
 
     // Create mode buttons
     const modeContainer = document.createElement("div");
@@ -222,14 +326,14 @@ export class LevelEditor {
     if (this.undoStack.length === 0) return;
     this.redoStack.push(this.captureCurrentState());
     const prev = this.undoStack.pop();
-    this.restoreState(prev);
+    if (prev) this.restoreState(prev);
   }
 
   private redo() {
     if (this.redoStack.length === 0) return;
     this.undoStack.push(this.captureCurrentState());
     const next = this.redoStack.pop();
-    this.restoreState(next);
+    if (next) this.restoreState(next);
   }
 
   private pushUndoState() {
@@ -247,6 +351,7 @@ export class LevelEditor {
         position: e.position.copy(),
       })),
       player: { position: this.gameState.player.position.copy() },
+      scrollPosition: this.scrollPosition.copy(), // Save scroll position
     });
     // Limit stack size
     if (this.undoStack.length > 100) this.undoStack.shift();
@@ -267,10 +372,17 @@ export class LevelEditor {
         position: e.position.copy(),
       })),
       player: { position: this.gameState.player.position.copy() },
+      scrollPosition: this.scrollPosition.copy(), // Save scroll position
     };
   }
 
-  private restoreState(state: any) {
+  private restoreState(state: {
+    platforms: { position: Vector2; size: Vector2; color: string }[];
+    candles: { position: Vector2 }[];
+    enemies: { position: Vector2 }[];
+    player: { position: Vector2 };
+    scrollPosition?: Vector2; // Optional for backward compatibility
+  }) {
     // Restore platforms
     this.gameState.platforms = state.platforms.map(
       (p) =>
@@ -287,6 +399,11 @@ export class LevelEditor {
     // Restore player
     this.gameState.player.position.x = state.player.position.x;
     this.gameState.player.position.y = state.player.position.y;
+
+    // Restore scroll position if available
+    if (state.scrollPosition) {
+      this.scrollPosition = state.scrollPosition.copy();
+    }
   }
 
   private handleMouseDown = (e: MouseEvent) => {
@@ -295,56 +412,104 @@ export class LevelEditor {
     const y = e.clientY - rect.top;
     const pos = new Vector2(x, y);
 
+    // Handle middle mouse button for scrolling
+    if (e.button === this.dragButton) {
+      e.preventDefault();
+      this.isScrolling = true;
+      this.scrollStart = pos.copy();
+      return;
+    }
+
+    // Convert screen position to world position (accounting for scroll)
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
+
     switch (this.mode) {
       case EditorMode.SELECT:
-        this.startSelectMode(pos);
+        this.startSelectMode(worldPos);
         break;
 
       case EditorMode.PLATFORM:
         this.pushUndoState();
-        this.startPlatformMode(pos);
+        this.startPlatformMode(worldPos);
         break;
 
       case EditorMode.CANDLE:
         this.pushUndoState();
-        this.placeCandle(pos);
+        this.placeCandle(worldPos);
         break;
 
       case EditorMode.ENEMY:
         this.pushUndoState();
-        this.placeEnemy(pos);
+        this.placeEnemy(worldPos);
         break;
 
       case EditorMode.PLAYER:
         this.pushUndoState();
-        this.placePlayer(pos);
+        this.placePlayer(worldPos);
         break;
 
       case EditorMode.DELETE:
         this.pushUndoState();
-        this.startDeleteMode(pos);
+        this.startDeleteMode(worldPos);
         break;
     }
 
-    this.startPosition = pos;
+    this.startPosition = worldPos;
   };
 
   private handleMouseMove = (e: MouseEvent) => {
-    if (!this.startPosition) return;
-
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const pos = new Vector2(x, y);
 
+    // Handle scrolling with middle mouse button
+    if (this.isScrolling && this.scrollStart) {
+      const deltaX = this.scrollStart.x - pos.x;
+      const deltaY = this.scrollStart.y - pos.y;
+
+      this.scrollPosition.x += deltaX;
+      this.scrollPosition.y += deltaY;
+
+      // Keep scroll position positive
+      this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
+      this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+
+      // Sync camera
+      this.gameState.camera.position.x = this.scrollPosition.x;
+      this.gameState.camera.position.y = this.scrollPosition.y;
+
+      this.scrollStart = pos.copy();
+      this.updateScrollIndicator();
+      return;
+    }
+
+    if (!this.startPosition) return;
+
+    // Convert screen position to world position
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
+
     switch (this.mode) {
       case EditorMode.PLATFORM:
-        this.updatePlatformSize(pos);
+        this.updatePlatformSize(worldPos);
         break;
     }
   };
 
   private handleMouseUp = (e: MouseEvent) => {
+    // Stop scrolling if middle mouse button was released
+    if (e.button === this.dragButton) {
+      this.isScrolling = false;
+      this.scrollStart = null;
+      return;
+    }
+
     if (!this.startPosition) return;
 
     const rect = this.canvas.getBoundingClientRect();
@@ -352,9 +517,15 @@ export class LevelEditor {
     const y = e.clientY - rect.top;
     const pos = new Vector2(x, y);
 
+    // Convert to world position
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
+
     switch (this.mode) {
       case EditorMode.PLATFORM:
-        this.finishPlatform(pos);
+        this.finishPlatform(worldPos);
         break;
     }
 
@@ -365,7 +536,7 @@ export class LevelEditor {
     // Find the object under cursor
     this.selectedObject = null;
 
-    // Check platforms
+    // Check platforms - pos is already adjusted for scrolling in handleMouseDown
     for (const platform of this.gameState.platforms) {
       if (
         pos.x >= platform.position.x &&
@@ -487,6 +658,7 @@ export class LevelEditor {
 
   private startDeleteMode(pos: Vector2): void {
     // Find and delete object under cursor
+    // The pos parameter is already adjusted for scrolling in handleMouseDown
 
     // Check platforms
     for (let i = 0; i < this.gameState.platforms.length; i++) {
@@ -534,6 +706,8 @@ export class LevelEditor {
   render(ctx: CanvasRenderingContext2D): void {
     if (!this.isActive) return;
 
+    ctx.save();
+
     // Draw current platform being created
     if (this.mode === EditorMode.PLATFORM && this.currentPlatform) {
       ctx.fillStyle = this.currentPlatform.color;
@@ -555,52 +729,52 @@ export class LevelEditor {
 
     // Highlight selected object
     if (this.mode === EditorMode.SELECT && this.selectedObject) {
-      const obj = this.selectedObject;
-      ctx.strokeStyle = "#FF0000";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        obj.position.x - 2,
-        obj.position.y - 2,
-        obj.size.x + 4,
-        obj.size.y + 4
-      );
-      ctx.lineWidth = 1;
+      const obj = this.selectedObject as { position: Vector2; size: Vector2 };
+      if (obj.position && obj.size) {
+        ctx.strokeStyle = "#FF0000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          obj.position.x - 2,
+          obj.position.y - 2,
+          obj.size.x + 4,
+          obj.size.y + 4
+        );
+        ctx.lineWidth = 1;
+      }
     }
 
     // Draw grid for alignment
     this.drawGrid(ctx);
 
-    // Draw cursor based on current mode
-    this.drawCursor(ctx);
+    ctx.restore();
   }
 
   private drawGrid(ctx: CanvasRenderingContext2D): void {
-    ctx.save();
-
     ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
     ctx.lineWidth = 0.5;
 
+    // Calculate grid boundaries based on scroll position and canvas size
+    // We need to calculate grid position in world space
+    const startX = Math.floor(this.scrollPosition.x / 16) * 16;
+    const startY = Math.floor(this.scrollPosition.y / 16) * 16;
+    const endX = startX + this.canvas.width + 32;
+    const endY = startY + this.canvas.height + 32;
+
     // Draw vertical lines
-    for (let x = 0; x < this.canvas.width; x += 16) {
+    for (let x = startX; x < endX; x += 16) {
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, this.canvas.height);
+      ctx.moveTo(x, startY);
+      ctx.lineTo(x, endY);
       ctx.stroke();
     }
 
     // Draw horizontal lines
-    for (let y = 0; y < this.canvas.height; y += 16) {
+    for (let y = startY; y < endY; y += 16) {
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.canvas.width, y);
+      ctx.moveTo(startX, y);
+      ctx.lineTo(endX, y);
       ctx.stroke();
     }
-
-    ctx.restore();
-  }
-
-  private drawCursor(ctx: CanvasRenderingContext2D): void {
-    // No custom cursor in this implementation
   }
 
   private saveCurrentLevel(): void {
@@ -626,49 +800,12 @@ export class LevelEditor {
       levelId,
       levelName
     );
+    // Set width and height
+    levelData.width = this.levelWidth;
+    levelData.height = this.levelHeight;
 
-    // Convert Vector2 objects to vec2() function calls for code compatibility
-    const formatForCodeOutput = (obj: any): any => {
-      if (obj === null || obj === undefined) {
-        return obj;
-      }
-
-      if (obj instanceof Vector2) {
-        return `vec2(${obj.x}, ${obj.y})`;
-      }
-
-      if (typeof obj !== "object") {
-        return obj;
-      }
-
-      if (Array.isArray(obj)) {
-        return obj.map((item) => formatForCodeOutput(item));
-      }
-
-      const result: any = {};
-      for (const key in obj) {
-        if (Object.hasOwn(obj, key)) {
-          result[key] = formatForCodeOutput(obj[key]);
-        }
-      }
-      return result;
-    };
-
-    const formattedData = formatForCodeOutput(levelData);
-
-    // Convert to JSON, then replace the stringified vec2 function calls with actual function calls
-    const jsonStr = JSON.stringify(formattedData, null, 2).replace(
-      /"vec2\((\d+\.?\d*),\s*(\d+\.?\d*)\)"/g,
-      "vec2($1, $2)"
-    );
-
-    // Format as a valid JavaScript object for levels.ts
-    const platformsMatch = jsonStr.match(/"platforms": \[([\s\S]*?)\],/);
-    const candlesMatch = jsonStr.match(/"candles": \[([\s\S]*?)\],/);
-    const enemiesMatch = jsonStr.match(/"enemies": \[([\s\S]*?)\],/);
-    const playerMatch = jsonStr.match(
-      /"player": \{[\s\S]*?"position": ([^}]*)/
-    );
+    // Function to format Vector2 values is removed as it's not needed
+    // We're formatting the data directly in the template literals below
 
     const platforms = (levelData.platforms || [])
       .map(
@@ -703,6 +840,8 @@ export class LevelEditor {
     const formattedLevelCode = `{
   id: "${levelId}",
   name: "${levelName}",
+  width: ${this.levelWidth},
+  height: ${this.levelHeight},
   background: {
     color: "${levelData.background.color}",
   },
@@ -794,4 +933,78 @@ ${player}
   private snapVec2(v: Vector2) {
     return new Vector2(this.snap16(v.x), this.snap16(v.y));
   }
+
+  private createScrollIndicator(): void {
+    // Create a scroll position indicator
+    const indicator = document.createElement("div");
+    indicator.style.position = "fixed";
+    indicator.style.bottom = "10px";
+    indicator.style.right = "10px";
+    indicator.style.padding = "5px 10px";
+    indicator.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+    indicator.style.color = "white";
+    indicator.style.borderRadius = "3px";
+    indicator.style.zIndex = "1000";
+    indicator.style.fontFamily = "Arial, sans-serif";
+    indicator.style.fontSize = "12px";
+    indicator.textContent = "Scroll: 0, 0";
+
+    document.body.appendChild(indicator);
+    this.scrollIndicator = indicator;
+    this.updateScrollIndicator();
+  }
+
+  private updateScrollIndicator(): void {
+    if (!this.scrollIndicator) return;
+    this.scrollIndicator.textContent = `Scroll: ${Math.round(
+      this.scrollPosition.x
+    )}, ${Math.round(this.scrollPosition.y)}`;
+  }
+
+  private handleWheel = (e: WheelEvent): void => {
+    e.preventDefault();
+    const delta = e.deltaY;
+    const scrollSpeed = 32;
+    if (e.shiftKey) {
+      this.scrollPosition.x += (delta > 0 ? 1 : -1) * scrollSpeed;
+    } else {
+      this.scrollPosition.y += (delta > 0 ? 1 : -1) * scrollSpeed;
+    }
+    this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
+    this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+    // Sync camera
+    this.gameState.camera.position.x = this.scrollPosition.x;
+    this.gameState.camera.position.y = this.scrollPosition.y;
+    this.updateScrollIndicator();
+  };
+
+  private handleKeyDown = (e: KeyboardEvent): void => {
+    const scrollAmount = e.shiftKey ? 64 : 16;
+    switch (e.key) {
+      case "ArrowUp":
+        this.scrollPosition.y -= scrollAmount;
+        e.preventDefault();
+        break;
+      case "ArrowDown":
+        this.scrollPosition.y += scrollAmount;
+        e.preventDefault();
+        break;
+      case "ArrowLeft":
+        this.scrollPosition.x -= scrollAmount;
+        e.preventDefault();
+        break;
+      case "ArrowRight":
+        this.scrollPosition.x += scrollAmount;
+        e.preventDefault();
+        break;
+      default:
+        break;
+    }
+    this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
+    this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+    // Sync camera
+    this.gameState.camera.position.x = this.scrollPosition.x;
+    this.gameState.camera.position.y = this.scrollPosition.y;
+    this.updateScrollIndicator();
+  };
 }
