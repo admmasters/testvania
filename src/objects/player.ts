@@ -107,11 +107,12 @@ export class Player extends GameObject {
         this.position = nextPosition;
         
         // Ground collision (simple)
+        /*
         if (this.position.y > 400) {
             this.position.y = 400;
             this.velocity.y = 0;
             this.grounded = true;
-        }
+        }*/
         
         // Screen boundaries
         if (this.position.x < 0) this.position.x = 0;

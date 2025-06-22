@@ -96,10 +96,11 @@ export class Enemy extends GameObject {
         this.position = nextPosition;
         
         // Ground collision
+        /*
         if (this.position.y > 416) {
             this.position.y = 416;
             this.velocity.y = 0;
-        }
+        }*/
     }
     
     updateTimers(deltaTime: number): void {

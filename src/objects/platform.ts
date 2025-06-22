@@ -58,7 +58,7 @@ export class Platform extends GameObject {
             const brickWidth = 20;
             for (let x = this.position.x + brickWidth; x < this.position.x + this.size.x; x += brickWidth) {
                 // Make bricks offset for each row
-                const offset = Math.floor((x - this.position.x) / brickWidth) % 2 === 0 ? 5 : -5;
+                const offset = Math.floor((x - this.position.x) / brickWidth) % 2 === 0 ? 5 : 5;
                 
                 ctx.beginPath();
                 ctx.moveTo(x, this.position.y + offset);
