@@ -429,11 +429,23 @@ export class LevelEditor {
     switch (this.mode) {
       case EditorMode.SELECT:
         this.startSelectMode(worldPos);
+        // If a platform is selected, allow extending it by dragging
+        if (this.selectedObject && this.selectedObject instanceof Platform) {
+          this.currentPlatform = {
+            position: (this.selectedObject as Platform).position.copy(),
+            size: (this.selectedObject as Platform).size.copy(),
+            color: (this.selectedObject as Platform).color,
+          };
+          this.startPosition = this.currentPlatform.position.copy();
+        } else {
+          this.startPosition = null;
+        }
         break;
 
       case EditorMode.PLATFORM:
         this.pushUndoState();
         this.startPlatformMode(worldPos);
+        this.startPosition = worldPos;
         break;
 
       case EditorMode.CANDLE:
@@ -456,8 +468,6 @@ export class LevelEditor {
         this.startDeleteMode(worldPos);
         break;
     }
-
-    this.startPosition = worldPos;
   };
 
   private handleMouseMove = (e: MouseEvent) => {
@@ -499,6 +509,16 @@ export class LevelEditor {
       case EditorMode.PLATFORM:
         this.updatePlatformSize(worldPos);
         break;
+      case EditorMode.SELECT:
+        // If a platform is selected and being extended
+        if (
+          this.selectedObject &&
+          this.selectedObject instanceof Platform &&
+          this.currentPlatform
+        ) {
+          this.updatePlatformSize(worldPos);
+        }
+        break;
     }
   };
 
@@ -527,16 +547,60 @@ export class LevelEditor {
       case EditorMode.PLATFORM:
         this.finishPlatform(worldPos);
         break;
+      case EditorMode.SELECT:
+        // If a platform is selected and being extended
+        if (
+          this.selectedObject &&
+          this.selectedObject instanceof Platform &&
+          this.currentPlatform
+        ) {
+          // Save undo state before changing
+          this.pushUndoState();
+          // Update platform's position and size
+          const platform = this.selectedObject as Platform;
+          platform.position.x = this.currentPlatform.position.x;
+          platform.position.y = this.currentPlatform.position.y;
+          platform.size.x = this.currentPlatform.size.x;
+          platform.size.y = this.currentPlatform.size.y;
+          this.currentPlatform = null;
+        }
+        break;
     }
 
     this.startPosition = null;
   };
 
   private startSelectMode(pos: Vector2): void {
-    // Find the object under cursor
+    // Prioritize: enemy > candle > platform > player
     this.selectedObject = null;
 
-    // Check platforms - pos is already adjusted for scrolling in handleMouseDown
+    // Check enemies first
+    for (const enemy of this.gameState.enemies) {
+      if (
+        pos.x >= enemy.position.x &&
+        pos.x <= enemy.position.x + enemy.size.x &&
+        pos.y >= enemy.position.y &&
+        pos.y <= enemy.position.y + enemy.size.y
+      ) {
+        this.selectedObject = enemy;
+        return;
+      }
+    }
+
+    // Check candles
+    for (const candle of this.gameState.candles) {
+      if (
+        pos.x >= candle.position.x &&
+        pos.x <= candle.position.x + candle.size.x &&
+        pos.y >= candle.position.y &&
+        pos.y <= candle.position.y + candle.size.y
+      ) {
+        this.selectedObject = candle;
+        return;
+      }
+    }
+
+    // Check platforms
     for (const platform of this.gameState.platforms) {
       if (
         pos.x >= platform.position.x &&
@@ -545,51 +609,19 @@ export class LevelEditor {
         pos.y <= platform.position.y + platform.size.y
       ) {
         this.selectedObject = platform;
-        break;
-      }
-    }
-
-    // Check candles
-    if (!this.selectedObject) {
-      for (const candle of this.gameState.candles) {
-        if (
-          pos.x >= candle.position.x &&
-          pos.x <= candle.position.x + candle.size.x &&
-          pos.y >= candle.position.y &&
-          pos.y <= candle.position.y + candle.size.y
-        ) {
-          this.selectedObject = candle;
-          break;
-        }
-      }
-    }
-
-    // Check enemies
-    if (!this.selectedObject) {
-      for (const enemy of this.gameState.enemies) {
-        if (
-          pos.x >= enemy.position.x &&
-          pos.x <= enemy.position.x + enemy.size.x &&
-          pos.y >= enemy.position.y &&
-          pos.y <= enemy.position.y + enemy.size.y
-        ) {
-          this.selectedObject = enemy;
-          break;
-        }
+        return;
       }
     }
 
     // Check player
-    if (!this.selectedObject) {
-      const player = this.gameState.player;
-      if (
-        pos.x >= player.position.x &&
-        pos.x <= player.position.x + player.size.x &&
-        pos.y >= player.position.y &&
-        pos.y <= player.position.y + player.size.y
-      ) {
-        this.selectedObject = player;
-      }
+    const player = this.gameState.player;
+    if (
+      pos.x >= player.position.x &&
+      pos.x <= player.position.x + player.size.x &&
+      pos.y >= player.position.y &&
+      pos.y <= player.position.y + player.size.y
+    ) {
+      this.selectedObject = player;
     }
   }
 
@@ -646,7 +678,18 @@ export class LevelEditor {
   private placeEnemy(pos: Vector2): void {
     const snapped = this.snapVec2(pos);
     // Create new enemy at position
-    this.gameState.enemies.push(new Enemy(snapped.x - 12, snapped.y - 16));
+    // Make sure to position the enemy on the ground by aligning to the 16-pixel grid
+    const enemyX = snapped.x - 12;
+    const enemyY = snapped.y - 16;
+
+    // Create the enemy
+    const newEnemy = new Enemy(enemyX, enemyY);
+
+    // When creating an enemy through the editor, initialize with zero vertical velocity
+    // to prevent immediate falling
+    newEnemy.velocity.y = 0;
+
+    this.gameState.enemies.push(newEnemy);
   }
 
   private placePlayer(pos: Vector2): void {

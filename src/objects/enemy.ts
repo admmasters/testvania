@@ -1,5 +1,5 @@
 import { GameObject } from "../engine/GameObject";
-import { GameState } from "../engine/GameState";
+import type { GameState } from "../engine/GameState";
 
 export class Enemy extends GameObject {
   type: string;
@@ -28,12 +28,23 @@ export class Enemy extends GameObject {
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {
+    // Get the level dimensions from the game state
+    const levelData = gameState.levelManager.getLevelData(
+      gameState.currentLevelId ?? ""
+    );
+    const levelWidth = levelData?.width || 800; // Fallback to 800 if level data is not available
+    const levelHeight = levelData?.height || 600; // Fallback to 600 if level data is not available
+
     // Simple AI - move back and forth
     this.velocity.x = this.direction * this.speed;
 
-    // Change direction at screen edges
-    if (this.position.x <= 0 || this.position.x >= 776) {
-      this.direction *= -1;
+    // Change direction at level edges instead of hardcoded screen edges
+    if (this.position.x <= 0) {
+      this.direction = 1;
+      this.position.x = 0;
+    } else if (this.position.x + this.size.x >= levelWidth) {
+      this.direction = -1;
+      this.position.x = levelWidth - this.size.x;
     }
 
     // Gravity
@@ -46,7 +57,7 @@ export class Enemy extends GameObject {
     let willFallOff = true;
     let onPlatform = false;
 
-    for (let platform of gameState.platforms) {
+    for (const platform of gameState.platforms) {
       const enemyBottom = this.position.y + this.size.y;
       const nextEnemyBottom = nextPosition.y + this.size.y;
 
@@ -63,7 +74,10 @@ export class Enemy extends GameObject {
         const checkX = this.direction > 0 ? nextX + this.size.x : nextX;
 
         // If still on platform, we're good
-        if (checkX >= platform.position.x && checkX <= platform.position.x + platform.size.x) {
+        if (
+          checkX >= platform.position.x &&
+          checkX <= platform.position.x + platform.size.x
+        ) {
           willFallOff = false;
         }
       }
@@ -86,6 +100,25 @@ export class Enemy extends GameObject {
           willFallOff = false;
         }
       }
+
+      // Add additional collision check for falling through a platform at high speed
+      else if (
+        this.velocity.y > 200 && // High velocity threshold
+        this.position.y < platform.position.y &&
+        nextPosition.y + this.size.y > platform.position.y + platform.size.y
+      ) {
+        // Check if enemy is "tunneling" through the platform
+        if (
+          nextPosition.x + this.size.x > platform.position.x &&
+          nextPosition.x < platform.position.x + platform.size.x
+        ) {
+          // Stop on the platform
+          nextPosition.y = platform.position.y - this.size.y;
+          this.velocity.y = 0;
+          onPlatform = true;
+          willFallOff = false;
+        }
+      }
     }
 
     // If about to walk off the platform, reverse direction
@@ -99,12 +132,12 @@ export class Enemy extends GameObject {
     // Apply the calculated position
     this.position = nextPosition;
 
-    // Ground collision
-    /*
-        if (this.position.y > 416) {
-            this.position.y = 416;
-            this.velocity.y = 0;
-        }*/
+    // Ground collision with level bottom
+    if (this.position.y + this.size.y > levelHeight) {
+      this.position.y = levelHeight - this.size.y;
+      this.velocity.y = 0;
+      onPlatform = true; // Consider the enemy grounded when on the level floor
+    }
   }
 
   updateTimers(deltaTime: number): void {
@@ -120,7 +153,11 @@ export class Enemy extends GameObject {
     const player = gameState.player;
     const attackBounds = player.getAttackBounds();
 
-    if (attackBounds && this.checkCollisionWithBounds(attackBounds) && !this.isHit) {
+    if (
+      attackBounds &&
+      this.checkCollisionWithBounds(attackBounds) &&
+      !this.isHit
+    ) {
       this.takeDamage(1);
       this.isHit = true;
       this.hitTimer = this.hitDuration;

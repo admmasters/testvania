@@ -1,5 +1,5 @@
 import { GameObject } from "../engine/GameObject";
-import { GameState } from "../engine/GameState";
+import type { GameState } from "../engine/GameState";
 
 export class Player extends GameObject {
   speed: number;
@@ -40,7 +40,6 @@ export class Player extends GameObject {
     this.handleCollisions(gameState);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handleInput(input: any, _deltaTime: number): void {
     // Movement
     if (input.isKeyDown("ArrowLeft")) {
@@ -54,7 +53,10 @@ export class Player extends GameObject {
     }
 
     // Jump with improved feel - variable height based on how long the jump button is pressed
-    if (input.isKeyPressed("Space") && (this.grounded || this.coyoteTimer > 0)) {
+    if (
+      input.isKeyPressed("Space") &&
+      (this.grounded || this.coyoteTimer > 0)
+    ) {
       this.velocity.y = -this.jumpPower;
       this.grounded = false;
       this.coyoteTimer = 0; // Used up coyote time
@@ -82,7 +84,7 @@ export class Player extends GameObject {
 
     // Handle platform collisions
     this.grounded = false;
-    for (let platform of gameState.platforms) {
+    for (const platform of gameState.platforms) {
       // Check if player would be colliding with a platform after moving
       const playerBottom = this.position.y + this.size.y;
       const nextPlayerBottom = nextPosition.y + this.size.y;
@@ -117,9 +119,25 @@ export class Player extends GameObject {
             this.grounded = true;
         }*/
 
-    // Screen boundaries
+    // Level boundaries
+    // Get the level dimensions from the game state
+    const levelData = gameState.levelManager.getLevelData(
+      gameState.currentLevelId ?? ""
+    );
+    const levelWidth = levelData?.width || 800; // Fallback to 800 if level data is not available
+    const levelHeight = levelData?.height || 600; // Fallback to 600 if level data is not available
+
+    // Apply horizontal boundaries
     if (this.position.x < 0) this.position.x = 0;
-    if (this.position.x > 768) this.position.x = 768;
+    if (this.position.x + this.size.x > levelWidth)
+      this.position.x = levelWidth - this.size.x;
+
+    // Apply vertical boundary at the bottom of the level
+    if (this.position.y + this.size.y > levelHeight) {
+      this.position.y = levelHeight - this.size.y;
+      this.velocity.y = 0;
+      this.grounded = true;
+    }
   }
 
   updateTimers(deltaTime: number): void {
@@ -150,7 +168,7 @@ export class Player extends GameObject {
   handleCollisions(gameState: GameState): void {
     if (this.invulnerable) return;
 
-    for (let enemy of gameState.enemies) {
+    for (const enemy of gameState.enemies) {
       if (enemy.active && this.checkCollision(enemy)) {
         this.takeDamage(1);
         this.invulnerable = true;
@@ -172,7 +190,12 @@ export class Player extends GameObject {
     this.attackTimer = this.attackDuration;
   }
 
-  getAttackBounds(): { left: number; right: number; top: number; bottom: number } | null {
+  getAttackBounds(): {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+  } | null {
     if (!this.attacking) return null;
 
     const offset = this.facingRight ? this.size.x : -32;
@@ -207,7 +230,9 @@ export class Player extends GameObject {
     // Whip/weapon when attacking
     if (this.attacking) {
       ctx.fillStyle = "#8B4513";
-      const whipX = this.facingRight ? this.position.x + this.size.x : this.position.x - 32;
+      const whipX = this.facingRight
+        ? this.position.x + this.size.x
+        : this.position.x - 32;
       ctx.fillRect(whipX, this.position.y + 16, 32, 4);
     }
 

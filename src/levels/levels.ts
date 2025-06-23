@@ -9,19 +9,18 @@ function vec2(x: number, y: number): Vector2 {
 // Export an array of predefined levels
 export const levels: LevelData[] = [
   {
-    id: "level1",
-    name: "Custom Level 1",
+    id: "level5",
+    name: "Custom Level 5",
     width: 1600,
     height: 600,
     background: {
       color: "#2C1810",
     },
     platforms: [
-      { position: vec2(0, 448), size: vec2(800, 160), color: "#543121" },
+      { position: vec2(0, 448), size: vec2(2192, 160), color: "#543121" },
       { position: vec2(240, 336), size: vec2(128, 32), color: "#654321" },
       { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
       { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
-      { position: vec2(800, 448), size: vec2(704, 160), color: "#654321" },
     ],
     candles: [
       { position: vec2(192, 416) },
@@ -29,12 +28,9 @@ export const levels: LevelData[] = [
       { position: vec2(464, 224) },
     ],
     enemies: [
-      { position: vec2(800, 169840) },
-      { position: vec2(800, 126480) },
-      { position: vec2(800, 90208) },
-      { position: vec2(800, 16960) },
-      { position: vec2(800, 39600) },
-      { position: vec2(592, 416) },
+      { position: vec2(704, 416) },
+      { position: vec2(544, 416) },
+      { position: vec2(576, 416) },
     ],
     player: {
       position: vec2(32, 400),

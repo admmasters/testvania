@@ -1,6 +1,7 @@
+import type { LevelEditor } from "../levels/LevelEditor";
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
-import { Enemy } from "../objects/enemy";
+import type { Enemy } from "../objects/enemy";
 import { HitSpark } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
 import { Player } from "../objects/player";
@@ -127,32 +128,9 @@ export class GameState {
     this.enemies = this.enemies.filter((enemy) => enemy.active);
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
 
-    // Spawn new enemies
+    // Automatic enemy spawning is disabled - enemies are placed via the level editor only
+    // The timer is kept but not used for spawning
     this.spawnTimer += deltaTime;
-    if (this.spawnTimer >= this.spawnInterval && this.enemies.length < 5) {
-      this.spawnTimer = 0;
-
-      // Pick a random elevated platform (skip ground platform)
-      const platformOptions = this.platforms.filter(
-        (p) => p.position.y < 400 && p.position.y > 150
-      );
-
-      if (platformOptions.length > 0) {
-        // Choose random platform
-        const platform =
-          platformOptions[Math.floor(Math.random() * platformOptions.length)];
-
-        // Position on platform
-        const x = platform.position.x + Math.random() * (platform.size.x - 24);
-        const y = platform.position.y - 32;
-
-        this.enemies.push(new Enemy(x, y));
-      } else {
-        // Fallback if no appropriate platforms
-        const side = Math.random() > 0.5 ? 0 : 800;
-        this.enemies.push(new Enemy(side, 300));
-      }
-    }
 
     // Camera follows player and clamps to level bounds
     const levelData = this.levelManager.getLevelData(this.currentLevelId ?? "");
@@ -181,7 +159,10 @@ export class GameState {
     this.hitSparks.push(new HitSpark(x, y));
   }
 
-  levelEditor: any = null; // Will be set by the Game class
+  levelEditor: {
+    isEditorActive: () => boolean;
+    render: (ctx: CanvasRenderingContext2D) => void;
+  } | null = null; // Will be set by the Game class
 
   render(ctx: CanvasRenderingContext2D): void {
     // Clear screen
@@ -223,7 +204,7 @@ export class GameState {
     }
 
     // Render level editor UI if active
-    if (this.levelEditor && this.levelEditor.isEditorActive()) {
+    if (this.levelEditor?.isEditorActive()) {
       this.levelEditor.render(ctx);
     }
 
