@@ -1,5 +1,6 @@
 import { GameObject } from "../engine/GameObject";
 import type { GameState } from "../engine/GameState";
+import type { Platform } from "./platform";
 
 export class Player extends GameObject {
   speed: number;
@@ -79,53 +80,100 @@ export class Player extends GameObject {
     // Gravity
     this.velocity.y += 800 * deltaTime;
 
-    // Update position
-    const nextPosition = this.position.add(this.velocity.multiply(deltaTime));
+    // Handle horizontal movement first
+    const nextX = this.position.x + this.velocity.x * deltaTime;
+    let canMoveHorizontally = true;
 
-    // Handle platform collisions
-    this.grounded = false;
+    // Check horizontal collisions with platforms
     for (const platform of gameState.platforms) {
-      // Check if player would be colliding with a platform after moving
-      const playerBottom = this.position.y + this.size.y;
-      const nextPlayerBottom = nextPosition.y + this.size.y;
+      if (this.wouldCollideHorizontally(nextX, this.position.y, platform)) {
+        canMoveHorizontally = false;
+        break;
+      }
+    }
 
-      // Check if player is falling onto platform
-      if (
-        this.velocity.y > 0 &&
-        playerBottom <= platform.position.y &&
-        nextPlayerBottom >= platform.position.y
-      ) {
-        // Check horizontal overlap
+    // Apply horizontal movement if no collision
+    if (canMoveHorizontally) {
+      this.position.x = nextX;
+    } else {
+      this.velocity.x = 0; // Stop horizontal movement on collision
+    }
+
+    // Handle vertical movement
+    const nextY = this.position.y + this.velocity.y * deltaTime;
+    this.grounded = false;
+
+    // Check vertical collisions with platforms
+    let highestPlatform: Platform | null = null;
+    let highestPlatformY = Number.MAX_VALUE;
+    let hitCeiling = false;
+
+    for (const platform of gameState.platforms) {
+      // Check if player is falling onto platform (landing on top)
+      if (this.velocity.y > 0) {
+        const playerBottom = this.position.y + this.size.y;
+        const nextPlayerBottom = nextY + this.size.y;
+
         if (
-          nextPosition.x + this.size.x > platform.position.x &&
-          nextPosition.x < platform.position.x + platform.size.x
+          playerBottom <= platform.position.y &&
+          nextPlayerBottom >= platform.position.y
         ) {
-          // Land on platform
-          nextPosition.y = platform.position.y - this.size.y;
-          this.velocity.y = 0;
-          this.grounded = true;
+          // Check horizontal overlap
+          if (
+            this.position.x + this.size.x > platform.position.x &&
+            this.position.x < platform.position.x + platform.size.x
+          ) {
+            // Check if this is the highest (topmost) platform the player would land on
+            if (platform.position.y < highestPlatformY) {
+              highestPlatform = platform;
+              highestPlatformY = platform.position.y;
+            }
+          }
+        }
+      }
+      // Check if player is moving up into platform (hitting ceiling)
+      else if (this.velocity.y < 0) {
+        const playerTop = this.position.y;
+        const nextPlayerTop = nextY;
+        const platformBottom = platform.position.y + platform.size.y;
+
+        if (
+          playerTop >= platformBottom &&
+          nextPlayerTop <= platformBottom
+        ) {
+          // Check horizontal overlap
+          if (
+            this.position.x + this.size.x > platform.position.x &&
+            this.position.x < platform.position.x + platform.size.x
+          ) {
+            hitCeiling = true;
+            break;
+          }
         }
       }
     }
 
-    // Apply the calculated position
-    this.position = nextPosition;
-
-    // Ground collision (simple)
-    /*
-        if (this.position.y > 400) {
-            this.position.y = 400;
-            this.velocity.y = 0;
-            this.grounded = true;
-        }*/
+    // Apply vertical movement
+    if (highestPlatform) {
+      // Land on platform
+      this.position.y = highestPlatform.position.y - this.size.y;
+      this.velocity.y = 0;
+      this.grounded = true;
+    } else if (hitCeiling) {
+      // Hit ceiling
+      this.position.y = this.findCeilingPosition(gameState.platforms);
+      this.velocity.y = 0;
+    } else {
+      // No collision, apply normal movement
+      this.position.y = nextY;
+    }
 
     // Level boundaries
-    // Get the level dimensions from the game state
     const levelData = gameState.levelManager.getLevelData(
       gameState.currentLevelId ?? ""
     );
-    const levelWidth = levelData?.width || 800; // Fallback to 800 if level data is not available
-    const levelHeight = levelData?.height || 600; // Fallback to 600 if level data is not available
+    const levelWidth = levelData?.width || 800;
+    const levelHeight = levelData?.height || 600;
 
     // Apply horizontal boundaries
     if (this.position.x < 0) this.position.x = 0;
@@ -138,6 +186,46 @@ export class Player extends GameObject {
       this.velocity.y = 0;
       this.grounded = true;
     }
+  }
+
+  private wouldCollideHorizontally(nextX: number, currentY: number, platform: Platform): boolean {
+    // Check if the player would overlap with the platform horizontally
+    const playerLeft = nextX;
+    const playerRight = nextX + this.size.x;
+    const playerTop = currentY;
+    const playerBottom = currentY + this.size.y;
+
+    const platformLeft = platform.position.x;
+    const platformRight = platform.position.x + platform.size.x;
+    const platformTop = platform.position.y;
+    const platformBottom = platform.position.y + platform.size.y;
+
+    // Check if there's overlap in both axes
+    const horizontalOverlap = playerRight > platformLeft && playerLeft < platformRight;
+    const verticalOverlap = playerBottom > platformTop && playerTop < platformBottom;
+
+    return horizontalOverlap && verticalOverlap;
+  }
+
+  private findCeilingPosition(platforms: Platform[]): number {
+    let lowestCeiling = 0;
+
+    for (const platform of platforms) {
+      const platformBottom = platform.position.y + platform.size.y;
+      
+      // Check if player would horizontally overlap with this platform
+      if (
+        this.position.x + this.size.x > platform.position.x &&
+        this.position.x < platform.position.x + platform.size.x
+      ) {
+        // Check if this platform is above the player and lower than current ceiling
+        if (platformBottom > lowestCeiling && platformBottom < this.position.y) {
+          lowestCeiling = platformBottom;
+        }
+      }
+    }
+
+    return lowestCeiling;
   }
 
   updateTimers(deltaTime: number): void {

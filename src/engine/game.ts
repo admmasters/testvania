@@ -72,11 +72,11 @@ export class Game {
     }
 
     editorButton.addEventListener("click", () => {
-      if (this.gameState.levelEditor.isEditorActive()) {
+      if (this.gameState.levelEditor && this.gameState.levelEditor.isEditorActive()) {
         this.gameState.levelEditor.deactivate();
         editorButton.textContent = "Level Editor";
         this.running = true; // Resume game loop
-      } else {
+      } else if (this.gameState.levelEditor) {
         this.gameState.levelEditor.activate();
         editorButton.textContent = "Close Editor";
         this.running = false; // Pause game loop when editor is active

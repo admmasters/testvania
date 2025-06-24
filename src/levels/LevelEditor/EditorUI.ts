@@ -1,8 +1,6 @@
-import type { LevelEditor } from "../LevelEditor";
-import { EditorMode } from "./EditorModes";
 
 // Handles creation of the editor UI and mode buttons
-export function createEditorUI(editor: LevelEditor) {
+export function createEditorUI() {
   // Create editor container
   const container = document.createElement("div");
   container.style.position = "fixed";

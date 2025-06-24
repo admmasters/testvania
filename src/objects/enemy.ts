@@ -1,5 +1,6 @@
 import { GameObject } from "../engine/GameObject";
 import type { GameState } from "../engine/GameState";
+import type { Platform } from "./platform";
 
 export class Enemy extends GameObject {
   type: string;
@@ -56,6 +57,8 @@ export class Enemy extends GameObject {
     // Check if about to walk off current platform
     let willFallOff = true;
     let onPlatform = false;
+    let landingPlatform: Platform | null = null;
+    let landingPlatformY = Number.MAX_VALUE;
 
     for (const platform of gameState.platforms) {
       const enemyBottom = this.position.y + this.size.y;
@@ -82,7 +85,7 @@ export class Enemy extends GameObject {
         }
       }
 
-      // Handle landing on platforms when falling
+      // Handle landing on platforms when falling - collect potential platforms
       if (
         this.velocity.y > 0 &&
         enemyBottom <= platform.position.y &&
@@ -93,11 +96,11 @@ export class Enemy extends GameObject {
           nextPosition.x + this.size.x > platform.position.x &&
           nextPosition.x < platform.position.x + platform.size.x
         ) {
-          // Land on platform
-          nextPosition.y = platform.position.y - this.size.y;
-          this.velocity.y = 0;
-          onPlatform = true;
-          willFallOff = false;
+          // Check if this is the highest platform to land on
+          if (platform.position.y < landingPlatformY) {
+            landingPlatform = platform;
+            landingPlatformY = platform.position.y;
+          }
         }
       }
 
@@ -112,13 +115,21 @@ export class Enemy extends GameObject {
           nextPosition.x + this.size.x > platform.position.x &&
           nextPosition.x < platform.position.x + platform.size.x
         ) {
-          // Stop on the platform
-          nextPosition.y = platform.position.y - this.size.y;
-          this.velocity.y = 0;
-          onPlatform = true;
-          willFallOff = false;
+          // Check if this is the highest platform to land on
+          if (platform.position.y < landingPlatformY) {
+            landingPlatform = platform;
+            landingPlatformY = platform.position.y;
+          }
         }
       }
+    }
+
+    // Apply landing on the highest platform found
+    if (landingPlatform) {
+      nextPosition.y = landingPlatform.position.y - this.size.y;
+      this.velocity.y = 0;
+      onPlatform = true;
+      willFallOff = false;
     }
 
     // If about to walk off the platform, reverse direction

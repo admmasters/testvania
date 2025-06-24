@@ -165,6 +165,8 @@ export class GameState {
   levelEditor: {
     isEditorActive: () => boolean;
     render: (ctx: CanvasRenderingContext2D) => void;
+    activate: () => void;
+    deactivate: () => void;
   } | null = null; // Will be set by the Game class
 
   render(ctx: CanvasRenderingContext2D): void {
