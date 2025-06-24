@@ -1,4 +1,4 @@
-import type { LevelEditor } from "../levels/LevelEditor";
+
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
 import type { Enemy } from "../objects/enemy";
@@ -7,6 +7,7 @@ import type { Platform } from "../objects/platform";
 import { Player } from "../objects/player";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
+import { ParallaxBackground } from "./ParallaxBackground";
 
 export class GameState {
   levelManager: LevelManager;
@@ -18,6 +19,7 @@ export class GameState {
   candles: Candle[];
   input: Input;
   camera: Camera;
+  parallaxBackground: ParallaxBackground;
   hitPauseTimer: number;
   hitPauseDuration: number;
   spawnTimer: number;
@@ -36,6 +38,7 @@ export class GameState {
     // Initialize common game state properties
     this.input = new Input();
     this.camera = new Camera();
+    this.parallaxBackground = new ParallaxBackground();
     this.hitPauseTimer = 0;
     this.hitPauseDuration = 0;
     this.spawnTimer = 0;
@@ -169,11 +172,11 @@ export class GameState {
     ctx.fillStyle = "#2C1810";
     ctx.fillRect(0, 0, 800, 600);
 
+    // Draw parallax background (before applying camera)
+    this.parallaxBackground.render(ctx, this.camera);
+
     // Apply camera effects
     this.camera.apply(ctx);
-
-    // Draw background elements
-    this.drawBackground(ctx);
 
     // Draw platforms
     for (const platform of this.platforms) {
@@ -215,29 +218,7 @@ export class GameState {
     this.drawUI(ctx);
   }
 
-  drawBackground(ctx: CanvasRenderingContext2D): void {
-    /*
-	ctx.fillStyle = "#1A0F0A";
 
-	// Castle walls
-	for (let i = 0; i < 5; i++) {
-	  ctx.fillRect(i * 160, 450, 160, 150);
-	}
-
-	// Castle towers
-	ctx.fillStyle = "#0F0A07";
-	ctx.fillRect(0, 400, 40, 48); // Adjusted height to multiple of 8
-	ctx.fillRect(760, 400, 40, 48); // Adjusted height to multiple of 8
-	ctx.fillRect(384, 352, 40, 96); // Adjusted x,y,height to multiples of 8
-
-	*/
-
-    // Moon
-    ctx.fillStyle = "#FFFACD";
-    ctx.beginPath();
-    ctx.arc(704, 80, 32, 0, Math.PI * 2); // Adjusted to multiples of 8
-    ctx.fill();
-  }
 
   drawUI(ctx: CanvasRenderingContext2D): void {
     // Save the current context state

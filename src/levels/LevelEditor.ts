@@ -3,16 +3,8 @@ import { Vector2 } from "../engine/Vector2";
 import { Candle } from "../objects/candle";
 import { Enemy } from "../objects/enemy";
 import { Platform } from "../objects/platform";
+import { EditorMode } from "./LevelEditor/EditorModes";
 import { LevelManager } from "./LevelManager";
-
-export enum EditorMode {
-  PLATFORM,
-  CANDLE,
-  ENEMY,
-  PLAYER,
-  SELECT,
-  DELETE,
-}
 
 interface EditorPlatform {
   position: Vector2;
@@ -824,7 +816,7 @@ export class LevelEditor {
     // Generate a level ID
     const levelId = prompt(
       "Enter a level ID (e.g., 'level3'):",
-      "level" + (this.gameState.levelManager.getLevelIds().length + 1)
+      `level${this.gameState.levelManager.getLevelIds().length + 1}`
     );
 
     if (!levelId) return;
@@ -832,7 +824,7 @@ export class LevelEditor {
     // Generate a level name
     const levelName = prompt(
       "Enter a level name:",
-      "Custom Level " + (this.gameState.levelManager.getLevelIds().length + 1)
+      `Custom Level ${this.gameState.levelManager.getLevelIds().length + 1}`
     );
 
     if (!levelName) return;

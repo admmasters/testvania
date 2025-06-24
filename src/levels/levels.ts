@@ -9,7 +9,7 @@ function vec2(x: number, y: number): Vector2 {
 // Export an array of predefined levels
 export const levels: LevelData[] = [
   {
-    id: "level5",
+    id: "level1",
     name: "Custom Level 5",
     width: 1600,
     height: 600,
