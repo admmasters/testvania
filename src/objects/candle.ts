@@ -12,7 +12,7 @@ export class Candle {
 
   constructor(x: number, y: number) {
     this.position = new Vector2(x, y);
-    this.size = new Vector2(16, 24);
+    this.size = new Vector2(16, 32);
     this.velocity = new Vector2(0, 0);
     this.active = true;
     this.animationFrame = 0;
