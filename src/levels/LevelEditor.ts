@@ -1,10 +1,10 @@
-import type { GameState } from "../engine/GameState";
-import { Vector2 } from "../engine/Vector2";
-import { Candle } from "../objects/candle";
-import { Enemy } from "../objects/enemy";
-import { Platform } from "../objects/platform";
-import { EditorMode } from "./LevelEditor/EditorModes";
+import { Candle } from "@/objects/candle";
+import { Vector2 } from "@/engine/Vector2";
 import { LevelManager } from "./LevelManager";
+import { Platform } from "@/objects/platform";
+import { LandGhost } from "@/objects/LandGhost";
+import type { GameState } from "@/engine/GameState";
+import { EditorMode } from "./LevelEditor/EditorModes";
 
 interface EditorPlatform {
   position: Vector2;
@@ -28,7 +28,7 @@ export class LevelEditor {
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
   private editorContainer: HTMLDivElement | null = null;
-  private selectedObject: Platform | Candle | Enemy | object | null = null; // Using object type for player
+  private selectedObject: Platform | Candle | LandGhost | object | null = null; // Using object type for player
   private platformColor: string = "#654321";
 
   // Scrolling properties
@@ -386,7 +386,7 @@ export class LevelEditor {
     );
     // Restore enemies
     this.gameState.enemies = state.enemies.map(
-      (e) => new Enemy(e.position.x, e.position.y)
+      (e) => new LandGhost(e.position.x, e.position.y)
     );
     // Restore player
     this.gameState.player.position.x = state.player.position.x;
@@ -663,8 +663,8 @@ export class LevelEditor {
 
   private placeCandle(pos: Vector2): void {
     const snapped = this.snapVec2(pos);
-    // Create new candle at position
-    this.gameState.candles.push(new Candle(snapped.x - 8, snapped.y - 12));
+    // Create new candle at position (bottom center at snapped position)
+    this.gameState.candles.push(new Candle(snapped.x - 8, snapped.y - 32));
   }
 
   private placeEnemy(pos: Vector2): void {
@@ -675,7 +675,7 @@ export class LevelEditor {
     const enemyY = snapped.y - 16;
 
     // Create the enemy
-    const newEnemy = new Enemy(enemyX, enemyY);
+    const newEnemy = new LandGhost(enemyX, enemyY);
 
     // When creating an enemy through the editor, initialize with zero vertical velocity
     // to prevent immediate falling

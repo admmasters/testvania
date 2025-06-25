@@ -10,30 +10,35 @@ function vec2(x: number, y: number): Vector2 {
 export const levels: LevelData[] = [
   {
     id: "level1",
-    name: "Custom Level 5",
+    name: "Custom Level 1",
     width: 1600,
     height: 600,
     background: {
       color: "#2C1810",
     },
     platforms: [
-      { position: vec2(0, 448), size: vec2(2192, 160), color: "#543121" },
-      { position: vec2(240, 336), size: vec2(128, 32), color: "#654321" },
-      { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
-      { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(0, 448), size: vec2(2192, 160), color: "#543121" },
+    { position: vec2(240, 336), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
+    { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(592, 256), size: vec2(112, 32), color: "#654321" },
     ],
     candles: [
-      { position: vec2(192, 416) },
-      { position: vec2(304, 304) },
-      { position: vec2(464, 224) },
+    { position: vec2(192, 416) },
+    { position: vec2(304, 304) },
+    { position: vec2(464, 224) },
+    { position: vec2(416, 416) },
+    { position: vec2(560, 416) },
+    { position: vec2(656, 416) },
     ],
     enemies: [
-      { position: vec2(704, 416) },
-      { position: vec2(544, 416) },
-      { position: vec2(576, 416) },
+    { position: vec2(864, 416) },
+    { position: vec2(704, 416) },
+    { position: vec2(736, 416) },
+    { position: vec2(496, 224) },
     ],
     player: {
-      position: vec2(32, 400),
+    position: vec2(128, 400)
     },
   },
   {

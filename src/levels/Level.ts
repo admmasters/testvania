@@ -2,8 +2,8 @@ import { LevelData } from "./LevelData";
 import { GameState } from "../engine/GameState";
 import { Platform } from "../objects/platform";
 import { Candle } from "../objects/candle";
-import { Enemy } from "../objects/enemy";
 import { Player } from "../objects/player";
+import { LandGhost } from "@/objects/LandGhost";
 
 export class Level {
   private data: LevelData;
@@ -40,7 +40,7 @@ export class Level {
 
     // Create enemies
     for (const enemyData of this.data.enemies) {
-      gameState.enemies.push(new Enemy(enemyData.position.x, enemyData.position.y));
+      gameState.enemies.push(new LandGhost(enemyData.position.x, enemyData.position.y));
     }
 
     // Create player at defined start position
