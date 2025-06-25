@@ -2,7 +2,8 @@
 export enum EditorMode {
   PLATFORM,
   CANDLE,
-  ENEMY,
+  GHOST,
+  LANDGHOST,
   PLAYER,
   SELECT,
   DELETE,

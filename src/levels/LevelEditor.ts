@@ -3,6 +3,7 @@ import { Vector2 } from "@/engine/Vector2";
 import { LevelManager } from "./LevelManager";
 import { Platform } from "@/objects/platform";
 import { LandGhost } from "@/objects/LandGhost";
+import { Ghost } from "@/objects/Ghost";
 import type { GameState } from "@/engine/GameState";
 import { EditorMode } from "./LevelEditor/EditorModes";
 
@@ -15,7 +16,7 @@ interface EditorPlatform {
 interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
   candles: { position: Vector2 }[];
-  enemies: { position: Vector2 }[];
+  enemies: { position: Vector2; type: string }[];
   player: { position: Vector2 };
   scrollPosition: Vector2;
 }
@@ -28,7 +29,7 @@ export class LevelEditor {
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
   private editorContainer: HTMLDivElement | null = null;
-  private selectedObject: Platform | Candle | LandGhost | object | null = null; // Using object type for player
+  private selectedObject: Platform | Candle | LandGhost | Ghost | object | null = null; // Using object type for player
   private platformColor: string = "#654321";
 
   // Scrolling properties
@@ -219,7 +220,8 @@ export class LevelEditor {
     createModeButton(EditorMode.SELECT, "Select");
     createModeButton(EditorMode.PLATFORM, "Platform");
     createModeButton(EditorMode.CANDLE, "Candle");
-    createModeButton(EditorMode.ENEMY, "Enemy");
+    createModeButton(EditorMode.GHOST, "Ghost");
+    createModeButton(EditorMode.LANDGHOST, "Land Ghost");
     createModeButton(EditorMode.PLAYER, "Player");
     createModeButton(EditorMode.DELETE, "Delete");
 
@@ -341,6 +343,7 @@ export class LevelEditor {
       })),
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
+        type: e.type,
       })),
       player: { position: this.gameState.player.position.copy() },
       scrollPosition: this.scrollPosition.copy(), // Save scroll position
@@ -362,6 +365,7 @@ export class LevelEditor {
       })),
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
+        type: e.type,
       })),
       player: { position: this.gameState.player.position.copy() },
       scrollPosition: this.scrollPosition.copy(), // Save scroll position
@@ -371,7 +375,7 @@ export class LevelEditor {
   private restoreState(state: {
     platforms: { position: Vector2; size: Vector2; color: string }[];
     candles: { position: Vector2 }[];
-    enemies: { position: Vector2 }[];
+    enemies: { position: Vector2; type?: string }[]; // Make type optional for backward compatibility
     player: { position: Vector2 };
     scrollPosition?: Vector2; // Optional for backward compatibility
   }) {
@@ -385,9 +389,14 @@ export class LevelEditor {
       (c) => new Candle(c.position.x, c.position.y)
     );
     // Restore enemies
-    this.gameState.enemies = state.enemies.map(
-      (e) => new LandGhost(e.position.x, e.position.y)
-    );
+    this.gameState.enemies = state.enemies.map((e) => {
+      const enemyType = e.type || "landghost"; // Default to landghost for backward compatibility
+      if (enemyType === "ghost") {
+        return new Ghost(e.position.x, e.position.y);
+      } else {
+        return new LandGhost(e.position.x, e.position.y);
+      }
+    });
     // Restore player
     this.gameState.player.position.x = state.player.position.x;
     this.gameState.player.position.y = state.player.position.y;
@@ -445,9 +454,14 @@ export class LevelEditor {
         this.placeCandle(worldPos);
         break;
 
-      case EditorMode.ENEMY:
+      case EditorMode.GHOST:
         this.pushUndoState();
-        this.placeEnemy(worldPos);
+        this.placeGhost(worldPos);
+        break;
+
+      case EditorMode.LANDGHOST:
+        this.pushUndoState();
+        this.placeLandGhost(worldPos);
         break;
 
       case EditorMode.PLAYER:
@@ -667,12 +681,25 @@ export class LevelEditor {
     this.gameState.candles.push(new Candle(snapped.x - 8, snapped.y - 32));
   }
 
-  private placeEnemy(pos: Vector2): void {
+  private placeGhost(pos: Vector2): void {
     const snapped = this.snapVec2(pos);
-    // Create new enemy at position
+    // Create new ghost at position
+    // Ghosts float, so position them slightly above the snap point
+    const ghostX = snapped.x - 12; // Center the 24px wide ghost
+    const ghostY = snapped.y - 16; // Position the 32px tall ghost
+
+    // Create the ghost
+    const newGhost = new Ghost(ghostX, ghostY);
+
+    this.gameState.enemies.push(newGhost);
+  }
+
+  private placeLandGhost(pos: Vector2): void {
+    const snapped = this.snapVec2(pos);
+    // Create new land ghost at position
     // Make sure to position the enemy on the ground by aligning to the 16-pixel grid
-    const enemyX = snapped.x - 12;
-    const enemyY = snapped.y - 16;
+    const enemyX = snapped.x - 12; // Center the 24px wide enemy
+    const enemyY = snapped.y - 16; // Position the 32px tall enemy
 
     // Create the enemy
     const newEnemy = new LandGhost(enemyX, enemyY);
@@ -860,13 +887,13 @@ export class LevelEditor {
           )}) },`
       )
       .join("\n");
-    const enemies = (levelData.enemies || [])
-      .map(
-        (e) =>
-          `  { position: vec2(${this.snap16(e.position.x)}, ${this.snap16(
-            e.position.y
-          )}) },`
-      )
+    const enemies = this.gameState.enemies
+      .map((e) => {
+        const enemyType = e.type === "ghost" ? "ghost" : "landghost";
+        return `  { position: vec2(${this.snap16(e.position.x)}, ${this.snap16(
+          e.position.y
+        )}), type: "${enemyType}" },`;
+      })
       .join("\n");
     const player = `  position: vec2(${this.snap16(
       levelData.player.position.x
