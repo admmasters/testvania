@@ -91,21 +91,13 @@ export class Player extends GameObject {
     const nextX = this.position.x + this.velocity.x * deltaTime;
     let canMoveHorizontally = true;
 
-    // Check horizontal collisions with platforms
-    for (const platform of gameState.platforms) {
-      if (this.wouldCollideHorizontally(nextX, this.position.y, platform)) {
+    // Do NOT check horizontal collisions with platforms (allow moving through them)
+    
+    // Check horizontal collisions with solid blocks only
+    for (const solidBlock of gameState.solidBlocks) {
+      if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
         canMoveHorizontally = false;
         break;
-      }
-    }
-
-    // Check horizontal collisions with solid blocks
-    if (canMoveHorizontally) {
-      for (const solidBlock of gameState.solidBlocks) {
-        if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
-          canMoveHorizontally = false;
-          break;
-        }
       }
     }
 
@@ -149,26 +141,7 @@ export class Player extends GameObject {
           }
         }
       }
-      // Check if player is moving up into platform (hitting ceiling)
-      else if (this.velocity.y < 0) {
-        const playerTop = this.position.y;
-        const nextPlayerTop = nextY;
-        const platformBottom = platform.position.y + platform.size.y;
-
-        if (
-          playerTop >= platformBottom &&
-          nextPlayerTop <= platformBottom
-        ) {
-          // Check horizontal overlap
-          if (
-            this.position.x + this.size.x > platform.position.x &&
-            this.position.x < platform.position.x + platform.size.x
-          ) {
-            hitCeiling = true;
-            break;
-          }
-        }
-      }
+      // Do NOT check for hitting ceiling with platforms (allow jumping through)
     }
 
     // Check solid blocks
@@ -274,23 +247,9 @@ export class Player extends GameObject {
   private findCeilingPosition(platforms: Platform[], solidBlocks: SolidBlock[]): number {
     let lowestCeiling = 0;
 
-    // Check platforms
-    for (const platform of platforms) {
-      const platformBottom = platform.position.y + platform.size.y;
-      
-      // Check if player would horizontally overlap with this platform
-      if (
-        this.position.x + this.size.x > platform.position.x &&
-        this.position.x < platform.position.x + platform.size.x
-      ) {
-        // Check if this platform is above the player and lower than current ceiling
-        if (platformBottom > lowestCeiling && platformBottom < this.position.y) {
-          lowestCeiling = platformBottom;
-        }
-      }
-    }
+    // Do NOT check platforms for ceiling (allow jumping through them)
 
-    // Check solid blocks
+    // Check solid blocks only
     for (const solidBlock of solidBlocks) {
       const solidBlockBottom = solidBlock.position.y + solidBlock.size.y;
       

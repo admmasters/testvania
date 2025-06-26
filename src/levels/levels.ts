@@ -18,18 +18,20 @@ export const levels: LevelData[] = [
     },
     platforms: [
     { position: vec2(0, 448), size: vec2(2192, 160), color: "#543121" },
-    { position: vec2(240, 336), size: vec2(128, 32), color: "#654321" },
     { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
     { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
     { position: vec2(592, 256), size: vec2(112, 32), color: "#654321" },
     { position: vec2(752, 256), size: vec2(192, 32), color: "#654321" },
+    { position: vec2(624, 352), size: vec2(0, 16), color: "#654321" },
+    { position: vec2(592, 352), size: vec2(112, 32), color: "#654321" },
+    { position: vec2(400, 352), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(224, 304), size: vec2(112, 32), color: "#654321" },
     ],
     solidBlocks: [
     { position: vec2(944, 256), size: vec2(128, 192), color: "#4A4A4A" },
     ],
     candles: [
     { position: vec2(192, 416) },
-    { position: vec2(304, 304) },
     { position: vec2(464, 224) },
     { position: vec2(416, 416) },
     { position: vec2(560, 416) },
@@ -40,6 +42,10 @@ export const levels: LevelData[] = [
     { position: vec2(1248, 416) },
     { position: vec2(1312, 416) },
     { position: vec2(1392, 416) },
+    { position: vec2(656, 224) },
+    { position: vec2(1472, 416) },
+    { position: vec2(1536, 416) },
+    { position: vec2(1600, 416) },
     ],
     enemies: [
     { position: vec2(864, 416), type: "landghost" },
@@ -50,6 +56,11 @@ export const levels: LevelData[] = [
     { position: vec2(672, 224), type: "ghost" },
     { position: vec2(1168, 416), type: "landghost" },
     { position: vec2(1344, 416), type: "landghost" },
+    { position: vec2(448, 320), type: "landghost" },
+    { position: vec2(640, 320), type: "landghost" },
+    { position: vec2(256, 272), type: "landghost" },
+    { position: vec2(1552, 416), type: "landghost" },
+    { position: vec2(1680, 416), type: "landghost" },
     ],
     player: {
     position: vec2(128, 400)
