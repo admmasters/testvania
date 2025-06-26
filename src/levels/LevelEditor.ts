@@ -2,6 +2,7 @@ import { Candle } from "@/objects/candle";
 import { Vector2 } from "@/engine/Vector2";
 import { LevelManager } from "./LevelManager";
 import { Platform } from "@/objects/platform";
+import { SolidBlock } from "@/objects/solidBlock";
 import { LandGhost } from "@/objects/LandGhost";
 import { Ghost } from "@/objects/Ghost";
 import type { GameState } from "@/engine/GameState";
@@ -15,6 +16,7 @@ interface EditorPlatform {
 
 interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
+  solidBlocks: { position: Vector2; size: Vector2; color: string }[];
   candles: { position: Vector2 }[];
   enemies: { position: Vector2; type: string }[];
   player: { position: Vector2 };
@@ -29,7 +31,7 @@ export class LevelEditor {
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
   private editorContainer: HTMLDivElement | null = null;
-  private selectedObject: Platform | Candle | LandGhost | Ghost | object | null = null; // Using object type for player
+  private selectedObject: Platform | SolidBlock | Candle | LandGhost | Ghost | object | null = null; // Using object type for player
   private platformColor: string = "#654321";
 
   // Scrolling properties
@@ -219,6 +221,7 @@ export class LevelEditor {
 
     createModeButton(EditorMode.SELECT, "Select");
     createModeButton(EditorMode.PLATFORM, "Platform");
+    createModeButton(EditorMode.SOLID_BLOCK, "Solid Block");
     createModeButton(EditorMode.CANDLE, "Candle");
     createModeButton(EditorMode.GHOST, "Ghost");
     createModeButton(EditorMode.LANDGHOST, "Land Ghost");
@@ -338,6 +341,11 @@ export class LevelEditor {
         size: p.size.copy(),
         color: p.color,
       })),
+      solidBlocks: this.gameState.solidBlocks.map((sb) => ({
+        position: sb.position.copy(),
+        size: sb.size.copy(),
+        color: sb.color,
+      })),
       candles: this.gameState.candles.map((c) => ({
         position: c.position.copy(),
       })),
@@ -360,6 +368,11 @@ export class LevelEditor {
         size: p.size.copy(),
         color: p.color,
       })),
+      solidBlocks: this.gameState.solidBlocks.map((sb) => ({
+        position: sb.position.copy(),
+        size: sb.size.copy(),
+        color: sb.color,
+      })),
       candles: this.gameState.candles.map((c) => ({
         position: c.position.copy(),
       })),
@@ -374,6 +387,7 @@ export class LevelEditor {
 
   private restoreState(state: {
     platforms: { position: Vector2; size: Vector2; color: string }[];
+    solidBlocks?: { position: Vector2; size: Vector2; color: string }[]; // Optional for backward compatibility
     candles: { position: Vector2 }[];
     enemies: { position: Vector2; type?: string }[]; // Make type optional for backward compatibility
     player: { position: Vector2 };
@@ -383,6 +397,11 @@ export class LevelEditor {
     this.gameState.platforms = state.platforms.map(
       (p) =>
         new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color)
+    );
+    // Restore solid blocks
+    this.gameState.solidBlocks = (state.solidBlocks || []).map(
+      (sb) =>
+        new SolidBlock(sb.position.x, sb.position.y, sb.size.x, sb.size.y, sb.color)
     );
     // Restore candles
     this.gameState.candles = state.candles.map(
@@ -446,6 +465,12 @@ export class LevelEditor {
       case EditorMode.PLATFORM:
         this.pushUndoState();
         this.startPlatformMode(worldPos);
+        this.startPosition = worldPos;
+        break;
+
+      case EditorMode.SOLID_BLOCK:
+        this.pushUndoState();
+        this.startSolidBlockMode(worldPos);
         this.startPosition = worldPos;
         break;
 
@@ -515,6 +540,9 @@ export class LevelEditor {
       case EditorMode.PLATFORM:
         this.updatePlatformSize(worldPos);
         break;
+      case EditorMode.SOLID_BLOCK:
+        this.updatePlatformSize(worldPos);
+        break;
       case EditorMode.SELECT:
         // If a platform is selected and being extended
         if (
@@ -552,6 +580,9 @@ export class LevelEditor {
     switch (this.mode) {
       case EditorMode.PLATFORM:
         this.finishPlatform(worldPos);
+        break;
+      case EditorMode.SOLID_BLOCK:
+        this.finishSolidBlock(worldPos);
         break;
       case EditorMode.SELECT:
         // If a platform is selected and being extended
@@ -615,6 +646,19 @@ export class LevelEditor {
         pos.y <= platform.position.y + platform.size.y
       ) {
         this.selectedObject = platform;
+        return;
+      }
+    }
+
+    // Check solid blocks
+    for (const solidBlock of this.gameState.solidBlocks) {
+      if (
+        pos.x >= solidBlock.position.x &&
+        pos.x <= solidBlock.position.x + solidBlock.size.x &&
+        pos.y >= solidBlock.position.y &&
+        pos.y <= solidBlock.position.y + solidBlock.size.y
+      ) {
+        this.selectedObject = solidBlock;
         return;
       }
     }
@@ -736,6 +780,20 @@ export class LevelEditor {
       }
     }
 
+    // Check solid blocks
+    for (let i = 0; i < this.gameState.solidBlocks.length; i++) {
+      const solidBlock = this.gameState.solidBlocks[i];
+      if (
+        pos.x >= solidBlock.position.x &&
+        pos.x <= solidBlock.position.x + solidBlock.size.x &&
+        pos.y >= solidBlock.position.y &&
+        pos.y <= solidBlock.position.y + solidBlock.size.y
+      ) {
+        this.gameState.solidBlocks.splice(i, 1);
+        return;
+      }
+    }
+
     // Check candles
     for (let i = 0; i < this.gameState.candles.length; i++) {
       const candle = this.gameState.candles[i];
@@ -781,6 +839,25 @@ export class LevelEditor {
       );
 
       ctx.strokeStyle = "#FFFFFF";
+      ctx.strokeRect(
+        this.currentPlatform.position.x,
+        this.currentPlatform.position.y,
+        this.currentPlatform.size.x,
+        this.currentPlatform.size.y
+      );
+    }
+
+    // Draw current solid block being created
+    if (this.mode === EditorMode.SOLID_BLOCK && this.currentPlatform) {
+      ctx.fillStyle = this.currentPlatform.color;
+      ctx.fillRect(
+        this.currentPlatform.position.x,
+        this.currentPlatform.position.y,
+        this.currentPlatform.size.x,
+        this.currentPlatform.size.y
+      );
+
+      ctx.strokeStyle = "#00FFFF"; // Cyan to distinguish from platforms
       ctx.strokeRect(
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
@@ -879,6 +956,16 @@ export class LevelEditor {
           )}), color: "${p.color}" },`
       )
       .join("\n");
+    const solidBlocks = this.gameState.solidBlocks
+      .map(
+        (sb) =>
+          `  { position: vec2(${this.snap16(sb.position.x)}, ${this.snap16(
+            sb.position.y
+          )}), size: vec2(${this.snap16(sb.size.x)}, ${this.snap16(
+            sb.size.y
+          )}), color: "${sb.color}" },`
+      )
+      .join("\n");
     const candles = (levelData.candles || [])
       .map(
         (c) =>
@@ -909,6 +996,9 @@ export class LevelEditor {
   },
   platforms: [
 ${platforms}
+  ],
+  solidBlocks: [
+${solidBlocks}
   ],
   candles: [
 ${candles}
@@ -1069,4 +1159,31 @@ ${player}
     this.gameState.camera.position.y = this.scrollPosition.y;
     this.updateScrollIndicator();
   };
+
+  private startSolidBlockMode(pos: Vector2): void {
+    this.currentPlatform = {
+      position: this.snapVec2(pos),
+      size: new Vector2(0, 0),
+      color: "#4A4A4A", // Default solid block color
+    };
+  }
+
+  private finishSolidBlock(pos: Vector2): void {
+    if (!this.currentPlatform) return;
+
+    const snappedPos = this.snapVec2(pos);
+    const width = Math.abs(snappedPos.x - this.currentPlatform.position.x);
+    const height = Math.abs(snappedPos.y - this.currentPlatform.position.y);
+
+    if (width > 0 && height > 0) {
+      const minX = Math.min(this.currentPlatform.position.x, snappedPos.x);
+      const minY = Math.min(this.currentPlatform.position.y, snappedPos.y);
+
+      this.gameState.solidBlocks.push(
+        new SolidBlock(minX, minY, width, height, this.currentPlatform.color)
+      );
+    }
+
+    this.currentPlatform = null;
+  }
 }

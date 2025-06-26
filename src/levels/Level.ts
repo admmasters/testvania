@@ -1,9 +1,11 @@
 import { LevelData } from "./LevelData";
 import { GameState } from "../engine/GameState";
 import { Platform } from "../objects/platform";
+import { SolidBlock } from "../objects/solidBlock";
 import { Candle } from "../objects/candle";
 import { Player } from "../objects/player";
 import { LandGhost } from "@/objects/LandGhost";
+import { Ghost } from "../objects/Ghost";
 
 export class Level {
   private data: LevelData;
@@ -16,6 +18,7 @@ export class Level {
   loadIntoGameState(gameState: GameState): void {
     // Clear existing objects
     gameState.platforms = [];
+    gameState.solidBlocks = [];
     gameState.enemies = [];
     gameState.candles = [];
     gameState.hitSparks = [];
@@ -33,6 +36,19 @@ export class Level {
       );
     }
 
+    // Create solid blocks
+    for (const solidBlockData of this.data.solidBlocks) {
+      gameState.solidBlocks.push(
+        new SolidBlock(
+          solidBlockData.position.x,
+          solidBlockData.position.y,
+          solidBlockData.size.x,
+          solidBlockData.size.y,
+          solidBlockData.color,
+        ),
+      );
+    }
+
     // Create candles
     for (const candleData of this.data.candles) {
       gameState.candles.push(new Candle(candleData.position.x, candleData.position.y));
@@ -40,7 +56,11 @@ export class Level {
 
     // Create enemies
     for (const enemyData of this.data.enemies) {
-      gameState.enemies.push(new LandGhost(enemyData.position.x, enemyData.position.y));
+      if (enemyData.type === "ghost") {
+        gameState.enemies.push(new Ghost(enemyData.position.x, enemyData.position.y));
+      } else {
+        gameState.enemies.push(new LandGhost(enemyData.position.x, enemyData.position.y));
+      }
     }
 
     // Create player at defined start position

@@ -64,6 +64,7 @@ export class LevelManager {
         color: "#2C1810", // Default background color
       },
       platforms: [],
+      solidBlocks: [],
       candles: [],
       enemies: [],
       player: {
@@ -80,6 +81,15 @@ export class LevelManager {
         position: new Vector2(platform.position.x, platform.position.y),
         size: new Vector2(platform.size.x, platform.size.y),
         color: platform.color,
+      });
+    }
+
+    // Convert solid blocks
+    for (const solidBlock of gameState.solidBlocks) {
+      levelData.solidBlocks.push({
+        position: new Vector2(solidBlock.position.x, solidBlock.position.y),
+        size: new Vector2(solidBlock.size.x, solidBlock.size.y),
+        color: solidBlock.color,
       });
     }
 

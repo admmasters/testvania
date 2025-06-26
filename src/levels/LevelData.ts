@@ -7,6 +7,13 @@ export interface PlatformData {
   color: string;
 }
 
+// Define the structure for solid block data
+export interface SolidBlockData {
+  position: Vector2;
+  size: Vector2;
+  color: string;
+}
+
 // Define candle positions
 export interface CandleData {
   position: Vector2;
@@ -15,6 +22,7 @@ export interface CandleData {
 // Define initial enemy positions
 export interface EnemyData {
   position: Vector2;
+  type?: string;
 }
 
 // Define player starting position
@@ -38,6 +46,7 @@ export interface LevelData {
     }[];
   };
   platforms: PlatformData[];
+  solidBlocks: SolidBlockData[];
   candles: CandleData[];
   enemies: EnemyData[];
   player: PlayerStartData;

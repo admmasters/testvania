@@ -1,6 +1,7 @@
 import { GameState } from "@/engine/GameState";
 import { Enemy } from "./enemy";
 import { Platform } from "./platform";
+import { SolidBlock } from "./solidBlock";
 
 export class LandGhost extends Enemy {
   constructor(x: number, y: number) {
@@ -17,6 +18,18 @@ export class LandGhost extends Enemy {
 
     // Simple AI - move back and forth
     this.velocity.x = this.direction * this.speed;
+
+    // Check for solid block collisions before moving horizontally
+    const nextX = this.position.x + this.velocity.x * deltaTime;
+
+    // Check horizontal collisions with solid blocks
+    for (const solidBlock of gameState.solidBlocks) {
+      if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
+        this.direction *= -1; // Reverse direction when hitting a wall
+        this.velocity.x = this.direction * this.speed;
+        break;
+      }
+    }
 
     // Change direction at level edges instead of hardcoded screen edges
     if (this.position.x <= 0) {
@@ -159,5 +172,24 @@ export class LandGhost extends Enemy {
     ctx.fillRect(this.position.x + 16, this.position.y + 8, 2, 2);
     // Mouth
     ctx.fillRect(this.position.x + 10, this.position.y + 14, 4, 2);
+  }
+
+  private wouldCollideHorizontally(nextX: number, currentY: number, obstacle: Platform | SolidBlock): boolean {
+    // Check if the enemy would overlap with the obstacle horizontally
+    const enemyLeft = nextX;
+    const enemyRight = nextX + this.size.x;
+    const enemyTop = currentY;
+    const enemyBottom = currentY + this.size.y;
+
+    const obstacleLeft = obstacle.position.x;
+    const obstacleRight = obstacle.position.x + obstacle.size.x;
+    const obstacleTop = obstacle.position.y;
+    const obstacleBottom = obstacle.position.y + obstacle.size.y;
+
+    // Check if there's overlap in both axes
+    const horizontalOverlap = enemyRight > obstacleLeft && enemyLeft < obstacleRight;
+    const verticalOverlap = enemyBottom > obstacleTop && enemyTop < obstacleBottom;
+
+    return horizontalOverlap && verticalOverlap;
   }
 }

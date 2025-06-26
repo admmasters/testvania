@@ -4,6 +4,7 @@ import type { Candle } from "../objects/candle";
 import type { Enemy } from "../objects/enemy";
 import { HitSpark } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
+import type { SolidBlock } from "../objects/solidBlock";
 import { Player } from "../objects/player";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
@@ -15,6 +16,7 @@ export class GameState {
   player: Player;
   enemies: Enemy[];
   platforms: Platform[];
+  solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
   input: Input;
@@ -31,6 +33,7 @@ export class GameState {
 
     // Initialize empty arrays
     this.platforms = [];
+    this.solidBlocks = [];
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
@@ -183,6 +186,11 @@ export class GameState {
     // Draw platforms
     for (const platform of this.platforms) {
       platform.render(ctx);
+    }
+
+    // Draw solid blocks
+    for (const solidBlock of this.solidBlocks) {
+      solidBlock.render(ctx);
     }
 
     // Draw game objects
