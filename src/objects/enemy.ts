@@ -85,6 +85,9 @@ export abstract class Enemy extends GameObject {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Flash white when hit
     if (this.isHit) {
       ctx.fillStyle = "#FFFFFF";
@@ -92,7 +95,7 @@ export abstract class Enemy extends GameObject {
       ctx.fillStyle = this.getColor();
     }
 
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     if (!this.isHit) {
       this.renderDetails(ctx);

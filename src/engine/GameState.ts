@@ -99,7 +99,16 @@ export class GameState {
     // Handle hit pause
     if (this.hitPauseTimer > 0) {
       this.hitPauseTimer -= deltaTime;
-      return; // Skip all updates during hit pause
+      
+      // Update shake effects during hit pause
+      this.player.updateShake(deltaTime);
+      for (const enemy of this.enemies) {
+        if (enemy.active) {
+          enemy.updateShake(deltaTime);
+        }
+      }
+      
+      return; // Skip all other updates during hit pause
     }
 
     // Update candles
@@ -159,6 +168,15 @@ export class GameState {
   hitPause(duration: number): void {
     this.hitPauseTimer = duration;
     this.hitPauseDuration = duration;
+    
+    // Start shake effect on player and enemies during hit pause
+    const shakeIntensity = 2; // 2 pixels shake
+    this.player.startShake(shakeIntensity, duration);
+    for (const enemy of this.enemies) {
+      if (enemy.active) {
+        enemy.startShake(shakeIntensity, duration);
+      }
+    }
   }
 
   createHitSpark(x: number, y: number): void {

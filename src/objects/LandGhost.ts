@@ -166,12 +166,13 @@ export class LandGhost extends Enemy {
 
   protected renderDetails(ctx: CanvasRenderingContext2D): void {
     // Simple sprite details
+    const renderPos = this.getRenderPosition();
     ctx.fillStyle = "#000";
     // Eyes
-    ctx.fillRect(this.position.x + 6, this.position.y + 8, 2, 2);
-    ctx.fillRect(this.position.x + 16, this.position.y + 8, 2, 2);
+    ctx.fillRect(renderPos.x + 6, renderPos.y + 8, 2, 2);
+    ctx.fillRect(renderPos.x + 16, renderPos.y + 8, 2, 2);
     // Mouth
-    ctx.fillRect(this.position.x + 10, this.position.y + 14, 4, 2);
+    ctx.fillRect(renderPos.x + 10, renderPos.y + 14, 4, 2);
   }
 
   private wouldCollideHorizontally(nextX: number, currentY: number, obstacle: Platform | SolidBlock): boolean {

@@ -411,28 +411,31 @@ export class Player extends GameObject {
       ctx.globalAlpha = 0.5;
     }
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     ctx.fillStyle = "#8B4513";
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     // Face
     ctx.fillStyle = "#FFE4C4";
-    ctx.fillRect(this.position.x + 8, this.position.y + 8, 16, 16);
+    ctx.fillRect(renderPos.x + 8, renderPos.y + 8, 16, 16);
 
     // Eyes
     ctx.fillStyle = "#000";
-    ctx.fillRect(this.position.x + 10, this.position.y + 12, 2, 2);
-    ctx.fillRect(this.position.x + 20, this.position.y + 12, 2, 2);
+    ctx.fillRect(renderPos.x + 10, renderPos.y + 12, 2, 2);
+    ctx.fillRect(renderPos.x + 20, renderPos.y + 12, 2, 2);
 
     // Alucard-style ultra-fast sword swipe
     if (this.attacking) {
       const progress = this.attackAnimationPhase;
-      const centerX = this.position.x + this.size.x / 2;
-      const centerY = this.position.y + this.size.y / 2;
+      const centerX = renderPos.x + this.size.x / 2;
+      const centerY = renderPos.y + this.size.y / 2;
       const direction = this.facingRight ? 1 : -1;
       
       // Multiple simultaneous slash lines for instant impact
-      const slashCount = 4; // Increased slash count for wider coverage
-      const baseLength = 70; // Increased from 45 for longer visual reach
+      const slashCount = 3; // Reduced for thinner appearance
+      const baseLength = 60; // Slightly shorter visual reach
       
       // Intense white flash effect at the start - more dramatic with lighting
       if (progress < 0.3) {
@@ -457,7 +460,7 @@ export class Player extends GameObject {
       
               // Draw multiple horizontal slash lines instantly - razor sharp
         for (let i = 0; i < slashCount; i++) {
-          const yOffset = (i - 2) * 3; // Increased vertical spread from 1 to 3 for better coverage
+          const yOffset = (i - 1) * 2; // Thinner vertical spread for sleeker appearance
         
         const length = baseLength + (i * 8) + (progress * 40);
         const startX = centerX - (direction * length * 0.1); // Much less behind the character
@@ -465,13 +468,13 @@ export class Player extends GameObject {
         const endX = centerX + (direction * length * 0.9); // More in front
         const endY = centerY + yOffset;
         
-        // Outer lighting bloom - small and elegant
+        // Outer lighting bloom - thinner and more elegant
         ctx.strokeStyle = "#66BBDD";
-        ctx.lineWidth = 6;
-        ctx.globalAlpha = 0.5;
+        ctx.lineWidth = 4; // Reduced from 6
+        ctx.globalAlpha = 0.4; // Slightly more transparent
         ctx.lineCap = "round";
         ctx.shadowColor = "#66BBDD";
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 6; // Reduced blur
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
@@ -479,21 +482,21 @@ export class Player extends GameObject {
         
         // Mid glow layer - thinner
         ctx.strokeStyle = "#88CCEE";
-        ctx.lineWidth = 3;
-        ctx.globalAlpha = 0.7;
-        ctx.shadowBlur = 5;
+        ctx.lineWidth = 2; // Reduced from 3
+        ctx.globalAlpha = 0.6; // Slightly more transparent
+        ctx.shadowBlur = 4; // Reduced blur
         ctx.lineCap = "butt";
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
         
-        // Main slash - thin bright light blue
+        // Main slash - thinner bright light blue
         ctx.strokeStyle = "#BBDDFF";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1; // Reduced from 1.5
         ctx.globalAlpha = 1.0;
         ctx.shadowColor = "#BBDDFF";
-        ctx.shadowBlur = 3;
+        ctx.shadowBlur = 2; // Reduced blur
         ctx.lineCap = "butt";
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -502,9 +505,9 @@ export class Player extends GameObject {
         
         // Ultra-sharp inner core - very thin
         ctx.strokeStyle = "#DDEEFF";
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 0.3; // Reduced from 0.5
         ctx.globalAlpha = 1.0;
-        ctx.shadowBlur = 2;
+        ctx.shadowBlur = 1; // Reduced blur
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
@@ -515,16 +518,16 @@ export class Player extends GameObject {
         ctx.shadowBlur = 0;
       }
       
-      // Sharp speed lines effect - smaller and bright light blue
-      ctx.globalAlpha = 0.7;
+      // Sharp speed lines effect - thinner and more refined
+      ctx.globalAlpha = 0.6; // More subtle
       ctx.strokeStyle = "#CCDDFF";
-      ctx.lineWidth = 0.8;
+      ctx.lineWidth = 0.5; // Thinner speed lines
       ctx.lineCap = "butt";
       ctx.shadowColor = "#BBDDFF";
-      ctx.shadowBlur = 2;
-      for (let i = 0; i < 6; i++) { // Increased speed lines for better visual coverage
-        const lineLength = 35 + (i * 6); // Increased base length and spacing
-        const yOffset = (i - 2.5) * 4; // Increased vertical spread for speed lines
+      ctx.shadowBlur = 1; // Less blur
+      for (let i = 0; i < 4; i++) { // Fewer speed lines for cleaner look
+        const lineLength = 30 + (i * 5); // Slightly shorter
+        const yOffset = (i - 1.5) * 3; // Tighter vertical spread
         
         const lineStartX = centerX - (direction * lineLength * 0.2); // Less behind
         const lineStartY = centerY + yOffset;

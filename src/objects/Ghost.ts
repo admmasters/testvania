@@ -82,21 +82,26 @@ export class Ghost extends Enemy {
 
   protected renderDetails(ctx: CanvasRenderingContext2D): void {
     // Eyes
+    const renderPos = this.getRenderPosition();
     ctx.fillStyle = "#222";
     ctx.beginPath();
-    ctx.arc(this.position.x + 8, this.position.y + 16, 2, 0, Math.PI * 2);
-    ctx.arc(this.position.x + 16, this.position.y + 16, 2, 0, Math.PI * 2);
+    ctx.arc(renderPos.x + 8, renderPos.y + 16, 2, 0, Math.PI * 2);
+    ctx.arc(renderPos.x + 16, renderPos.y + 16, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
+    
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+    
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = this.isHit ? "#FFFFFF" : this.getColor();
     ctx.beginPath();
     ctx.ellipse(
-      this.position.x + this.size.x / 2,
-      this.position.y + this.size.y / 2,
+      renderPos.x + this.size.x / 2,
+      renderPos.y + this.size.y / 2,
       this.size.x / 2,
       this.size.y / 2,
       0,
