@@ -25,6 +25,12 @@ export interface EnemyData {
   type?: string;
 }
 
+// Define door data
+export interface DoorData {
+  position: Vector2;
+  nextLevelId: string;
+}
+
 // Define player starting position
 export interface PlayerStartData {
   position: Vector2;
@@ -49,5 +55,6 @@ export interface LevelData {
   solidBlocks: SolidBlockData[];
   candles: CandleData[];
   enemies: EnemyData[];
+  doors: DoorData[];
   player: PlayerStartData;
 }

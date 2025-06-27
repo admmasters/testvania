@@ -244,7 +244,7 @@ export class Player extends GameObject {
     return horizontalOverlap && verticalOverlap;
   }
 
-  private findCeilingPosition(platforms: Platform[], solidBlocks: SolidBlock[]): number {
+  private findCeilingPosition(_platforms: Platform[], solidBlocks: SolidBlock[]): number {
     let lowestCeiling = 0;
 
     // Do NOT check platforms for ceiling (allow jumping through them)

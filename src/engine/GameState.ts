@@ -1,6 +1,6 @@
-
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
+import type { Door } from "../objects/door";
 import type { Enemy } from "../objects/enemy";
 import { HitSpark } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
@@ -19,6 +19,7 @@ export class GameState {
   solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
+  doors: Door[];
   input: Input;
   camera: Camera;
   parallaxBackground: ParallaxBackground;
@@ -37,6 +38,7 @@ export class GameState {
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
+    this.doors = [];
 
     // Initialize common game state properties
     this.input = new Input();
@@ -123,6 +125,11 @@ export class GameState {
 
     // Check for candle collisions
     this.checkCandleCollisions();
+
+    // Update doors
+    for (const door of this.doors) {
+      door.update(deltaTime, this);
+    }
 
     this.player.update(deltaTime, this);
 
@@ -221,6 +228,11 @@ export class GameState {
       }
     }
 
+    // Draw doors
+    for (const door of this.doors) {
+      door.render(ctx);
+    }
+
     for (const enemy of this.enemies) {
       if (enemy.active) {
         enemy.render(ctx);
@@ -245,8 +257,6 @@ export class GameState {
     // Draw UI
     this.drawUI(ctx);
   }
-
-
 
   drawUI(ctx: CanvasRenderingContext2D): void {
     // Save the current context state

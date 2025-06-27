@@ -62,6 +62,9 @@ export const levels: LevelData[] = [
     { position: vec2(1552, 416), type: "landghost" },
     { position: vec2(1680, 416), type: "landghost" },
     ],
+    doors: [
+      { position: vec2(1520, 384), nextLevelId: "level2" },
+    ],
     player: {
     position: vec2(128, 400)
     },
@@ -126,6 +129,9 @@ export const levels: LevelData[] = [
       { position: vec2(360, 198) },
       { position: vec2(630, 258) },
     ],
+    doors: [
+      { position: vec2(720, 386), nextLevelId: "level3" },
+    ],
     player: {
       position: vec2(100, 330),
     },
@@ -175,6 +181,9 @@ export const levels: LevelData[] = [
       { position: vec2(450, 390) },
       { position: vec2(710, 300) },
     ],
+    doors: [
+      { position: vec2(740, 486), nextLevelId: "level4" },
+    ],
     player: {
       position: vec2(50, 360),
     },
@@ -194,6 +203,7 @@ export const levels: LevelData[] = [
     solidBlocks: [],
     candles: [{ position: vec2(648, 176) }],
     enemies: [],
+    doors: [],
     player: {
       position: vec2(104, 504),
     },

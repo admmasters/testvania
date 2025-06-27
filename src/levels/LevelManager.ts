@@ -67,6 +67,7 @@ export class LevelManager {
       solidBlocks: [],
       candles: [],
       enemies: [],
+      doors: [],
       player: {
         position: new Vector2(
           gameState.player.position.x,
@@ -104,6 +105,14 @@ export class LevelManager {
     for (const enemy of gameState.enemies) {
       levelData.enemies.push({
         position: new Vector2(enemy.position.x, enemy.position.y),
+      });
+    }
+
+    // Convert doors
+    for (const door of gameState.doors) {
+      levelData.doors.push({
+        position: new Vector2(door.position.x, door.position.y),
+        nextLevelId: door.nextLevelId,
       });
     }
 
