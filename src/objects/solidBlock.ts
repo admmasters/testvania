@@ -29,24 +29,27 @@ export class SolidBlock extends GameObject {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Main block body
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     // Border
     ctx.strokeStyle = this.borderColor;
     ctx.lineWidth = 2;
-    ctx.strokeRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.strokeRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     // Top-left highlight
     ctx.fillStyle = this.highlightColor;
-    ctx.fillRect(this.position.x + 2, this.position.y + 2, this.size.x - 4, 3);
-    ctx.fillRect(this.position.x + 2, this.position.y + 2, 3, this.size.y - 4);
+    ctx.fillRect(renderPos.x + 2, renderPos.y + 2, this.size.x - 4, 3);
+    ctx.fillRect(renderPos.x + 2, renderPos.y + 2, 3, this.size.y - 4);
 
     // Bottom-right shadow
     ctx.fillStyle = this.shadowColor;
-    ctx.fillRect(this.position.x + 2, this.position.y + this.size.y - 5, this.size.x - 4, 3);
-    ctx.fillRect(this.position.x + this.size.x - 5, this.position.y + 2, 3, this.size.y - 4);
+    ctx.fillRect(renderPos.x + 2, renderPos.y + this.size.y - 5, this.size.x - 4, 3);
+    ctx.fillRect(renderPos.x + this.size.x - 5, renderPos.y + 2, 3, this.size.y - 4);
 
     // Stone block pattern for larger blocks
     if (this.size.x > 32 && this.size.y > 32) {
@@ -55,24 +58,24 @@ export class SolidBlock extends GameObject {
 
       // Create a stone block pattern
       const blockSize = 16;
-      for (let x = this.position.x + blockSize; x < this.position.x + this.size.x; x += blockSize) {
+      for (let x = renderPos.x + blockSize; x < renderPos.x + this.size.x; x += blockSize) {
         ctx.beginPath();
-        ctx.moveTo(x, this.position.y + 2);
-        ctx.lineTo(x, this.position.y + this.size.y - 2);
+        ctx.moveTo(x, renderPos.y + 2);
+        ctx.lineTo(x, renderPos.y + this.size.y - 2);
         ctx.stroke();
       }
 
-      for (let y = this.position.y + blockSize; y < this.position.y + this.size.y; y += blockSize) {
+      for (let y = renderPos.y + blockSize; y < renderPos.y + this.size.y; y += blockSize) {
         ctx.beginPath();
-        ctx.moveTo(this.position.x + 2, y);
-        ctx.lineTo(this.position.x + this.size.x - 2, y);
+        ctx.moveTo(renderPos.x + 2, y);
+        ctx.lineTo(renderPos.x + this.size.x - 2, y);
         ctx.stroke();
       }
 
       // Add some texture dots for stone appearance
       ctx.fillStyle = this.shadowColor;
-      for (let x = this.position.x + 8; x < this.position.x + this.size.x - 8; x += 16) {
-        for (let y = this.position.y + 8; y < this.position.y + this.size.y - 8; y += 16) {
+      for (let x = renderPos.x + 8; x < renderPos.x + this.size.x - 8; x += 16) {
+        for (let y = renderPos.y + 8; y < renderPos.y + this.size.y - 8; y += 16) {
           ctx.fillRect(x, y, 2, 2);
           ctx.fillRect(x + 6, y + 6, 1, 1);
         }

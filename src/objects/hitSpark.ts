@@ -93,6 +93,9 @@ export class HitSpark extends GameObject {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Draw flash circle at the beginning of the effect
     if (this.lifeTime > this.maxLifeTime - this.flashDuration) {
       // Calculate flash opacity based on remaining time
@@ -103,8 +106,8 @@ export class HitSpark extends GameObject {
       ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
       ctx.beginPath();
       ctx.arc(
-        this.position.x,
-        this.position.y,
+        renderPos.x,
+        renderPos.y,
         this.flashRadius * (1 - flashOpacity + 0.5), // Grow and then shrink
         0,
         Math.PI * 2,

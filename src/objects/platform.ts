@@ -27,17 +27,20 @@ export class Platform extends GameObject {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Main platform body
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     // Top highlight
     ctx.fillStyle = this.highlightColor;
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, 4);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, 4);
 
     // Bottom shadow
     ctx.fillStyle = this.shadowColor;
-    ctx.fillRect(this.position.x, this.position.y + this.size.y - 3, this.size.x, 3);
+    ctx.fillRect(renderPos.x, renderPos.y + this.size.y - 3, this.size.x, 3);
 
     // Brick pattern for larger platforms
     if (this.size.x > 50) {
@@ -46,10 +49,10 @@ export class Platform extends GameObject {
 
       // Horizontal lines
       if (this.size.y > 30) {
-        for (let y = this.position.y + 10; y < this.position.y + this.size.y - 5; y += 10) {
+        for (let y = renderPos.y + 10; y < renderPos.y + this.size.y - 5; y += 10) {
           ctx.beginPath();
-          ctx.moveTo(this.position.x, y);
-          ctx.lineTo(this.position.x + this.size.x, y);
+          ctx.moveTo(renderPos.x, y);
+          ctx.lineTo(renderPos.x + this.size.x, y);
           ctx.stroke();
         }
       }
@@ -57,16 +60,16 @@ export class Platform extends GameObject {
       // Vertical lines (brick pattern)
       const brickWidth = 20;
       for (
-        let x = this.position.x + brickWidth;
-        x < this.position.x + this.size.x;
+        let x = renderPos.x + brickWidth;
+        x < renderPos.x + this.size.x;
         x += brickWidth
       ) {
         // Make bricks offset for each row
-        const offset = Math.floor((x - this.position.x) / brickWidth) % 2 === 0 ? 5 : 5;
+        const offset = Math.floor((x - renderPos.x) / brickWidth) % 2 === 0 ? 5 : 5;
 
         ctx.beginPath();
-        ctx.moveTo(x, this.position.y + offset);
-        ctx.lineTo(x, this.position.y + this.size.y);
+        ctx.moveTo(x, renderPos.y + offset);
+        ctx.lineTo(x, renderPos.y + this.size.y);
         ctx.stroke();
       }
     }

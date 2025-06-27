@@ -71,45 +71,48 @@ export class Door extends GameObject {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Door frame (stone archway) - smaller proportions
     ctx.fillStyle = "#5A5A5A";
-    ctx.fillRect(this.position.x - 6, this.position.y - 6, this.size.x + 12, this.size.y + 12);
+    ctx.fillRect(renderPos.x - 6, renderPos.y - 6, this.size.x + 12, this.size.y + 12);
     
     // Inner frame shadow
     ctx.fillStyle = "#3A3A3A";
-    ctx.fillRect(this.position.x - 3, this.position.y - 3, this.size.x + 6, this.size.y + 6);
+    ctx.fillRect(renderPos.x - 3, renderPos.y - 3, this.size.x + 6, this.size.y + 6);
 
     // Calculate door opening offset
     const openOffset = this.openProgress * (this.size.x * 0.8);
 
     // Main door body
     ctx.fillStyle = this.doorColor;
-    ctx.fillRect(this.position.x + openOffset, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x + openOffset, renderPos.y, this.size.x, this.size.y);
 
     // Door panels (decorative) - adjusted for smaller size
     ctx.fillStyle = "#2A1F15";
     // Upper panel
-    ctx.fillRect(this.position.x + 6 + openOffset, this.position.y + 6, this.size.x - 12, this.size.y / 2 - 9);
+    ctx.fillRect(renderPos.x + 6 + openOffset, renderPos.y + 6, this.size.x - 12, this.size.y / 2 - 9);
     // Lower panel
-    ctx.fillRect(this.position.x + 6 + openOffset, this.position.y + this.size.y / 2 + 3, this.size.x - 12, this.size.y / 2 - 9);
+    ctx.fillRect(renderPos.x + 6 + openOffset, renderPos.y + this.size.y / 2 + 3, this.size.x - 12, this.size.y / 2 - 9);
 
     // Metal fittings and hinges - smaller proportions
     ctx.fillStyle = this.metalColor;
     // Left hinge (top)
-    ctx.fillRect(this.position.x + 3 + openOffset, this.position.y + 8, 6, 8);
+    ctx.fillRect(renderPos.x + 3 + openOffset, renderPos.y + 8, 6, 8);
     // Left hinge (bottom)
-    ctx.fillRect(this.position.x + 3 + openOffset, this.position.y + this.size.y - 16, 6, 8);
+    ctx.fillRect(renderPos.x + 3 + openOffset, renderPos.y + this.size.y - 16, 6, 8);
     
     // Door handle
     ctx.fillStyle = this.hingeColor;
-    ctx.fillRect(this.position.x + this.size.x - 9 + openOffset, this.position.y + this.size.y / 2 - 3, 4, 6);
+    ctx.fillRect(renderPos.x + this.size.x - 9 + openOffset, renderPos.y + this.size.y / 2 - 3, 4, 6);
 
     // Metal studs - fewer and smaller
     ctx.fillStyle = this.metalColor;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
-        const studX = this.position.x + 12 + (i * 12) + openOffset;
-        const studY = this.position.y + 14 + (j * 20);
+        const studX = renderPos.x + 12 + (i * 12) + openOffset;
+        const studY = renderPos.y + 14 + (j * 20);
         ctx.fillRect(studX, studY, 2, 2);
       }
     }
@@ -117,12 +120,12 @@ export class Door extends GameObject {
     // Draw interaction prompt when player is near - adjusted position
     if (this.isPlayerNear && !this.isOpen) {
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-      ctx.fillRect(this.position.x - 15, this.position.y - 25, 78, 16);
+      ctx.fillRect(renderPos.x - 15, renderPos.y - 25, 78, 16);
       
       ctx.fillStyle = "#FFFFFF";
       ctx.font = "10px monospace";
       ctx.textAlign = "center";
-      ctx.fillText("Door Opening...", this.position.x + this.size.x / 2, this.position.y - 14);
+      ctx.fillText("Door Opening...", renderPos.x + this.size.x / 2, renderPos.y - 14);
     }
 
     // Draw glowing effect when door is opening - smaller glow
@@ -132,7 +135,7 @@ export class Door extends GameObject {
       ctx.strokeStyle = "#FFD700";
       ctx.lineWidth = 2;
       ctx.globalAlpha = 0.5;
-      ctx.strokeRect(this.position.x - 3, this.position.y - 3, this.size.x + 6, this.size.y + 6);
+      ctx.strokeRect(renderPos.x - 3, renderPos.y - 3, this.size.x + 6, this.size.y + 6);
     }
 
     ctx.restore();
