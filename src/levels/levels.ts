@@ -18,11 +18,9 @@ export const levels: LevelData[] = [
     },
     platforms: [
     { position: vec2(0, 448), size: vec2(2192, 160), color: "#543121" },
-    { position: vec2(336, 368), size: vec2(0, 0), color: "#654321" },
     { position: vec2(400, 256), size: vec2(128, 32), color: "#654321" },
     { position: vec2(592, 256), size: vec2(112, 32), color: "#654321" },
     { position: vec2(752, 256), size: vec2(192, 32), color: "#654321" },
-    { position: vec2(624, 352), size: vec2(0, 16), color: "#654321" },
     { position: vec2(592, 352), size: vec2(112, 32), color: "#654321" },
     { position: vec2(400, 352), size: vec2(128, 32), color: "#654321" },
     { position: vec2(224, 304), size: vec2(112, 32), color: "#654321" },

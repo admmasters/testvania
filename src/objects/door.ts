@@ -74,47 +74,70 @@ export class Door extends GameObject {
     // Get render position with shake offset
     const renderPos = this.getRenderPosition();
 
-    // Door frame (stone archway) - smaller proportions
+    // Door frame (stone archway) - smaller proportions - ALWAYS VISIBLE
     ctx.fillStyle = "#5A5A5A";
     ctx.fillRect(renderPos.x - 6, renderPos.y - 6, this.size.x + 12, this.size.y + 12);
     
-    // Inner frame shadow
+    // Inner frame shadow - ALWAYS VISIBLE
     ctx.fillStyle = "#3A3A3A";
     ctx.fillRect(renderPos.x - 3, renderPos.y - 3, this.size.x + 6, this.size.y + 6);
 
-    // Calculate door opening offset
-    const openOffset = this.openProgress * (this.size.x * 0.8);
+    // Calculate door opening effects
+    const openAngle = this.openProgress * Math.PI / 2; // 0 to 90 degrees
+    const doorWidth = this.size.x * Math.cos(openAngle); // Perspective width effect
+    const doorOpacity = 1 - (this.openProgress * 0.7); // Fade as it opens
+    const hingeOffset = 3; // Offset from left edge where hinge is
 
-    // Main door body
-    ctx.fillStyle = this.doorColor;
-    ctx.fillRect(renderPos.x + openOffset, renderPos.y, this.size.x, this.size.y);
+    // Only render door if it's not fully open or still visible
+    if (doorWidth > 1) {
+      ctx.globalAlpha = doorOpacity;
 
-    // Door panels (decorative) - adjusted for smaller size
-    ctx.fillStyle = "#2A1F15";
-    // Upper panel
-    ctx.fillRect(renderPos.x + 6 + openOffset, renderPos.y + 6, this.size.x - 12, this.size.y / 2 - 9);
-    // Lower panel
-    ctx.fillRect(renderPos.x + 6 + openOffset, renderPos.y + this.size.y / 2 + 3, this.size.x - 12, this.size.y / 2 - 9);
+      // Main door body with perspective
+      ctx.fillStyle = this.doorColor;
+      ctx.fillRect(renderPos.x + hingeOffset, renderPos.y, doorWidth, this.size.y);
 
-    // Metal fittings and hinges - smaller proportions
-    ctx.fillStyle = this.metalColor;
-    // Left hinge (top)
-    ctx.fillRect(renderPos.x + 3 + openOffset, renderPos.y + 8, 6, 8);
-    // Left hinge (bottom)
-    ctx.fillRect(renderPos.x + 3 + openOffset, renderPos.y + this.size.y - 16, 6, 8);
-    
-    // Door handle
-    ctx.fillStyle = this.hingeColor;
-    ctx.fillRect(renderPos.x + this.size.x - 9 + openOffset, renderPos.y + this.size.y / 2 - 3, 4, 6);
-
-    // Metal studs - fewer and smaller
-    ctx.fillStyle = this.metalColor;
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 2; j++) {
-        const studX = renderPos.x + 12 + (i * 12) + openOffset;
-        const studY = renderPos.y + 14 + (j * 20);
-        ctx.fillRect(studX, studY, 2, 2);
+      // Door panels (decorative) - adjusted for perspective
+      ctx.fillStyle = "#2A1F15";
+      // Upper panel
+      const panelWidth = doorWidth - 12;
+      if (panelWidth > 0) {
+        ctx.fillRect(renderPos.x + 6 + hingeOffset, renderPos.y + 6, panelWidth, this.size.y / 2 - 9);
+        // Lower panel
+        ctx.fillRect(renderPos.x + 6 + hingeOffset, renderPos.y + this.size.y / 2 + 3, panelWidth, this.size.y / 2 - 9);
       }
+
+      // Metal fittings and hinges - adjusted for perspective
+      ctx.fillStyle = this.metalColor;
+      // Left hinge (top) - stays at hinge point
+      ctx.fillRect(renderPos.x + hingeOffset, renderPos.y + 8, 6, 8);
+      // Left hinge (bottom) - stays at hinge point
+      ctx.fillRect(renderPos.x + hingeOffset, renderPos.y + this.size.y - 16, 6, 8);
+      
+      // Door handle - moves with door perspective
+      if (doorWidth > 15) {
+        ctx.fillStyle = this.hingeColor;
+        ctx.fillRect(renderPos.x + hingeOffset + doorWidth - 9, renderPos.y + this.size.y / 2 - 3, 4, 6);
+      }
+
+      // Metal studs - fewer and smaller, adjusted for perspective
+      ctx.fillStyle = this.metalColor;
+      for (let i = 0; i < 2; i++) {
+        for (let j = 0; j < 2; j++) {
+          const studX = renderPos.x + 12 + (i * 12 * doorWidth / this.size.x) + hingeOffset;
+          const studY = renderPos.y + 14 + (j * 20);
+          if (studX < renderPos.x + hingeOffset + doorWidth - 2) {
+            ctx.fillRect(studX, studY, 2, 2);
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1; // Reset alpha
+    }
+
+    // Draw darkness/shadow behind the open door
+    if (this.openProgress > 0.1) {
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.8 * this.openProgress})`;
+      ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
     }
 
     // Draw interaction prompt when player is near - adjusted position
