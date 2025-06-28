@@ -151,10 +151,7 @@ export class LevelEditor {
     widthInput.value = String(this.levelWidth);
     widthInput.style.width = "70px";
     widthInput.addEventListener("change", () => {
-      const val = Math.max(
-        320,
-        Math.min(10000, parseInt(widthInput.value, 10))
-      );
+      const val = Math.max(320, Math.min(10000, parseInt(widthInput.value, 10)));
       widthInput.value = String(val);
       this.levelWidth = val;
     });
@@ -170,10 +167,7 @@ export class LevelEditor {
     heightInput.value = String(this.levelHeight);
     heightInput.style.width = "70px";
     heightInput.addEventListener("change", () => {
-      const val = Math.max(
-        240,
-        Math.min(2000, parseInt(heightInput.value, 10))
-      );
+      const val = Math.max(240, Math.min(2000, parseInt(heightInput.value, 10)));
       heightInput.value = String(val);
       this.levelHeight = val;
     });
@@ -395,18 +389,14 @@ export class LevelEditor {
   }) {
     // Restore platforms
     this.gameState.platforms = state.platforms.map(
-      (p) =>
-        new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color)
+      (p) => new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color),
     );
     // Restore solid blocks
     this.gameState.solidBlocks = (state.solidBlocks || []).map(
-      (sb) =>
-        new SolidBlock(sb.position.x, sb.position.y, sb.size.x, sb.size.y, sb.color)
+      (sb) => new SolidBlock(sb.position.x, sb.position.y, sb.size.x, sb.size.y, sb.color),
     );
     // Restore candles
-    this.gameState.candles = state.candles.map(
-      (c) => new Candle(c.position.x, c.position.y)
-    );
+    this.gameState.candles = state.candles.map((c) => new Candle(c.position.x, c.position.y));
     // Restore enemies
     this.gameState.enemies = state.enemies.map((e) => {
       const enemyType = e.type || "landghost"; // Default to landghost for backward compatibility
@@ -441,10 +431,7 @@ export class LevelEditor {
     }
 
     // Convert screen position to world position (accounting for scroll)
-    const worldPos = new Vector2(
-      pos.x + this.scrollPosition.x,
-      pos.y + this.scrollPosition.y
-    );
+    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
 
     switch (this.mode) {
       case EditorMode.SELECT:
@@ -531,10 +518,7 @@ export class LevelEditor {
     if (!this.startPosition) return;
 
     // Convert screen position to world position
-    const worldPos = new Vector2(
-      pos.x + this.scrollPosition.x,
-      pos.y + this.scrollPosition.y
-    );
+    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
 
     switch (this.mode) {
       case EditorMode.PLATFORM:
@@ -572,10 +556,7 @@ export class LevelEditor {
     const pos = new Vector2(x, y);
 
     // Convert to world position
-    const worldPos = new Vector2(
-      pos.x + this.scrollPosition.x,
-      pos.y + this.scrollPosition.y
-    );
+    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
 
     switch (this.mode) {
       case EditorMode.PLATFORM:
@@ -712,8 +693,8 @@ export class LevelEditor {
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
         this.currentPlatform.size.y,
-        this.currentPlatform.color
-      )
+        this.currentPlatform.color,
+      ),
     );
 
     this.currentPlatform = null;
@@ -835,7 +816,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
 
       ctx.strokeStyle = "#FFFFFF";
@@ -843,7 +824,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
     }
 
@@ -854,7 +835,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
 
       ctx.strokeStyle = "#00FFFF"; // Cyan to distinguish from platforms
@@ -862,7 +843,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y
+        this.currentPlatform.size.y,
       );
     }
 
@@ -872,12 +853,7 @@ export class LevelEditor {
       if (obj.position && obj.size) {
         ctx.strokeStyle = "#FF0000";
         ctx.lineWidth = 2;
-        ctx.strokeRect(
-          obj.position.x - 2,
-          obj.position.y - 2,
-          obj.size.x + 4,
-          obj.size.y + 4
-        );
+        ctx.strokeRect(obj.position.x - 2, obj.position.y - 2, obj.size.x + 4, obj.size.y + 4);
         ctx.lineWidth = 1;
       }
     }
@@ -920,7 +896,7 @@ export class LevelEditor {
     // Generate a level ID
     const levelId = prompt(
       "Enter a level ID (e.g., 'level3'):",
-      `level${this.gameState.levelManager.getLevelIds().length + 1}`
+      `level${this.gameState.levelManager.getLevelIds().length + 1}`,
     );
 
     if (!levelId) return;
@@ -928,17 +904,13 @@ export class LevelEditor {
     // Generate a level name
     const levelName = prompt(
       "Enter a level name:",
-      `Custom Level ${this.gameState.levelManager.getLevelIds().length + 1}`
+      `Custom Level ${this.gameState.levelManager.getLevelIds().length + 1}`,
     );
 
     if (!levelName) return;
 
     // Create level data from current game state
-    const levelData = LevelManager.createLevelFromGameState(
-      this.gameState,
-      levelId,
-      levelName
-    );
+    const levelData = LevelManager.createLevelFromGameState(this.gameState, levelId, levelName);
     // Set width and height
     levelData.width = this.levelWidth;
     levelData.height = this.levelHeight;
@@ -950,40 +922,37 @@ export class LevelEditor {
       .map(
         (p) =>
           `  { position: vec2(${this.snap16(p.position.x)}, ${this.snap16(
-            p.position.y
+            p.position.y,
           )}), size: vec2(${this.snap16(p.size.x)}, ${this.snap16(
-            p.size.y
-          )}), color: "${p.color}" },`
+            p.size.y,
+          )}), color: "${p.color}" },`,
       )
       .join("\n");
     const solidBlocks = this.gameState.solidBlocks
       .map(
         (sb) =>
           `  { position: vec2(${this.snap16(sb.position.x)}, ${this.snap16(
-            sb.position.y
+            sb.position.y,
           )}), size: vec2(${this.snap16(sb.size.x)}, ${this.snap16(
-            sb.size.y
-          )}), color: "${sb.color}" },`
+            sb.size.y,
+          )}), color: "${sb.color}" },`,
       )
       .join("\n");
     const candles = (levelData.candles || [])
       .map(
-        (c) =>
-          `  { position: vec2(${this.snap16(c.position.x)}, ${this.snap16(
-            c.position.y
-          )}) },`
+        (c) => `  { position: vec2(${this.snap16(c.position.x)}, ${this.snap16(c.position.y)}) },`,
       )
       .join("\n");
     const enemies = this.gameState.enemies
       .map((e) => {
         const enemyType = e.type === "ghost" ? "ghost" : "landghost";
         return `  { position: vec2(${this.snap16(e.position.x)}, ${this.snap16(
-          e.position.y
+          e.position.y,
         )}), type: "${enemyType}" },`;
       })
       .join("\n");
     const player = `  position: vec2(${this.snap16(
-      levelData.player.position.x
+      levelData.player.position.x,
     )}, ${this.snap16(levelData.player.position.y)})`;
 
     const formattedLevelCode = `{
@@ -1061,11 +1030,7 @@ ${player}
 
   private handleUndoRedoKeys = (e: KeyboardEvent) => {
     const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-    if (
-      (isMac ? e.metaKey : e.ctrlKey) &&
-      !e.shiftKey &&
-      e.key.toLowerCase() === "z"
-    ) {
+    if ((isMac ? e.metaKey : e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       this.undo();
     } else if (
@@ -1109,7 +1074,7 @@ ${player}
   private updateScrollIndicator(): void {
     if (!this.scrollIndicator) return;
     this.scrollIndicator.textContent = `Scroll: ${Math.round(
-      this.scrollPosition.x
+      this.scrollPosition.x,
     )}, ${Math.round(this.scrollPosition.y)}`;
   }
 
@@ -1180,7 +1145,7 @@ ${player}
       const minY = Math.min(this.currentPlatform.position.y, snappedPos.y);
 
       this.gameState.solidBlocks.push(
-        new SolidBlock(minX, minY, width, height, this.currentPlatform.color)
+        new SolidBlock(minX, minY, width, height, this.currentPlatform.color),
       );
     }
 

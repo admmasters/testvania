@@ -3,7 +3,6 @@ import { GameState } from "../engine/GameState";
 import { Platform } from "../objects/platform";
 import { SolidBlock } from "../objects/solidBlock";
 import { Candle } from "../objects/candle";
-import { Door } from "../objects/door";
 import { Player } from "../objects/player";
 import { LandGhost } from "@/objects/LandGhost";
 import { Ghost } from "../objects/Ghost";
@@ -22,7 +21,6 @@ export class Level {
     gameState.solidBlocks = [];
     gameState.enemies = [];
     gameState.candles = [];
-    gameState.doors = [];
     gameState.hitSparks = [];
 
     // Create platforms
@@ -54,11 +52,6 @@ export class Level {
     // Create candles
     for (const candleData of this.data.candles) {
       gameState.candles.push(new Candle(candleData.position.x, candleData.position.y));
-    }
-
-    // Create doors
-    for (const doorData of this.data.doors) {
-      gameState.doors.push(new Door(doorData.position.x, doorData.position.y, doorData.nextLevelId));
     }
 
     // Create enemies

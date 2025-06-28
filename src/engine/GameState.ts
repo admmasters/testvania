@@ -1,6 +1,5 @@
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
-import type { Door } from "../objects/door";
 import type { Enemy } from "../objects/enemy";
 import { HitSpark } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
@@ -19,7 +18,6 @@ export class GameState {
   solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
-  doors: Door[];
   input: Input;
   camera: Camera;
   parallaxBackground: ParallaxBackground;
@@ -38,7 +36,6 @@ export class GameState {
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
-    this.doors = [];
 
     // Initialize common game state properties
     this.input = new Input();
@@ -87,10 +84,7 @@ export class GameState {
 
           if (isColliding) {
             candle.break();
-            this.createHitSpark(
-              candle.position.x + candle.size.x / 2,
-              candle.position.y
-            );
+            this.createHitSpark(candle.position.x + candle.size.x / 2, candle.position.y);
           }
         }
       }
@@ -101,7 +95,7 @@ export class GameState {
     // Handle hit pause
     if (this.hitPauseTimer > 0) {
       this.hitPauseTimer -= deltaTime;
-      
+
       // Update shake effects during hit pause
       this.player.updateShake(deltaTime);
       for (const enemy of this.enemies) {
@@ -109,7 +103,7 @@ export class GameState {
           enemy.updateShake(deltaTime);
         }
       }
-      
+
       return; // Skip all other updates during hit pause
     }
 
@@ -125,11 +119,6 @@ export class GameState {
 
     // Check for candle collisions
     this.checkCandleCollisions();
-
-    // Update doors
-    for (const door of this.doors) {
-      door.update(deltaTime, this);
-    }
 
     this.player.update(deltaTime, this);
 
@@ -165,7 +154,7 @@ export class GameState {
         levelData.width,
         levelData.height,
         viewportWidth,
-        viewportHeight
+        viewportHeight,
       );
     }
     this.camera.update(deltaTime);
@@ -175,7 +164,7 @@ export class GameState {
   hitPause(duration: number): void {
     this.hitPauseTimer = duration;
     this.hitPauseDuration = duration;
-    
+
     // Start shake effect on player and enemies during hit pause
     const shakeIntensity = 2; // 2 pixels shake
     this.player.startShake(shakeIntensity, duration);
@@ -226,11 +215,6 @@ export class GameState {
       if (candle.active) {
         candle.render(ctx);
       }
-    }
-
-    // Draw doors
-    for (const door of this.doors) {
-      door.render(ctx);
     }
 
     for (const enemy of this.enemies) {
