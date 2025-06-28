@@ -1,12 +1,12 @@
-import { Candle } from "@/objects/candle";
+import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
-import { LevelManager } from "./LevelManager";
+import { Candle } from "@/objects/candle";
+import { Ghost } from "@/objects/Ghost";
+import { LandGhost } from "@/objects/LandGhost";
 import { Platform } from "@/objects/platform";
 import { SolidBlock } from "@/objects/solidBlock";
-import { LandGhost } from "@/objects/LandGhost";
-import { Ghost } from "@/objects/Ghost";
-import type { GameState } from "@/engine/GameState";
 import { EditorMode } from "./LevelEditor/EditorModes";
+import { LevelManager } from "./LevelManager";
 
 interface EditorPlatform {
   position: Vector2;
@@ -31,7 +31,41 @@ export class LevelEditor {
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
   private editorContainer: HTMLDivElement | null = null;
-  private selectedObject: Platform | SolidBlock | Candle | LandGhost | Ghost | object | null = null; // Using object type for player
+  private selectedObject:
+    | Platform
+    | SolidBlock
+    | Candle
+    | LandGhost
+    | Ghost
+    | object
+    | null = null; // Using object type for player
+  private resizing: {
+    handle: string;
+    startMouse: Vector2;
+    startRect: { x: number; y: number; w: number; h: number };
+  } | null = null;
+  // Resize handle size in pixels
+  private static HANDLE_SIZE = 8;
+
+  // Returns an array of handle positions for a given rect
+  private getResizeHandles(rect: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }) {
+    const hs = LevelEditor.HANDLE_SIZE / 2;
+    return [
+      { name: "nw", x: rect.x - hs, y: rect.y - hs },
+      { name: "n", x: rect.x + rect.w / 2 - hs, y: rect.y - hs },
+      { name: "ne", x: rect.x + rect.w - hs, y: rect.y - hs },
+      { name: "e", x: rect.x + rect.w - hs, y: rect.y + rect.h / 2 - hs },
+      { name: "se", x: rect.x + rect.w - hs, y: rect.y + rect.h - hs },
+      { name: "s", x: rect.x + rect.w / 2 - hs, y: rect.y + rect.h - hs },
+      { name: "sw", x: rect.x - hs, y: rect.y + rect.h - hs },
+      { name: "w", x: rect.x - hs, y: rect.y + rect.h / 2 - hs },
+    ];
+  }
   private platformColor: string = "#654321";
 
   // Scrolling properties
@@ -151,7 +185,10 @@ export class LevelEditor {
     widthInput.value = String(this.levelWidth);
     widthInput.style.width = "70px";
     widthInput.addEventListener("change", () => {
-      const val = Math.max(320, Math.min(10000, parseInt(widthInput.value, 10)));
+      const val = Math.max(
+        320,
+        Math.min(10000, parseInt(widthInput.value, 10))
+      );
       widthInput.value = String(val);
       this.levelWidth = val;
     });
@@ -167,7 +204,10 @@ export class LevelEditor {
     heightInput.value = String(this.levelHeight);
     heightInput.style.width = "70px";
     heightInput.addEventListener("change", () => {
-      const val = Math.max(240, Math.min(2000, parseInt(heightInput.value, 10)));
+      const val = Math.max(
+        240,
+        Math.min(2000, parseInt(heightInput.value, 10))
+      );
       heightInput.value = String(val);
       this.levelHeight = val;
     });
@@ -389,14 +429,24 @@ export class LevelEditor {
   }) {
     // Restore platforms
     this.gameState.platforms = state.platforms.map(
-      (p) => new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color),
+      (p) =>
+        new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color)
     );
     // Restore solid blocks
     this.gameState.solidBlocks = (state.solidBlocks || []).map(
-      (sb) => new SolidBlock(sb.position.x, sb.position.y, sb.size.x, sb.size.y, sb.color),
+      (sb) =>
+        new SolidBlock(
+          sb.position.x,
+          sb.position.y,
+          sb.size.x,
+          sb.size.y,
+          sb.color
+        )
     );
     // Restore candles
-    this.gameState.candles = state.candles.map((c) => new Candle(c.position.x, c.position.y));
+    this.gameState.candles = state.candles.map(
+      (c) => new Candle(c.position.x, c.position.y)
+    );
     // Restore enemies
     this.gameState.enemies = state.enemies.map((e) => {
       const enemyType = e.type || "landghost"; // Default to landghost for backward compatibility
@@ -431,12 +481,48 @@ export class LevelEditor {
     }
 
     // Convert screen position to world position (accounting for scroll)
-    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
+
+    // --- Resize handle logic ---
+    if (
+      this.mode === EditorMode.SELECT &&
+      this.selectedObject &&
+      this.selectedObject instanceof Platform
+    ) {
+      const platform = this.selectedObject as Platform;
+      const rect = {
+        x: platform.position.x,
+        y: platform.position.y,
+        w: platform.size.x,
+        h: platform.size.y,
+      };
+      const handles = this.getResizeHandles(rect);
+      for (const handle of handles) {
+        if (
+          worldPos.x >= handle.x &&
+          worldPos.x <= handle.x + LevelEditor.HANDLE_SIZE &&
+          worldPos.y >= handle.y &&
+          worldPos.y <= handle.y + LevelEditor.HANDLE_SIZE
+        ) {
+          // Start resizing
+          this.resizing = {
+            handle: handle.name,
+            startMouse: worldPos.copy(),
+            startRect: { x: rect.x, y: rect.y, w: rect.w, h: rect.h },
+          };
+          this.pushUndoState();
+          return;
+        }
+      }
+    }
 
     switch (this.mode) {
       case EditorMode.SELECT:
         this.startSelectMode(worldPos);
-        // If a platform is selected, allow extending it by dragging
+        // If a platform is selected, allow extending it by dragging (legacy drag-to-resize)
         if (this.selectedObject && this.selectedObject instanceof Platform) {
           this.currentPlatform = {
             position: (this.selectedObject as Platform).position.copy(),
@@ -448,39 +534,32 @@ export class LevelEditor {
           this.startPosition = null;
         }
         break;
-
       case EditorMode.PLATFORM:
         this.pushUndoState();
         this.startPlatformMode(worldPos);
         this.startPosition = worldPos;
         break;
-
       case EditorMode.SOLID_BLOCK:
         this.pushUndoState();
         this.startSolidBlockMode(worldPos);
         this.startPosition = worldPos;
         break;
-
       case EditorMode.CANDLE:
         this.pushUndoState();
         this.placeCandle(worldPos);
         break;
-
       case EditorMode.GHOST:
         this.pushUndoState();
         this.placeGhost(worldPos);
         break;
-
       case EditorMode.LANDGHOST:
         this.pushUndoState();
         this.placeLandGhost(worldPos);
         break;
-
       case EditorMode.PLAYER:
         this.pushUndoState();
         this.placePlayer(worldPos);
         break;
-
       case EditorMode.DELETE:
         this.pushUndoState();
         this.startDeleteMode(worldPos);
@@ -515,10 +594,75 @@ export class LevelEditor {
       return;
     }
 
+    // --- Resize logic ---
+    if (
+      this.resizing &&
+      this.selectedObject &&
+      this.selectedObject instanceof Platform
+    ) {
+      const mouse = new Vector2(
+        pos.x + this.scrollPosition.x,
+        pos.y + this.scrollPosition.y
+      );
+      const dx = mouse.x - this.resizing.startMouse.x;
+      const dy = mouse.y - this.resizing.startMouse.y;
+      let { x, y, w, h } = this.resizing.startRect;
+      switch (this.resizing.handle) {
+        case "nw":
+          x += dx;
+          y += dy;
+          w -= dx;
+          h -= dy;
+          break;
+        case "n":
+          y += dy;
+          h -= dy;
+          break;
+        case "ne":
+          w += dx;
+          y += dy;
+          h -= dy;
+          break;
+        case "e":
+          w += dx;
+          break;
+        case "se":
+          w += dx;
+          h += dy;
+          break;
+        case "s":
+          h += dy;
+          break;
+        case "sw":
+          x += dx;
+          w -= dx;
+          h += dy;
+          break;
+        case "w":
+          x += dx;
+          w -= dx;
+          break;
+      }
+      // Snap to grid and prevent negative size
+      const minSize = 16;
+      w = Math.max(minSize, Math.round(w / 16) * 16);
+      h = Math.max(minSize, Math.round(h / 16) * 16);
+      x = Math.round(x / 16) * 16;
+      y = Math.round(y / 16) * 16;
+      this.selectedObject.position.x = x;
+      this.selectedObject.position.y = y;
+      this.selectedObject.size.x = w;
+      this.selectedObject.size.y = h;
+      return;
+    }
+
     if (!this.startPosition) return;
 
     // Convert screen position to world position
-    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
 
     switch (this.mode) {
       case EditorMode.PLATFORM:
@@ -548,6 +692,12 @@ export class LevelEditor {
       return;
     }
 
+    // --- End resize if resizing ---
+    if (this.resizing) {
+      this.resizing = null;
+      return;
+    }
+
     if (!this.startPosition) return;
 
     const rect = this.canvas.getBoundingClientRect();
@@ -556,7 +706,10 @@ export class LevelEditor {
     const pos = new Vector2(x, y);
 
     // Convert to world position
-    const worldPos = new Vector2(pos.x + this.scrollPosition.x, pos.y + this.scrollPosition.y);
+    const worldPos = new Vector2(
+      pos.x + this.scrollPosition.x,
+      pos.y + this.scrollPosition.y
+    );
 
     switch (this.mode) {
       case EditorMode.PLATFORM:
@@ -693,8 +846,8 @@ export class LevelEditor {
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
         this.currentPlatform.size.y,
-        this.currentPlatform.color,
-      ),
+        this.currentPlatform.color
+      )
     );
 
     this.currentPlatform = null;
@@ -816,7 +969,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
 
       ctx.strokeStyle = "#FFFFFF";
@@ -824,7 +977,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
     }
 
@@ -835,7 +988,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
 
       ctx.strokeStyle = "#00FFFF"; // Cyan to distinguish from platforms
@@ -843,7 +996,7 @@ export class LevelEditor {
         this.currentPlatform.position.x,
         this.currentPlatform.position.y,
         this.currentPlatform.size.x,
-        this.currentPlatform.size.y,
+        this.currentPlatform.size.y
       );
     }
 
@@ -853,8 +1006,42 @@ export class LevelEditor {
       if (obj.position && obj.size) {
         ctx.strokeStyle = "#FF0000";
         ctx.lineWidth = 2;
-        ctx.strokeRect(obj.position.x - 2, obj.position.y - 2, obj.size.x + 4, obj.size.y + 4);
+        ctx.strokeRect(
+          obj.position.x - 2,
+          obj.position.y - 2,
+          obj.size.x + 4,
+          obj.size.y + 4
+        );
         ctx.lineWidth = 1;
+
+        // Draw resize handles if it's a platform
+        if (this.selectedObject instanceof Platform) {
+          const rect = {
+            x: obj.position.x,
+            y: obj.position.y,
+            w: obj.size.x,
+            h: obj.size.y,
+          };
+          const handles = this.getResizeHandles(rect);
+          ctx.save();
+          for (const handle of handles) {
+            ctx.fillStyle = "#00FF00";
+            ctx.fillRect(
+              handle.x,
+              handle.y,
+              LevelEditor.HANDLE_SIZE,
+              LevelEditor.HANDLE_SIZE
+            );
+            ctx.strokeStyle = "#222";
+            ctx.strokeRect(
+              handle.x,
+              handle.y,
+              LevelEditor.HANDLE_SIZE,
+              LevelEditor.HANDLE_SIZE
+            );
+          }
+          ctx.restore();
+        }
       }
     }
 
@@ -896,7 +1083,7 @@ export class LevelEditor {
     // Generate a level ID
     const levelId = prompt(
       "Enter a level ID (e.g., 'level3'):",
-      `level${this.gameState.levelManager.getLevelIds().length + 1}`,
+      `level${this.gameState.levelManager.getLevelIds().length + 1}`
     );
 
     if (!levelId) return;
@@ -904,13 +1091,17 @@ export class LevelEditor {
     // Generate a level name
     const levelName = prompt(
       "Enter a level name:",
-      `Custom Level ${this.gameState.levelManager.getLevelIds().length + 1}`,
+      `Custom Level ${this.gameState.levelManager.getLevelIds().length + 1}`
     );
 
     if (!levelName) return;
 
     // Create level data from current game state
-    const levelData = LevelManager.createLevelFromGameState(this.gameState, levelId, levelName);
+    const levelData = LevelManager.createLevelFromGameState(
+      this.gameState,
+      levelId,
+      levelName
+    );
     // Set width and height
     levelData.width = this.levelWidth;
     levelData.height = this.levelHeight;
@@ -922,37 +1113,40 @@ export class LevelEditor {
       .map(
         (p) =>
           `  { position: vec2(${this.snap16(p.position.x)}, ${this.snap16(
-            p.position.y,
+            p.position.y
           )}), size: vec2(${this.snap16(p.size.x)}, ${this.snap16(
-            p.size.y,
-          )}), color: "${p.color}" },`,
+            p.size.y
+          )}), color: "${p.color}" },`
       )
       .join("\n");
     const solidBlocks = this.gameState.solidBlocks
       .map(
         (sb) =>
           `  { position: vec2(${this.snap16(sb.position.x)}, ${this.snap16(
-            sb.position.y,
+            sb.position.y
           )}), size: vec2(${this.snap16(sb.size.x)}, ${this.snap16(
-            sb.size.y,
-          )}), color: "${sb.color}" },`,
+            sb.size.y
+          )}), color: "${sb.color}" },`
       )
       .join("\n");
     const candles = (levelData.candles || [])
       .map(
-        (c) => `  { position: vec2(${this.snap16(c.position.x)}, ${this.snap16(c.position.y)}) },`,
+        (c) =>
+          `  { position: vec2(${this.snap16(c.position.x)}, ${this.snap16(
+            c.position.y
+          )}) },`
       )
       .join("\n");
     const enemies = this.gameState.enemies
       .map((e) => {
         const enemyType = e.type === "ghost" ? "ghost" : "landghost";
         return `  { position: vec2(${this.snap16(e.position.x)}, ${this.snap16(
-          e.position.y,
+          e.position.y
         )}), type: "${enemyType}" },`;
       })
       .join("\n");
     const player = `  position: vec2(${this.snap16(
-      levelData.player.position.x,
+      levelData.player.position.x
     )}, ${this.snap16(levelData.player.position.y)})`;
 
     const formattedLevelCode = `{
@@ -1030,7 +1224,11 @@ ${player}
 
   private handleUndoRedoKeys = (e: KeyboardEvent) => {
     const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-    if ((isMac ? e.metaKey : e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+    if (
+      (isMac ? e.metaKey : e.ctrlKey) &&
+      !e.shiftKey &&
+      e.key.toLowerCase() === "z"
+    ) {
       e.preventDefault();
       this.undo();
     } else if (
@@ -1074,7 +1272,7 @@ ${player}
   private updateScrollIndicator(): void {
     if (!this.scrollIndicator) return;
     this.scrollIndicator.textContent = `Scroll: ${Math.round(
-      this.scrollPosition.x,
+      this.scrollPosition.x
     )}, ${Math.round(this.scrollPosition.y)}`;
   }
 
@@ -1145,7 +1343,7 @@ ${player}
       const minY = Math.min(this.currentPlatform.position.y, snappedPos.y);
 
       this.gameState.solidBlocks.push(
-        new SolidBlock(minX, minY, width, height, this.currentPlatform.color),
+        new SolidBlock(minX, minY, width, height, this.currentPlatform.color)
       );
     }
 
