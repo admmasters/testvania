@@ -1,0 +1,141 @@
+# Testavania - 2D Game Engine Project Rules
+
+This is a TypeScript-based 2D game engine project called "Testavania" built with Vite. It features a custom game engine with a built-in level editor.
+
+## Project Structure
+
+### Core Engine (`src/engine/`)
+- `GameObject.ts` - Base class for all game entities with collision, health, and shake effects
+- `GameState.ts` - Main game state manager handling all game objects and systems
+- `game.ts` - Main game loop and initialization
+- `Camera.ts` - Camera system with following and shake effects
+- `Input.ts` - Keyboard input handling system
+- `Vector2.ts` - 2D vector math utility class
+- `ParallaxBackground.ts` - Background rendering system
+
+### Game Objects (`src/objects/`)
+- `player.ts` - Player character with movement, combat, and physics
+- `enemy.ts` - Base enemy class with AI and combat
+- `Ghost.ts`, `LandGhost.ts` - Specific enemy implementations
+- `platform.ts` - Collidable platform objects
+- `solidBlock.ts` - Solid wall/block objects
+- `candle.ts` - Interactive candle objects
+- `projectile.ts` - Projectile system for combat
+- `hitSpark.ts` - Visual effect for hit impacts
+
+### Level System (`src/levels/`)
+- `LevelData.ts` - TypeScript interfaces defining level structure
+- `Level.ts` - Level loading and management class
+- `LevelManager.ts` - Handles multiple levels and switching
+- `levels.ts` - Predefined level data array
+- `LevelEditor.ts` - Visual level editor main class
+- `LevelEditor/` - Modular level editor components
+
+## Key Conventions
+
+### Code Style
+- Uses Biome for formatting and linting
+- 2-space indentation, double quotes, semicolons required
+- Line width limit of 100 characters
+- TypeScript strict mode enabled
+
+### Architecture Patterns
+- Entity-Component pattern with GameObject base class
+- All game objects extend GameObject and override update()/render()
+- GameState manages all game systems and object collections
+- Modular level editor with separate responsibility classes
+
+### Naming Conventions
+- Classes use PascalCase (e.g., `GameObject`, `LevelEditor`)
+- Files match class names (e.g., `GameObject.ts`)
+- Interfaces use PascalCase with descriptive suffixes (e.g., `LevelData`, `PlatformData`)
+- Constants and enums use PascalCase (e.g., `EditorMode`)
+
+### Vector2 Usage
+- All positions and sizes use Vector2 class
+- Helper function `vec2(x, y)` for creating Vector2 instances
+- Consistent coordinate system throughout
+
+## Development Guidelines
+
+### Adding New Game Objects
+1. Extend GameObject base class
+2. Override update(deltaTime, gameState) and render(ctx) methods
+3. Add to appropriate GameState collection
+4. Handle collision detection if needed
+5. Add to LevelData interface if it's a placeable object
+
+### Level Creation
+- Use the built-in level editor (press Level Editor button)
+- Or manually edit `src/levels/levels.ts`
+- Follow existing LevelData interface structure
+- Each level needs unique id, dimensions, and object arrays
+
+### Editor Development
+- Level editor is modular with separate classes for different responsibilities
+- EditorTypes.ts defines all editor-specific interfaces
+- Each editor module handles specific functionality (UI, mouse, rendering, etc.)
+
+### Physics and Collision
+- GameObject provides basic collision detection via getBounds()
+- Physics handled in individual object update() methods
+- GameState coordinates collision responses between objects
+
+### Rendering Order
+1. Background (parallax)
+2. Platforms and solid blocks
+3. Game objects (player, enemies, candles)
+4. Hit sparks and effects
+5. UI elements
+
+## Common Patterns
+
+### Game Object Lifecycle
+```typescript
+class MyObject extends GameObject {
+  update(deltaTime: number, gameState: GameState): void {
+    // Update logic, physics, AI
+    this.updateShake(deltaTime); // Handle shake effects
+  }
+  
+  render(ctx: CanvasRenderingContext2D): void {
+    const pos = this.getRenderPosition(); // Includes shake offset
+    // Render at pos
+  }
+}
+```
+
+### Level Data Structure
+```typescript
+{
+  id: "unique-id",
+  name: "Display Name", 
+  width: 1600, height: 600,
+  background: { color: "#2C1810" },
+  platforms: [{ position: vec2(x, y), size: vec2(w, h), color: "#654321" }],
+  solidBlocks: [], candles: [], enemies: [],
+  player: { position: vec2(x, y) }
+}
+```
+
+## File Organization
+- Keep related functionality in same directory
+- Use barrel exports where appropriate
+- Separate interfaces from implementations
+- Group editor components in LevelEditor/ subdirectory
+
+## Performance Considerations
+- Objects marked inactive are filtered out each frame
+- Hit pause system for combat feedback
+- Camera bounds clamping for large levels
+- Efficient collision detection using bounding boxes
+
+## Build and Development
+- `npm run dev` - Start development server
+- `npm run build` - Build for production  
+- `npm run typecheck` - Type checking only
+- `npm run format` - Format with Biome
+- `npm run lint` - Lint with Biome
+- `npm run check` - Format and lint together
+
+When working on this project, focus on maintaining the existing architecture patterns and code organization. The level editor is a key feature, so preserve its modular structure when making changes. Run npm typecheck after each change we make

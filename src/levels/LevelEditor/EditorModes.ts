@@ -1,0 +1,10 @@
+export enum EditorMode {
+  SELECT = "SELECT",
+  PLATFORM = "PLATFORM",
+  SOLID_BLOCK = "SOLID_BLOCK",
+  CANDLE = "CANDLE",
+  GHOST = "GHOST",
+  LANDGHOST = "LANDGHOST",
+  PLAYER = "PLAYER",
+  DELETE = "DELETE",
+}
