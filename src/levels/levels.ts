@@ -65,4 +65,4 @@ export const levels: LevelData[] = [
       position: vec2(100, 330),
     },
   },
-
+];
