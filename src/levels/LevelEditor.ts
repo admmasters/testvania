@@ -582,8 +582,7 @@ export class LevelEditor {
       this.scrollPosition.y += deltaY;
 
       // Keep scroll position positive
-      this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
-      this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+      this.clampScrollPosition();
 
       // Sync camera
       this.gameState.camera.position.x = this.scrollPosition.x;
@@ -838,6 +837,15 @@ export class LevelEditor {
 
     // Update size one last time
     this.updatePlatformSize(pos);
+
+    // Prevent 0x0 platforms
+    if (
+      this.currentPlatform.size.x === 0 ||
+      this.currentPlatform.size.y === 0
+    ) {
+      this.currentPlatform = null;
+      return;
+    }
 
     // Add platform to game state
     this.gameState.platforms.push(
@@ -1285,8 +1293,7 @@ ${player}
     } else {
       this.scrollPosition.y += (delta > 0 ? 1 : -1) * scrollSpeed;
     }
-    this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
-    this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+    this.clampScrollPosition();
     // Sync camera
     this.gameState.camera.position.x = this.scrollPosition.x;
     this.gameState.camera.position.y = this.scrollPosition.y;
@@ -1315,13 +1322,25 @@ ${player}
       default:
         break;
     }
-    this.scrollPosition.x = Math.max(0, this.scrollPosition.x);
-    this.scrollPosition.y = Math.max(0, this.scrollPosition.y);
+    this.clampScrollPosition();
     // Sync camera
     this.gameState.camera.position.x = this.scrollPosition.x;
     this.gameState.camera.position.y = this.scrollPosition.y;
     this.updateScrollIndicator();
   };
+
+  // Clamp scroll position so it doesn't go outside the level bounds
+  private clampScrollPosition() {
+    // The visible area is the canvas size, so don't allow scrolling past the right/bottom edge
+    const maxX = Math.max(0, this.levelWidth - this.canvas.width);
+    const maxY = Math.max(0, this.levelHeight - this.canvas.height);
+    this.scrollPosition.x = Math.max(0, Math.min(this.scrollPosition.x, maxX));
+    this.scrollPosition.y = Math.max(0, Math.min(this.scrollPosition.y, maxY));
+    // Sync camera
+    this.gameState.camera.position.x = this.scrollPosition.x;
+    this.gameState.camera.position.y = this.scrollPosition.y;
+    this.updateScrollIndicator();
+  }
 
   private startSolidBlockMode(pos: Vector2): void {
     this.currentPlatform = {
@@ -1337,6 +1356,12 @@ ${player}
     const snappedPos = this.snapVec2(pos);
     const width = Math.abs(snappedPos.x - this.currentPlatform.position.x);
     const height = Math.abs(snappedPos.y - this.currentPlatform.position.y);
+
+    // Prevent 0x0 solid blocks
+    if (width === 0 || height === 0) {
+      this.currentPlatform = null;
+      return;
+    }
 
     if (width > 0 && height > 0) {
       const minX = Math.min(this.currentPlatform.position.x, snappedPos.x);
