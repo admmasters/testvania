@@ -1,5 +1,5 @@
 import { Vector2 } from "@/engine/Vector2";
-import type { ResizeHandle, ResizeState } from "./EditorTypes";
+import type { EditorPlatform, ResizeHandle, ResizeState } from "./EditorTypes";
 
 export class EditorUtils {
   private static HANDLE_SIZE = 8;
@@ -37,7 +37,7 @@ export class EditorUtils {
     );
   }
 
-  handleResize(resizing: ResizeState, selectedObject: any, mouse: Vector2): void {
+  handleResize(resizing: ResizeState, selectedObject: EditorPlatform, mouse: Vector2): void {
     const dx = mouse.x - resizing.startMouse.x;
     const dy = mouse.y - resizing.startMouse.y;
     let { x, y, w, h } = resizing.startRect;
@@ -92,12 +92,13 @@ export class EditorUtils {
     selectedObject.size.y = h;
   }
 
-  clampScrollPosition(
-    scrollPosition: Vector2,
-    canvas: HTMLCanvasElement,
-    levelWidth: number = 800,
-    levelHeight: number = 600,
-  ): void {
+  clampScrollPosition(args: {
+    scrollPosition: Vector2;
+    canvas: HTMLCanvasElement;
+    levelWidth?: number;
+    levelHeight?: number;
+  }): void {
+    const { scrollPosition, canvas, levelWidth = 800, levelHeight = 600 } = args;
     // The visible area is the canvas size, so don't allow scrolling past the right/bottom edge
     const maxX = Math.max(0, levelWidth - canvas.width);
     const maxY = Math.max(0, levelHeight - canvas.height);
@@ -105,11 +106,12 @@ export class EditorUtils {
     scrollPosition.y = Math.max(0, Math.min(scrollPosition.y, maxY));
   }
 
-  drawGrid(
-    ctx: CanvasRenderingContext2D,
-    scrollPosition: Vector2,
-    canvas: HTMLCanvasElement,
-  ): void {
+  drawGrid(args: {
+    ctx: CanvasRenderingContext2D;
+    scrollPosition: Vector2;
+    canvas: HTMLCanvasElement;
+  }): void {
+    const { ctx, scrollPosition, canvas } = args;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
     ctx.lineWidth = 0.5;
 

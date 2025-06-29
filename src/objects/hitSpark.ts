@@ -1,5 +1,5 @@
 import { GameObject } from "../engine/GameObject";
-import { GameState } from "../engine/GameState";
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2";
 
 export class HitSpark extends GameObject {
@@ -17,7 +17,7 @@ export class HitSpark extends GameObject {
 
   constructor(x: number, y: number) {
     // Use a small invisible GameObject as the container
-    super(x, y, 1, 1);
+    super({ x, y, width: 1, height: 1 });
 
     this.maxLifeTime = 0.5; // Effect lasts for 0.5 seconds
     this.lifeTime = this.maxLifeTime;
@@ -70,7 +70,7 @@ export class HitSpark extends GameObject {
     }
 
     // Update particles
-    for (let particle of this.particles) {
+    for (const particle of this.particles) {
       // Update position
       particle.position.x += particle.velocity.x * deltaTime;
       particle.position.y += particle.velocity.y * deltaTime;
@@ -116,7 +116,7 @@ export class HitSpark extends GameObject {
     }
 
     // Draw each particle
-    for (let particle of this.particles) {
+    for (const particle of this.particles) {
       if (particle.lifeTime <= 0) continue;
 
       ctx.fillStyle = particle.color;

@@ -38,7 +38,7 @@ export class EditorRenderer {
     }
 
     // Draw grid for alignment
-    this.utils.drawGrid(ctx, scrollPosition, this.canvas);
+    this.utils.drawGrid({ ctx, scrollPosition, canvas: this.canvas });
 
     ctx.restore();
   }

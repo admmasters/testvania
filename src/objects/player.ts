@@ -3,6 +3,11 @@ import type { GameState } from "../engine/GameState";
 import type { Platform } from "./platform";
 import type { SolidBlock } from "./solidBlock";
 
+interface PlayerInput {
+  isKeyDown(key: string): boolean;
+  isKeyPressed(key: string): boolean;
+}
+
 export class Player extends GameObject {
   speed: number;
   jumpPower: number;
@@ -21,7 +26,7 @@ export class Player extends GameObject {
   coyoteTimer: number;
 
   constructor(x: number, y: number) {
-    super(x, y, 32, 48);
+    super({ x, y, width: 32, height: 48 });
     this.health = 16;
     this.maxHealth = 16;
     this.speed = 220;
@@ -48,7 +53,7 @@ export class Player extends GameObject {
     this.handleCollisions(gameState);
   }
 
-  handleInput(input: any, _deltaTime: number, gameState?: GameState): void {
+  handleInput(input: PlayerInput, _deltaTime: number, gameState?: GameState): void {
     // Movement
     if (input.isKeyDown("ArrowLeft")) {
       this.velocity.x = -this.speed;
@@ -61,10 +66,7 @@ export class Player extends GameObject {
     }
 
     // Jump with improved feel - variable height based on how long the jump button is pressed
-    if (
-      input.isKeyPressed("Space") &&
-      (this.grounded || this.coyoteTimer > 0)
-    ) {
+    if (input.isKeyPressed("Space") && (this.grounded || this.coyoteTimer > 0)) {
       this.velocity.y = -this.jumpPower;
       this.grounded = false;
       this.coyoteTimer = 0; // Used up coyote time
@@ -92,7 +94,7 @@ export class Player extends GameObject {
     let canMoveHorizontally = true;
 
     // Do NOT check horizontal collisions with platforms (allow moving through them)
-    
+
     // Check horizontal collisions with solid blocks only
     for (const solidBlock of gameState.solidBlocks) {
       if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
@@ -124,10 +126,7 @@ export class Player extends GameObject {
         const playerBottom = this.position.y + this.size.y;
         const nextPlayerBottom = nextY + this.size.y;
 
-        if (
-          playerBottom <= platform.position.y &&
-          nextPlayerBottom >= platform.position.y
-        ) {
+        if (playerBottom <= platform.position.y && nextPlayerBottom >= platform.position.y) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > platform.position.x &&
@@ -151,10 +150,7 @@ export class Player extends GameObject {
         const playerBottom = this.position.y + this.size.y;
         const nextPlayerBottom = nextY + this.size.y;
 
-        if (
-          playerBottom <= solidBlock.position.y &&
-          nextPlayerBottom >= solidBlock.position.y
-        ) {
+        if (playerBottom <= solidBlock.position.y && nextPlayerBottom >= solidBlock.position.y) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > solidBlock.position.x &&
@@ -174,10 +170,7 @@ export class Player extends GameObject {
         const nextPlayerTop = nextY;
         const solidBlockBottom = solidBlock.position.y + solidBlock.size.y;
 
-        if (
-          playerTop >= solidBlockBottom &&
-          nextPlayerTop <= solidBlockBottom
-        ) {
+        if (playerTop >= solidBlockBottom && nextPlayerTop <= solidBlockBottom) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > solidBlock.position.x &&
@@ -206,16 +199,13 @@ export class Player extends GameObject {
     }
 
     // Level boundaries
-    const levelData = gameState.levelManager.getLevelData(
-      gameState.currentLevelId ?? ""
-    );
+    const levelData = gameState.levelManager.getLevelData(gameState.currentLevelId ?? "");
     const levelWidth = levelData?.width || 800;
     const levelHeight = levelData?.height || 600;
 
     // Apply horizontal boundaries
     if (this.position.x < 0) this.position.x = 0;
-    if (this.position.x + this.size.x > levelWidth)
-      this.position.x = levelWidth - this.size.x;
+    if (this.position.x + this.size.x > levelWidth) this.position.x = levelWidth - this.size.x;
 
     // Apply vertical boundary at the bottom of the level
     if (this.position.y + this.size.y > levelHeight) {
@@ -225,7 +215,11 @@ export class Player extends GameObject {
     }
   }
 
-  private wouldCollideHorizontally(nextX: number, currentY: number, obstacle: Platform | SolidBlock): boolean {
+  private wouldCollideHorizontally(
+    nextX: number,
+    currentY: number,
+    obstacle: Platform | SolidBlock,
+  ): boolean {
     // Check if the player would overlap with the obstacle horizontally
     const playerLeft = nextX;
     const playerRight = nextX + this.size.x;
@@ -252,7 +246,7 @@ export class Player extends GameObject {
     // Check solid blocks only
     for (const solidBlock of solidBlocks) {
       const solidBlockBottom = solidBlock.position.y + solidBlock.size.y;
-      
+
       // Check if player would horizontally overlap with this solid block
       if (
         this.position.x + this.size.x > solidBlock.position.x &&
@@ -272,8 +266,8 @@ export class Player extends GameObject {
     if (this.attacking) {
       this.attackTimer -= deltaTime;
       // Update animation phase (0 = start, 1 = end)
-      this.attackAnimationPhase = 1 - (this.attackTimer / this.attackDuration);
-      
+      this.attackAnimationPhase = 1 - this.attackTimer / this.attackDuration;
+
       if (this.attackTimer <= 0) {
         this.attacking = false;
         this.attackAnimationPhase = 0;
@@ -329,10 +323,10 @@ export class Player extends GameObject {
   }
 
   // Enhanced attack method that could be called from GameState for screen shake
-  performAttack(gameState?: any): void {
+  performAttack(gameState?: GameState): void {
     this.attack();
     // Add ultra-intense screen shake for razor-sharp attacks
-    if (gameState && gameState.camera) {
+    if (gameState?.camera) {
       gameState.camera.shake(0.04, 4.0);
     }
   }
@@ -350,10 +344,10 @@ export class Player extends GameObject {
     const centerY = this.position.y + this.size.y / 2;
     const direction = this.facingRight ? 1 : -1;
     const slashLength = 100; // Increased from 60 for longer horizontal reach
-    
-    const startX = centerX - (direction * slashLength * 0.1); // Less behind character
-    const endX = centerX + (direction * slashLength * 0.9); // More in front
-    
+
+    const startX = centerX - direction * slashLength * 0.1; // Less behind character
+    const endX = centerX + direction * slashLength * 0.9; // More in front
+
     return {
       left: Math.min(startX, endX),
       right: Math.max(startX, endX),
@@ -391,42 +385,42 @@ export class Player extends GameObject {
       const centerX = renderPos.x + this.size.x / 2;
       const centerY = renderPos.y + this.size.y / 2;
       const direction = this.facingRight ? 1 : -1;
-      
+
       // Multiple simultaneous slash lines for instant impact
       const slashCount = 3; // Reduced for thinner appearance
       const baseLength = 60; // Slightly shorter visual reach
-      
+
       // Intense white flash effect at the start - more dramatic with lighting
       if (progress < 0.3) {
-        const flashAlpha = 1.0 - (progress / 0.5);
-        
+        const flashAlpha = 1.0 - progress / 0.5;
+
         // Outer light bloom - smaller and bright blue
         const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35);
         gradient.addColorStop(0, `rgba(220, 240, 255, ${flashAlpha * 0.8})`);
         gradient.addColorStop(0.3, `rgba(180, 220, 255, ${flashAlpha * 0.6})`);
         gradient.addColorStop(0.6, `rgba(140, 190, 255, ${flashAlpha * 0.3})`);
         gradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(centerX - 35, centerY - 35, 70, 70);
-        
+
         // Core bright flash - smaller light blue
         ctx.globalAlpha = flashAlpha * 0.8;
         ctx.fillStyle = "#DDEEff";
         ctx.fillRect(centerX - 20, centerY - 20, 40, 40);
         ctx.globalAlpha = 1.0;
       }
-      
-              // Draw multiple horizontal slash lines instantly - razor sharp
-        for (let i = 0; i < slashCount; i++) {
-          const yOffset = (i - 1) * 2; // Thinner vertical spread for sleeker appearance
-        
-        const length = baseLength + (i * 8) + (progress * 40);
-        const startX = centerX - (direction * length * 0.1); // Much less behind the character
+
+      // Draw multiple horizontal slash lines instantly - razor sharp
+      for (let i = 0; i < slashCount; i++) {
+        const yOffset = (i - 1) * 2; // Thinner vertical spread for sleeker appearance
+
+        const length = baseLength + i * 8 + progress * 40;
+        const startX = centerX - direction * length * 0.1; // Much less behind the character
         const startY = centerY + yOffset;
-        const endX = centerX + (direction * length * 0.9); // More in front
+        const endX = centerX + direction * length * 0.9; // More in front
         const endY = centerY + yOffset;
-        
+
         // Outer lighting bloom - thinner and more elegant
         ctx.strokeStyle = "#66BBDD";
         ctx.lineWidth = 4; // Reduced from 6
@@ -438,7 +432,7 @@ export class Player extends GameObject {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
-        
+
         // Mid glow layer - thinner
         ctx.strokeStyle = "#88CCEE";
         ctx.lineWidth = 2; // Reduced from 3
@@ -449,7 +443,7 @@ export class Player extends GameObject {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
-        
+
         // Main slash - thinner bright light blue
         ctx.strokeStyle = "#BBDDFF";
         ctx.lineWidth = 1; // Reduced from 1.5
@@ -461,7 +455,7 @@ export class Player extends GameObject {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
-        
+
         // Ultra-sharp inner core - very thin
         ctx.strokeStyle = "#DDEEFF";
         ctx.lineWidth = 0.3; // Reduced from 0.5
@@ -471,12 +465,12 @@ export class Player extends GameObject {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         ctx.stroke();
-        
+
         // Reset shadow for other elements
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;
       }
-      
+
       // Sharp speed lines effect - thinner and more refined
       ctx.globalAlpha = 0.6; // More subtle
       ctx.strokeStyle = "#CCDDFF";
@@ -484,15 +478,16 @@ export class Player extends GameObject {
       ctx.lineCap = "butt";
       ctx.shadowColor = "#BBDDFF";
       ctx.shadowBlur = 1; // Less blur
-      for (let i = 0; i < 4; i++) { // Fewer speed lines for cleaner look
-        const lineLength = 30 + (i * 5); // Slightly shorter
+      for (let i = 0; i < 4; i++) {
+        // Fewer speed lines for cleaner look
+        const lineLength = 30 + i * 5; // Slightly shorter
         const yOffset = (i - 1.5) * 3; // Tighter vertical spread
-        
-        const lineStartX = centerX - (direction * lineLength * 0.2); // Less behind
+
+        const lineStartX = centerX - direction * lineLength * 0.2; // Less behind
         const lineStartY = centerY + yOffset;
-        const lineEndX = centerX + (direction * lineLength * 0.8); // More forward
+        const lineEndX = centerX + direction * lineLength * 0.8; // More forward
         const lineEndY = centerY + yOffset;
-        
+
         ctx.beginPath();
         ctx.moveTo(lineStartX, lineStartY);
         ctx.lineTo(lineEndX, lineEndY);
@@ -501,45 +496,47 @@ export class Player extends GameObject {
       ctx.globalAlpha = 1.0;
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
-      
+
       // Explosive sparkle burst at sword tip - with dramatic lighting
-      if (progress > 0.15) { // Start after initial flash for better pacing
-        const tipX = centerX + (direction * (baseLength + 40) * 0.8); // More forward
+      if (progress > 0.15) {
+        // Start after initial flash for better pacing
+        const tipX = centerX + direction * (baseLength + 40) * 0.8; // More forward
         const tipY = centerY;
-        
+
         // Outer light bloom around tip - smaller blue-white
         const sparkGradient = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 18);
         sparkGradient.addColorStop(0, "rgba(240, 250, 255, 0.8)");
         sparkGradient.addColorStop(0.4, "rgba(200, 230, 255, 0.6)");
         sparkGradient.addColorStop(0.7, "rgba(160, 200, 255, 0.3)");
         sparkGradient.addColorStop(1, "rgba(120, 170, 255, 0)");
-        
+
         ctx.fillStyle = sparkGradient;
         ctx.fillRect(tipX - 18, tipY - 18, 36, 36);
-        
+
         // Small spark explosion with blue glow
         ctx.shadowColor = "#AADDFF";
         ctx.shadowBlur = 4;
         ctx.fillStyle = "#CCDDFF";
-        for (let i = 0; i < 8; i++) { // Fewer sparks
+        for (let i = 0; i < 8; i++) {
+          // Fewer sparks
           const sparkAngle = (i / 8) * Math.PI * 2;
           const sparkDist = 4 + Math.random() * 6;
           const sparkX = tipX + Math.cos(sparkAngle) * sparkDist;
           const sparkY = tipY + Math.sin(sparkAngle) * sparkDist;
           ctx.fillRect(sparkX - 1, sparkY - 1, 2, 2);
         }
-        
+
         // Small central burst with blue glow
         ctx.shadowColor = "#DDEEFF";
         ctx.shadowBlur = 6;
         ctx.fillStyle = "#EEFFFF";
         ctx.fillRect(tipX - 2, tipY - 2, 4, 4);
-        
+
         // Small bright core
         ctx.shadowBlur = 3;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(tipX - 1, tipY - 1, 2, 2);
-        
+
         // Reset shadow
         ctx.shadowColor = "transparent";
         ctx.shadowBlur = 0;

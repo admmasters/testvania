@@ -6,8 +6,15 @@ export class SolidBlock extends GameObject {
   highlightColor: string;
   borderColor: string;
 
-  constructor(x: number, y: number, width: number, height: number, color = "#4A4A4A") {
-    super(x, y, width, height);
+  constructor(args: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color?: string;
+  }) {
+    const { x, y, width, height, color = "#4A4A4A" } = args;
+    super({ x, y, width, height });
     this.color = color;
     this.shadowColor = this.adjustColor(color, -30);
     this.highlightColor = this.adjustColor(color, 40);

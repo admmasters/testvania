@@ -11,8 +11,6 @@ body {
 
 canvas {
   border: 2px solid #444;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
 

@@ -103,13 +103,13 @@ export class EditorObjectManager {
 
     // Add platform to game state
     this.gameState.platforms.push(
-      new Platform(
-        currentPlatform.position.x,
-        currentPlatform.position.y,
-        currentPlatform.size.x,
-        currentPlatform.size.y,
-        currentPlatform.color,
-      ),
+      new Platform({
+        x: currentPlatform.position.x,
+        y: currentPlatform.position.y,
+        width: currentPlatform.size.x,
+        height: currentPlatform.size.y,
+        color: currentPlatform.color,
+      }),
     );
   }
 
@@ -130,7 +130,13 @@ export class EditorObjectManager {
       const minY = Math.min(currentPlatform.position.y, snappedPos.y);
 
       this.gameState.solidBlocks.push(
-        new SolidBlock(minX, minY, width, height, currentPlatform.color),
+        new SolidBlock({
+          x: minX,
+          y: minY,
+          width: width,
+          height: height,
+          color: currentPlatform.color,
+        }),
       );
     }
   }
@@ -219,12 +225,17 @@ export class EditorObjectManager {
     return obj instanceof Platform;
   }
 
-  private isPointInObject(pos: Vector2, obj: any): boolean {
-    return (
-      pos.x >= obj.position.x &&
-      pos.x <= obj.position.x + obj.size.x &&
-      pos.y >= obj.position.y &&
-      pos.y <= obj.position.y + obj.size.y
-    );
+  private isPointInObject(pos: Vector2, obj: EditorObject | null): boolean {
+    if (!obj) return false;
+    // Check if obj has position and size properties
+    if (typeof obj === "object" && "position" in obj && "size" in obj && obj.position && obj.size) {
+      return (
+        pos.x >= obj.position.x &&
+        pos.x <= obj.position.x + obj.size.x &&
+        pos.y >= obj.position.y &&
+        pos.y <= obj.position.y + obj.size.y
+      );
+    }
+    return false;
   }
 }

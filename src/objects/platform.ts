@@ -5,8 +5,15 @@ export class Platform extends GameObject {
   shadowColor: string;
   highlightColor: string;
 
-  constructor(x: number, y: number, width: number, height: number, color = "#654321") {
-    super(x, y, width, height);
+  constructor(args: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color?: string;
+  }) {
+    const { x, y, width, height, color = "#654321" } = args;
+    super({ x, y, width, height });
     this.color = color;
     this.shadowColor = this.adjustColor(color, -20);
     this.highlightColor = this.adjustColor(color, 20);

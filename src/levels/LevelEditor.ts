@@ -10,6 +10,10 @@ import type { EditorObject, EditorPlatform, ResizeState } from "./LevelEditor/Ed
 import { EditorUI } from "./LevelEditor/EditorUI";
 import { EditorUtils } from "./LevelEditor/EditorUtils";
 
+interface HasLevelData {
+  levelData?: { width?: number; height?: number };
+}
+
 export class LevelEditor {
   private gameState: GameState;
   private canvas: HTMLCanvasElement;
@@ -45,7 +49,11 @@ export class LevelEditor {
     this.stateManager = new EditorStateManager(gameState);
     this.renderer = new EditorRenderer(canvas, this.utils);
     this.levelSaver = new EditorLevelSaver(gameState, this.utils);
-    this.mouseHandler = new EditorMouseHandler(canvas, this.objectManager, this.utils);
+    this.mouseHandler = new EditorMouseHandler({
+      canvas,
+      objectManager: this.objectManager,
+      utils: this.utils,
+    });
 
     // Initialize UI with callbacks
     this.ui = new EditorUI({
@@ -71,9 +79,12 @@ export class LevelEditor {
     this.isActive = true;
 
     // Initialize level size from current level if available
-    if ((this.gameState as any).levelData) {
-      this.levelWidth = (this.gameState as any).levelData.width || 800;
-      this.levelHeight = (this.gameState as any).levelData.height || 600;
+    if ("levelData" in this.gameState) {
+      const levelData = (this.gameState as HasLevelData).levelData;
+      if (levelData) {
+        this.levelWidth = levelData.width ?? 800;
+        this.levelHeight = levelData.height ?? 600;
+      }
     }
 
     // Synchronize editor scroll position with game camera
@@ -153,73 +164,73 @@ export class LevelEditor {
   }
 
   private handleMouseDown = (e: MouseEvent) => {
-    this.mouseHandler.handleMouseDown(
+    this.mouseHandler.handleMouseDown({
       e,
-      this.mode,
-      this.selectedObject,
-      this.scrollPosition,
-      (pos: Vector2 | null) => {
+      mode: this.mode,
+      selectedObject: this.selectedObject,
+      scrollPosition: this.scrollPosition,
+      onStartPosition: (pos: Vector2 | null) => {
         this.startPosition = pos;
       },
-      (platform: EditorPlatform | null) => {
+      onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
       },
-      (resizing: ResizeState | null) => {
+      onResizing: (resizing: ResizeState | null) => {
         this.resizing = resizing;
       },
-      () => {
+      onScrolling: () => {
         /* handled internally */
       },
-      (obj: EditorObject) => {
+      onSelectedObject: (obj: EditorObject) => {
         this.selectedObject = obj;
       },
-      () => this.pushUndoState(),
-    );
+      onPushUndoState: () => this.pushUndoState(),
+    });
   };
 
   private handleMouseMove = (e: MouseEvent) => {
-    this.mouseHandler.handleMouseMove(
+    this.mouseHandler.handleMouseMove({
       e,
-      this.mode,
-      this.selectedObject,
-      this.currentPlatform,
-      this.resizing,
-      this.startPosition,
-      this.scrollPosition,
-      () => this.syncCameraWithScroll(),
-      () => {
+      mode: this.mode,
+      selectedObject: this.selectedObject,
+      currentPlatform: this.currentPlatform,
+      resizing: this.resizing,
+      startPosition: this.startPosition,
+      scrollPosition: this.scrollPosition,
+      onScrollPosition: () => this.syncCameraWithScroll(),
+      onScrolling: () => {
         /* handled internally */
       },
-      (platform: EditorPlatform | null) => {
+      onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
       },
-      () => this.updateScrollIndicator(),
-    );
+      onUpdateScrollIndicator: () => this.updateScrollIndicator(),
+    });
   };
 
   private handleMouseUp = (e: MouseEvent) => {
-    this.mouseHandler.handleMouseUp(
+    this.mouseHandler.handleMouseUp({
       e,
-      this.mode,
-      this.selectedObject,
-      this.currentPlatform,
-      this.resizing,
-      this.startPosition,
-      this.scrollPosition,
-      () => {
+      mode: this.mode,
+      selectedObject: this.selectedObject,
+      currentPlatform: this.currentPlatform,
+      resizing: this.resizing,
+      startPosition: this.startPosition,
+      scrollPosition: this.scrollPosition,
+      onScrolling: () => {
         /* handled internally */
       },
-      (resizing: ResizeState | null) => {
+      onResizing: (resizing: ResizeState | null) => {
         this.resizing = resizing;
       },
-      (pos: Vector2 | null) => {
+      onStartPosition: (pos: Vector2 | null) => {
         this.startPosition = pos;
       },
-      (platform: EditorPlatform | null) => {
+      onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
       },
-      () => this.pushUndoState(),
-    );
+      onPushUndoState: () => this.pushUndoState(),
+    });
   };
 
   private handleWheel = (e: WheelEvent): void => {
@@ -231,12 +242,12 @@ export class LevelEditor {
     } else {
       this.scrollPosition.y += (delta > 0 ? 1 : -1) * scrollSpeed;
     }
-    this.utils.clampScrollPosition(
-      this.scrollPosition,
-      this.canvas,
-      this.levelWidth,
-      this.levelHeight,
-    );
+    this.utils.clampScrollPosition({
+      scrollPosition: this.scrollPosition,
+      canvas: this.canvas,
+      levelWidth: this.levelWidth,
+      levelHeight: this.levelHeight,
+    });
     this.syncCameraWithScroll();
     this.updateScrollIndicator();
   };
@@ -263,12 +274,12 @@ export class LevelEditor {
       default:
         return;
     }
-    this.utils.clampScrollPosition(
-      this.scrollPosition,
-      this.canvas,
-      this.levelWidth,
-      this.levelHeight,
-    );
+    this.utils.clampScrollPosition({
+      scrollPosition: this.scrollPosition,
+      canvas: this.canvas,
+      levelWidth: this.levelWidth,
+      levelHeight: this.levelHeight,
+    });
     this.syncCameraWithScroll();
     this.updateScrollIndicator();
   };

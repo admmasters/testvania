@@ -1,6 +1,6 @@
-import { Enemy } from "./enemy";
 import type { GameState } from "../engine/GameState";
-import { SolidBlock } from "./solidBlock";
+import { Enemy } from "./enemy";
+import type { SolidBlock } from "./solidBlock";
 
 export class Ghost extends Enemy {
   floatTimer: number;
@@ -8,7 +8,7 @@ export class Ghost extends Enemy {
   baseY: number;
 
   constructor(x: number, y: number) {
-    super(x, y, "ghost");
+    super({ x, y, type: "ghost" });
     this.speed = 40;
     this.floatTimer = Math.random() * Math.PI * 2;
     this.floatAmplitude = 10;
@@ -56,11 +56,7 @@ export class Ghost extends Enemy {
   handlePlayerAttack(gameState: GameState): void {
     const player = gameState.player;
     const attackBounds = player.getAttackBounds();
-    if (
-      attackBounds &&
-      this.checkCollisionWithBounds(attackBounds) &&
-      !this.isHit
-    ) {
+    if (attackBounds && this.checkCollisionWithBounds(attackBounds) && !this.isHit) {
       this.takeDamage(1);
       this.isHit = true;
       this.hitTimer = this.hitDuration;
@@ -92,10 +88,10 @@ export class Ghost extends Enemy {
 
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
-    
+
     // Get render position with shake offset
     const renderPos = this.getRenderPosition();
-    
+
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = this.isHit ? "#FFFFFF" : this.getColor();
     ctx.beginPath();
@@ -106,15 +102,15 @@ export class Ghost extends Enemy {
       this.size.y / 2,
       0,
       0,
-      Math.PI * 2
+      Math.PI * 2,
     );
     ctx.fill();
-    
+
     if (!this.isHit) {
       ctx.globalAlpha = 1.0;
       this.renderDetails(ctx);
     }
-    
+
     ctx.restore();
   }
 
@@ -136,4 +132,4 @@ export class Ghost extends Enemy {
 
     return horizontalOverlap && verticalOverlap;
   }
-} 
+}

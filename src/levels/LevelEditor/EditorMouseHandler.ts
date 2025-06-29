@@ -4,6 +4,48 @@ import type { EditorObjectManager } from "./EditorObjectManager";
 import type { EditorObject, EditorPlatform, ResizeState } from "./EditorTypes";
 import type { EditorUtils } from "./EditorUtils";
 
+interface HandleMouseDownArgs {
+  e: MouseEvent;
+  mode: EditorMode;
+  selectedObject: EditorObject;
+  scrollPosition: Vector2;
+  onStartPosition: (pos: Vector2 | null) => void;
+  onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onResizing: (resizing: ResizeState | null) => void;
+  onScrolling: () => void;
+  onSelectedObject: (obj: EditorObject) => void;
+  onPushUndoState: () => void;
+}
+
+interface HandleMouseMoveArgs {
+  e: MouseEvent;
+  mode: EditorMode;
+  selectedObject: EditorObject;
+  currentPlatform: EditorPlatform | null;
+  resizing: ResizeState | null;
+  startPosition: Vector2 | null;
+  scrollPosition: Vector2;
+  onScrollPosition: () => void;
+  onScrolling: () => void;
+  onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onUpdateScrollIndicator: () => void;
+}
+
+interface HandleMouseUpArgs {
+  e: MouseEvent;
+  mode: EditorMode;
+  selectedObject: EditorObject;
+  currentPlatform: EditorPlatform | null;
+  resizing: ResizeState | null;
+  startPosition: Vector2 | null;
+  scrollPosition: Vector2;
+  onScrolling: () => void;
+  onResizing: (resizing: ResizeState | null) => void;
+  onStartPosition: (pos: Vector2 | null) => void;
+  onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onPushUndoState: () => void;
+}
+
 export class EditorMouseHandler {
   private canvas: HTMLCanvasElement;
   private objectManager: EditorObjectManager;
@@ -13,24 +55,29 @@ export class EditorMouseHandler {
   private scrollStart: Vector2 | null = null;
   private dragButton: number = 1; // Middle mouse button
 
-  constructor(canvas: HTMLCanvasElement, objectManager: EditorObjectManager, utils: EditorUtils) {
-    this.canvas = canvas;
-    this.objectManager = objectManager;
-    this.utils = utils;
+  constructor(args: {
+    canvas: HTMLCanvasElement;
+    objectManager: EditorObjectManager;
+    utils: EditorUtils;
+  }) {
+    this.canvas = args.canvas;
+    this.objectManager = args.objectManager;
+    this.utils = args.utils;
   }
 
-  handleMouseDown = (
-    e: MouseEvent,
-    mode: EditorMode,
-    selectedObject: EditorObject,
-    scrollPosition: Vector2,
-    onStartPosition: (pos: Vector2 | null) => void,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-    onResizing: (resizing: ResizeState | null) => void,
-    onScrolling: () => void,
-    onSelectedObject: (obj: EditorObject) => void,
-    onPushUndoState: () => void,
-  ) => {
+  handleMouseDown = (args: HandleMouseDownArgs) => {
+    const {
+      e,
+      mode,
+      selectedObject,
+      scrollPosition,
+      onStartPosition,
+      onCurrentPlatform,
+      onResizing,
+      onScrolling,
+      onSelectedObject,
+      onPushUndoState,
+    } = args;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -49,35 +96,35 @@ export class EditorMouseHandler {
     const worldPos = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
 
     // Handle resize logic
-    if (this.handleResizeStart(mode, selectedObject, worldPos, onResizing, onPushUndoState)) {
+    if (this.handleResizeStart({ mode, selectedObject, worldPos, onResizing, onPushUndoState })) {
       return;
     }
 
     // Handle mode-specific actions
-    this.handleModeActions(
+    this.handleModeActions({
       mode,
       worldPos,
-      selectedObject,
       onStartPosition,
       onCurrentPlatform,
       onSelectedObject,
       onPushUndoState,
-    );
+    });
   };
 
-  handleMouseMove = (
-    e: MouseEvent,
-    mode: EditorMode,
-    selectedObject: EditorObject,
-    currentPlatform: EditorPlatform | null,
-    resizing: ResizeState | null,
-    startPosition: Vector2 | null,
-    scrollPosition: Vector2,
-    onScrollPosition: () => void,
-    onScrolling: () => void,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-    onUpdateScrollIndicator: () => void,
-  ) => {
+  handleMouseMove = (args: HandleMouseMoveArgs) => {
+    const {
+      e,
+      mode,
+      selectedObject,
+      currentPlatform,
+      resizing,
+      startPosition,
+      scrollPosition,
+      onScrollPosition,
+      onScrolling,
+      onCurrentPlatform,
+      onUpdateScrollIndicator,
+    } = args;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -91,7 +138,7 @@ export class EditorMouseHandler {
       scrollPosition.x += deltaX;
       scrollPosition.y += deltaY;
 
-      this.utils.clampScrollPosition(scrollPosition, this.canvas);
+      this.utils.clampScrollPosition({ scrollPosition, canvas: this.canvas });
       onScrollPosition();
 
       this.scrollStart = pos.copy();
@@ -101,7 +148,7 @@ export class EditorMouseHandler {
     }
 
     // Handle resize logic
-    if (this.handleResizeMove(resizing, selectedObject, pos, scrollPosition)) {
+    if (this.handleResizeMove({ resizing, selectedObject, pos, scrollPosition })) {
       return;
     }
 
@@ -110,23 +157,24 @@ export class EditorMouseHandler {
     // Convert screen position to world position
     const worldPos = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
 
-    this.handleModeMovement(mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform);
+    this.handleModeMovement({ mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform });
   };
 
-  handleMouseUp = (
-    e: MouseEvent,
-    mode: EditorMode,
-    selectedObject: EditorObject,
-    currentPlatform: EditorPlatform | null,
-    resizing: ResizeState | null,
-    startPosition: Vector2 | null,
-    scrollPosition: Vector2,
-    onScrolling: () => void,
-    onResizing: (resizing: ResizeState | null) => void,
-    onStartPosition: (pos: Vector2 | null) => void,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-    onPushUndoState: () => void,
-  ) => {
+  handleMouseUp = (args: HandleMouseUpArgs) => {
+    const {
+      e,
+      mode,
+      selectedObject,
+      currentPlatform,
+      resizing,
+      startPosition,
+      scrollPosition,
+      onScrolling,
+      onResizing,
+      onStartPosition,
+      onCurrentPlatform,
+      onPushUndoState,
+    } = args;
     // Stop scrolling if middle mouse button was released
     if (e.button === this.dragButton) {
       this.isScrolling = false;
@@ -151,31 +199,32 @@ export class EditorMouseHandler {
     // Convert to world position
     const worldPos = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
 
-    this.handleModeCompletion(
+    this.handleModeCompletion({
       mode,
       worldPos,
       selectedObject,
       currentPlatform,
       onCurrentPlatform,
       onPushUndoState,
-    );
+    });
 
     onStartPosition(null);
   };
 
-  private handleResizeStart(
-    mode: EditorMode,
-    selectedObject: EditorObject,
-    worldPos: Vector2,
-    onResizing: (resizing: ResizeState | null) => void,
-    onPushUndoState: () => void,
-  ): boolean {
+  private handleResizeStart(args: {
+    mode: EditorMode;
+    selectedObject: EditorObject;
+    worldPos: Vector2;
+    onResizing: (resizing: ResizeState | null) => void;
+    onPushUndoState: () => void;
+  }): boolean {
+    const { mode, selectedObject, worldPos, onResizing, onPushUndoState } = args;
     if (
       mode === EditorMode.SELECT &&
       selectedObject &&
       this.objectManager.isPlatform(selectedObject)
     ) {
-      const platform = selectedObject as any;
+      const platform = selectedObject as EditorPlatform;
       const rect = {
         x: platform.position.x,
         y: platform.position.y,
@@ -199,35 +248,43 @@ export class EditorMouseHandler {
     return false;
   }
 
-  private handleResizeMove(
-    resizing: ResizeState | null,
-    selectedObject: EditorObject,
-    pos: Vector2,
-    scrollPosition: Vector2,
-  ): boolean {
+  private handleResizeMove(args: {
+    resizing: ResizeState | null;
+    selectedObject: EditorObject;
+    pos: Vector2;
+    scrollPosition: Vector2;
+  }): boolean {
+    const { resizing, selectedObject, pos, scrollPosition } = args;
     if (resizing && selectedObject && this.objectManager.isPlatform(selectedObject)) {
       const mouse = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
-      this.utils.handleResize(resizing, selectedObject as any, mouse);
+      this.utils.handleResize(resizing, selectedObject as EditorPlatform, mouse);
       return true;
     }
     return false;
   }
 
-  private handleModeActions(
-    mode: EditorMode,
-    worldPos: Vector2,
-    selectedObject: EditorObject,
-    onStartPosition: (pos: Vector2 | null) => void,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-    onSelectedObject: (obj: EditorObject) => void,
-    onPushUndoState: () => void,
-  ): void {
+  private handleModeActions(args: {
+    mode: EditorMode;
+    worldPos: Vector2;
+    onStartPosition: (pos: Vector2 | null) => void;
+    onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onSelectedObject: (obj: EditorObject) => void;
+    onPushUndoState: () => void;
+  }): void {
+    const {
+      mode,
+      worldPos,
+      onStartPosition,
+      onCurrentPlatform,
+      onSelectedObject,
+      onPushUndoState,
+    } = args;
     switch (mode) {
       case EditorMode.SELECT: {
         const selected = this.objectManager.selectObjectAt(worldPos);
         onSelectedObject(selected);
         if (selected && this.objectManager.isPlatform(selected)) {
-          const platform = selected as any;
+          const platform = selected as EditorPlatform;
           onCurrentPlatform({
             position: platform.position.copy(),
             size: platform.size.copy(),
@@ -272,13 +329,14 @@ export class EditorMouseHandler {
     }
   }
 
-  private handleModeMovement(
-    mode: EditorMode,
-    worldPos: Vector2,
-    selectedObject: EditorObject,
-    currentPlatform: EditorPlatform | null,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-  ): void {
+  private handleModeMovement(args: {
+    mode: EditorMode;
+    worldPos: Vector2;
+    selectedObject: EditorObject;
+    currentPlatform: EditorPlatform | null;
+    onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  }): void {
+    const { mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform } = args;
     switch (mode) {
       case EditorMode.PLATFORM:
       case EditorMode.SOLID_BLOCK:
@@ -296,14 +354,16 @@ export class EditorMouseHandler {
     }
   }
 
-  private handleModeCompletion(
-    mode: EditorMode,
-    worldPos: Vector2,
-    selectedObject: EditorObject,
-    currentPlatform: EditorPlatform | null,
-    onCurrentPlatform: (platform: EditorPlatform | null) => void,
-    onPushUndoState: () => void,
-  ): void {
+  private handleModeCompletion(args: {
+    mode: EditorMode;
+    worldPos: Vector2;
+    selectedObject: EditorObject;
+    currentPlatform: EditorPlatform | null;
+    onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onPushUndoState: () => void;
+  }): void {
+    const { mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform, onPushUndoState } =
+      args;
     switch (mode) {
       case EditorMode.PLATFORM:
         this.objectManager.finishPlatform(currentPlatform, worldPos);
@@ -316,7 +376,7 @@ export class EditorMouseHandler {
       case EditorMode.SELECT:
         if (selectedObject && this.objectManager.isPlatform(selectedObject) && currentPlatform) {
           onPushUndoState();
-          const platform = selectedObject as any;
+          const platform = selectedObject as EditorPlatform;
           platform.position.x = currentPlatform.position.x;
           platform.position.y = currentPlatform.position.y;
           platform.size.x = currentPlatform.size.x;

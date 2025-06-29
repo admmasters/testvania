@@ -1,5 +1,5 @@
+import type { GameState } from "./GameState";
 import { Vector2 } from "./Vector2";
-import { GameState } from "./GameState";
 
 export class GameObject {
   position: Vector2;
@@ -12,7 +12,13 @@ export class GameObject {
   shakeIntensity: number;
   shakeTimer: number;
 
-  constructor(x: number, y: number, width: number, height: number) {
+  constructor(args: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) {
+    const { x, y, width, height } = args;
     this.position = new Vector2(x, y);
     this.velocity = new Vector2(0, 0);
     this.size = new Vector2(width, height);
@@ -65,13 +71,13 @@ export class GameObject {
   updateShake(deltaTime: number): void {
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaTime;
-      
+
       // Generate random shake offset
       const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
       const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
       this.shakeOffset.x = shakeX;
       this.shakeOffset.y = shakeY;
-      
+
       if (this.shakeTimer <= 0) {
         this.shakeOffset.x = 0;
         this.shakeOffset.y = 0;
@@ -81,9 +87,6 @@ export class GameObject {
   }
 
   getRenderPosition(): Vector2 {
-    return new Vector2(
-      this.position.x + this.shakeOffset.x,
-      this.position.y + this.shakeOffset.y
-    );
+    return new Vector2(this.position.x + this.shakeOffset.x, this.position.y + this.shakeOffset.y);
   }
 }

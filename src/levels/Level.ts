@@ -1,11 +1,11 @@
-import { LevelData } from "./LevelData";
-import { GameState } from "../engine/GameState";
-import { Platform } from "../objects/platform";
-import { SolidBlock } from "../objects/solidBlock";
-import { Candle } from "../objects/candle";
-import { Player } from "../objects/player";
 import { LandGhost } from "@/objects/LandGhost";
+import type { GameState } from "../engine/GameState";
+import { Candle } from "../objects/candle";
 import { Ghost } from "../objects/Ghost";
+import { Platform } from "../objects/platform";
+import { Player } from "../objects/player";
+import { SolidBlock } from "../objects/solidBlock";
+import type { LevelData } from "./LevelData";
 
 export class Level {
   private data: LevelData;
@@ -26,26 +26,26 @@ export class Level {
     // Create platforms
     for (const platformData of this.data.platforms) {
       gameState.platforms.push(
-        new Platform(
-          platformData.position.x,
-          platformData.position.y,
-          platformData.size.x,
-          platformData.size.y,
-          platformData.color,
-        ),
+        new Platform({
+          x: platformData.position.x,
+          y: platformData.position.y,
+          width: platformData.size.x,
+          height: platformData.size.y,
+          color: platformData.color,
+        }),
       );
     }
 
     // Create solid blocks
     for (const solidBlockData of this.data.solidBlocks) {
       gameState.solidBlocks.push(
-        new SolidBlock(
-          solidBlockData.position.x,
-          solidBlockData.position.y,
-          solidBlockData.size.x,
-          solidBlockData.size.y,
-          solidBlockData.color,
-        ),
+        new SolidBlock({
+          x: solidBlockData.position.x,
+          y: solidBlockData.position.y,
+          width: solidBlockData.size.x,
+          height: solidBlockData.size.y,
+          color: solidBlockData.color,
+        }),
       );
     }
 
@@ -70,5 +70,9 @@ export class Level {
     gameState.hitPauseTimer = 0;
     gameState.hitPauseDuration = 0;
     gameState.spawnTimer = 0;
+  }
+
+  public getData(): LevelData {
+    return this.data;
   }
 }

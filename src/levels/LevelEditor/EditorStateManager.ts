@@ -96,12 +96,24 @@ export class EditorStateManager {
   private restoreState(state: EditorState): void {
     // Restore platforms
     this.gameState.platforms = state.platforms.map(
-      (p) => new Platform(p.position.x, p.position.y, p.size.x, p.size.y, p.color),
+      (p) => new Platform({
+        x: p.position.x,
+        y: p.position.y,
+        width: p.size.x,
+        height: p.size.y,
+        color: p.color,
+      }),
     );
 
     // Restore solid blocks
     this.gameState.solidBlocks = (state.solidBlocks || []).map(
-      (sb) => new SolidBlock(sb.position.x, sb.position.y, sb.size.x, sb.size.y, sb.color),
+      (sb) => new SolidBlock({
+        x: sb.position.x,
+        y: sb.position.y,
+        width: sb.size.x,
+        height: sb.size.y,
+        color: sb.color,
+      }),
     );
 
     // Restore candles

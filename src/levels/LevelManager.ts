@@ -11,8 +11,7 @@ export class LevelManager {
    */
   public getLevelData(levelId: string): LevelData | undefined {
     const level = this.levels.get(levelId);
-    // @ts-ignore: access private for engine use
-    return level ? ((level as any).data as LevelData) : undefined;
+    return level ? (level.getData() as LevelData) : undefined;
   }
   private currentLevelId: string | null = null;
 
