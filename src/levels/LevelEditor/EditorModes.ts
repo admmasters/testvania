@@ -1,10 +1,10 @@
-// Editor mode enum and mode logic
 export enum EditorMode {
-  PLATFORM,
-  CANDLE,
-  GHOST,
-  LANDGHOST,
-  PLAYER,
-  SELECT,
-  DELETE,
+  SELECT = "SELECT",
+  PLATFORM = "PLATFORM",
+  SOLID_BLOCK = "SOLID_BLOCK",
+  CANDLE = "CANDLE",
+  GHOST = "GHOST",
+  LANDGHOST = "LANDGHOST",
+  PLAYER = "PLAYER",
+  DELETE = "DELETE",
 }

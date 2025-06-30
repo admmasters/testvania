@@ -1,9 +1,9 @@
-
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
 import type { Enemy } from "../objects/enemy";
 import { HitSpark } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
+import type { SolidBlock } from "../objects/solidBlock";
 import { Player } from "../objects/player";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
@@ -15,6 +15,7 @@ export class GameState {
   player: Player;
   enemies: Enemy[];
   platforms: Platform[];
+  solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
   input: Input;
@@ -31,6 +32,7 @@ export class GameState {
 
     // Initialize empty arrays
     this.platforms = [];
+    this.solidBlocks = [];
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
@@ -82,10 +84,7 @@ export class GameState {
 
           if (isColliding) {
             candle.break();
-            this.createHitSpark(
-              candle.position.x + candle.size.x / 2,
-              candle.position.y
-            );
+            this.createHitSpark(candle.position.x + candle.size.x / 2, candle.position.y);
           }
         }
       }
@@ -96,7 +95,16 @@ export class GameState {
     // Handle hit pause
     if (this.hitPauseTimer > 0) {
       this.hitPauseTimer -= deltaTime;
-      return; // Skip all updates during hit pause
+
+      // Update shake effects during hit pause
+      this.player.updateShake(deltaTime);
+      for (const enemy of this.enemies) {
+        if (enemy.active) {
+          enemy.updateShake(deltaTime);
+        }
+      }
+
+      return; // Skip all other updates during hit pause
     }
 
     // Update candles
@@ -146,7 +154,7 @@ export class GameState {
         levelData.width,
         levelData.height,
         viewportWidth,
-        viewportHeight
+        viewportHeight,
       );
     }
     this.camera.update(deltaTime);
@@ -156,6 +164,15 @@ export class GameState {
   hitPause(duration: number): void {
     this.hitPauseTimer = duration;
     this.hitPauseDuration = duration;
+
+    // Start shake effect on player and enemies during hit pause
+    const shakeIntensity = 2; // 2 pixels shake
+    this.player.startShake(shakeIntensity, duration);
+    for (const enemy of this.enemies) {
+      if (enemy.active) {
+        enemy.startShake(shakeIntensity, duration);
+      }
+    }
   }
 
   createHitSpark(x: number, y: number): void {
@@ -183,6 +200,11 @@ export class GameState {
     // Draw platforms
     for (const platform of this.platforms) {
       platform.render(ctx);
+    }
+
+    // Draw solid blocks
+    for (const solidBlock of this.solidBlocks) {
+      solidBlock.render(ctx);
     }
 
     // Draw game objects
@@ -219,8 +241,6 @@ export class GameState {
     // Draw UI
     this.drawUI(ctx);
   }
-
-
 
   drawUI(ctx: CanvasRenderingContext2D): void {
     // Save the current context state

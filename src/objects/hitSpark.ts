@@ -1,5 +1,5 @@
 import { GameObject } from "../engine/GameObject";
-import { GameState } from "../engine/GameState";
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2";
 
 export class HitSpark extends GameObject {
@@ -17,7 +17,7 @@ export class HitSpark extends GameObject {
 
   constructor(x: number, y: number) {
     // Use a small invisible GameObject as the container
-    super(x, y, 1, 1);
+    super({ x, y, width: 1, height: 1 });
 
     this.maxLifeTime = 0.5; // Effect lasts for 0.5 seconds
     this.lifeTime = this.maxLifeTime;
@@ -70,7 +70,7 @@ export class HitSpark extends GameObject {
     }
 
     // Update particles
-    for (let particle of this.particles) {
+    for (const particle of this.particles) {
       // Update position
       particle.position.x += particle.velocity.x * deltaTime;
       particle.position.y += particle.velocity.y * deltaTime;
@@ -93,6 +93,9 @@ export class HitSpark extends GameObject {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Draw flash circle at the beginning of the effect
     if (this.lifeTime > this.maxLifeTime - this.flashDuration) {
       // Calculate flash opacity based on remaining time
@@ -103,8 +106,8 @@ export class HitSpark extends GameObject {
       ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
       ctx.beginPath();
       ctx.arc(
-        this.position.x,
-        this.position.y,
+        renderPos.x,
+        renderPos.y,
         this.flashRadius * (1 - flashOpacity + 0.5), // Grow and then shrink
         0,
         Math.PI * 2,
@@ -113,7 +116,7 @@ export class HitSpark extends GameObject {
     }
 
     // Draw each particle
-    for (let particle of this.particles) {
+    for (const particle of this.particles) {
       if (particle.lifeTime <= 0) continue;
 
       ctx.fillStyle = particle.color;

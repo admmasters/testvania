@@ -1,22 +1,33 @@
-import { GameState } from "@/engine/GameState";
+import type { GameState } from "@/engine/GameState";
 import { Enemy } from "./enemy";
-import { Platform } from "./platform";
+import type { Platform } from "./platform";
+import type { SolidBlock } from "./solidBlock";
 
 export class LandGhost extends Enemy {
   constructor(x: number, y: number) {
-    super(x, y, "landghost");
+    super({ x, y, type: "landghost" });
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {
     // Get the level dimensions from the game state
-    const levelData = gameState.levelManager.getLevelData(
-      gameState.currentLevelId ?? ""
-    );
+    const levelData = gameState.levelManager.getLevelData(gameState.currentLevelId ?? "");
     const levelWidth = levelData?.width || 800; // Fallback to 800 if level data is not available
     const levelHeight = levelData?.height || 600; // Fallback to 600 if level data is not available
 
     // Simple AI - move back and forth
     this.velocity.x = this.direction * this.speed;
+
+    // Check for solid block collisions before moving horizontally
+    const nextX = this.position.x + this.velocity.x * deltaTime;
+
+    // Check horizontal collisions with solid blocks
+    for (const solidBlock of gameState.solidBlocks) {
+      if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
+        this.direction *= -1; // Reverse direction when hitting a wall
+        this.velocity.x = this.direction * this.speed;
+        break;
+      }
+    }
 
     // Change direction at level edges instead of hardcoded screen edges
     if (this.position.x <= 0) {
@@ -96,7 +107,7 @@ export class LandGhost extends Enemy {
     // Check if about to walk off current platform
     if (onPlatform && currentPlatform) {
       const nextX = this.position.x + this.direction * this.speed * deltaTime;
-      
+
       // Check the edge the ghost is moving towards
       if (this.direction > 0) {
         // Moving right - check if right edge of ghost will go past right edge of platform
@@ -115,16 +126,19 @@ export class LandGhost extends Enemy {
     if (willFallOff && currentPlatform) {
       this.direction *= -1;
       this.velocity.x = this.direction * this.speed;
-      
+
       // Clamp position to platform bounds to prevent any overshoot
       if (this.direction > 0) {
         // Now moving right, ensure we're not past the left edge
         this.position.x = Math.max(this.position.x, currentPlatform.position.x);
       } else {
         // Now moving left, ensure we're not past the right edge
-        this.position.x = Math.min(this.position.x, currentPlatform.position.x + currentPlatform.size.x - this.size.x);
+        this.position.x = Math.min(
+          this.position.x,
+          currentPlatform.position.x + currentPlatform.size.x - this.size.x,
+        );
       }
-      
+
       // Recalculate next position with new direction
       nextPosition.x = this.position.x + this.velocity.x * deltaTime;
     }
@@ -153,11 +167,35 @@ export class LandGhost extends Enemy {
 
   protected renderDetails(ctx: CanvasRenderingContext2D): void {
     // Simple sprite details
+    const renderPos = this.getRenderPosition();
     ctx.fillStyle = "#000";
     // Eyes
-    ctx.fillRect(this.position.x + 6, this.position.y + 8, 2, 2);
-    ctx.fillRect(this.position.x + 16, this.position.y + 8, 2, 2);
+    ctx.fillRect(renderPos.x + 6, renderPos.y + 8, 2, 2);
+    ctx.fillRect(renderPos.x + 16, renderPos.y + 8, 2, 2);
     // Mouth
-    ctx.fillRect(this.position.x + 10, this.position.y + 14, 4, 2);
+    ctx.fillRect(renderPos.x + 10, renderPos.y + 14, 4, 2);
+  }
+
+  private wouldCollideHorizontally(
+    nextX: number,
+    currentY: number,
+    obstacle: Platform | SolidBlock,
+  ): boolean {
+    // Check if the enemy would overlap with the obstacle horizontally
+    const enemyLeft = nextX;
+    const enemyRight = nextX + this.size.x;
+    const enemyTop = currentY;
+    const enemyBottom = currentY + this.size.y;
+
+    const obstacleLeft = obstacle.position.x;
+    const obstacleRight = obstacle.position.x + obstacle.size.x;
+    const obstacleTop = obstacle.position.y;
+    const obstacleBottom = obstacle.position.y + obstacle.size.y;
+
+    // Check if there's overlap in both axes
+    const horizontalOverlap = enemyRight > obstacleLeft && enemyLeft < obstacleRight;
+    const verticalOverlap = enemyBottom > obstacleTop && enemyTop < obstacleBottom;
+
+    return horizontalOverlap && verticalOverlap;
   }
 }

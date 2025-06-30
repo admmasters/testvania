@@ -11,8 +11,7 @@ export class LevelManager {
    */
   public getLevelData(levelId: string): LevelData | undefined {
     const level = this.levels.get(levelId);
-    // @ts-ignore: access private for engine use
-    return level ? ((level as any).data as LevelData) : undefined;
+    return level ? (level.getData() as LevelData) : undefined;
   }
   private currentLevelId: string | null = null;
 
@@ -50,11 +49,7 @@ export class LevelManager {
   }
 
   // Helper method to create a level from current GameState (for level editor)
-  static createLevelFromGameState(
-    gameState: GameState,
-    id: string,
-    name: string
-  ): LevelData {
+  static createLevelFromGameState(gameState: GameState, id: string, name: string): LevelData {
     const levelData: LevelData = {
       id,
       name,
@@ -64,13 +59,11 @@ export class LevelManager {
         color: "#2C1810", // Default background color
       },
       platforms: [],
+      solidBlocks: [],
       candles: [],
       enemies: [],
       player: {
-        position: new Vector2(
-          gameState.player.position.x,
-          gameState.player.position.y
-        ),
+        position: new Vector2(gameState.player.position.x, gameState.player.position.y),
       },
     };
 
@@ -80,6 +73,15 @@ export class LevelManager {
         position: new Vector2(platform.position.x, platform.position.y),
         size: new Vector2(platform.size.x, platform.size.y),
         color: platform.color,
+      });
+    }
+
+    // Convert solid blocks
+    for (const solidBlock of gameState.solidBlocks) {
+      levelData.solidBlocks.push({
+        position: new Vector2(solidBlock.position.x, solidBlock.position.y),
+        size: new Vector2(solidBlock.size.x, solidBlock.size.y),
+        color: solidBlock.color,
       });
     }
 

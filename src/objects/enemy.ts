@@ -9,8 +9,15 @@ export abstract class Enemy extends GameObject {
   hitDuration: number;
   isHit: boolean;
 
-  constructor(x: number, y: number, type: string, width = 24, height = 32) {
-    super(x, y, width, height);
+  constructor(args: {
+    x: number;
+    y: number;
+    type: string;
+    width?: number;
+    height?: number;
+  }) {
+    const { x, y, type, width = 24, height = 32 } = args;
+    super({ x, y, width, height });
     this.type = type;
     this.health = 3;
     this.maxHealth = 3;
@@ -85,6 +92,9 @@ export abstract class Enemy extends GameObject {
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     // Flash white when hit
     if (this.isHit) {
       ctx.fillStyle = "#FFFFFF";
@@ -92,7 +102,7 @@ export abstract class Enemy extends GameObject {
       ctx.fillStyle = this.getColor();
     }
 
-    ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+    ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
     if (!this.isHit) {
       this.renderDetails(ctx);

@@ -1,5 +1,6 @@
-import { Enemy } from "./enemy";
 import type { GameState } from "../engine/GameState";
+import { Enemy } from "./enemy";
+import type { SolidBlock } from "./solidBlock";
 
 export class Ghost extends Enemy {
   floatTimer: number;
@@ -7,7 +8,7 @@ export class Ghost extends Enemy {
   baseY: number;
 
   constructor(x: number, y: number) {
-    super(x, y, "ghost");
+    super({ x, y, type: "ghost" });
     this.speed = 40;
     this.floatTimer = Math.random() * Math.PI * 2;
     this.floatAmplitude = 10;
@@ -22,8 +23,23 @@ export class Ghost extends Enemy {
     this.floatTimer += deltaTime * 2;
     this.position.y = this.baseY + Math.sin(this.floatTimer) * this.floatAmplitude;
 
-    // Move left/right
-    this.position.x += this.direction * this.speed * deltaTime;
+    // Check for solid block collisions before moving horizontally
+    const nextX = this.position.x + this.direction * this.speed * deltaTime;
+    let canMoveHorizontally = true;
+
+    // Check horizontal collisions with solid blocks
+    for (const solidBlock of gameState.solidBlocks) {
+      if (this.wouldCollideHorizontally(nextX, this.position.y, solidBlock)) {
+        canMoveHorizontally = false;
+        this.direction *= -1; // Reverse direction when hitting a wall
+        break;
+      }
+    }
+
+    // Move left/right only if no collision
+    if (canMoveHorizontally) {
+      this.position.x = nextX;
+    }
 
     // Reverse direction at level edges
     const levelData = gameState.levelManager.getLevelData(gameState.currentLevelId ?? "");
@@ -40,11 +56,7 @@ export class Ghost extends Enemy {
   handlePlayerAttack(gameState: GameState): void {
     const player = gameState.player;
     const attackBounds = player.getAttackBounds();
-    if (
-      attackBounds &&
-      this.checkCollisionWithBounds(attackBounds) &&
-      !this.isHit
-    ) {
+    if (attackBounds && this.checkCollisionWithBounds(attackBounds) && !this.isHit) {
       this.takeDamage(1);
       this.isHit = true;
       this.hitTimer = this.hitDuration;
@@ -66,34 +78,58 @@ export class Ghost extends Enemy {
 
   protected renderDetails(ctx: CanvasRenderingContext2D): void {
     // Eyes
+    const renderPos = this.getRenderPosition();
     ctx.fillStyle = "#222";
     ctx.beginPath();
-    ctx.arc(this.position.x + 8, this.position.y + 16, 2, 0, Math.PI * 2);
-    ctx.arc(this.position.x + 16, this.position.y + 16, 2, 0, Math.PI * 2);
+    ctx.arc(renderPos.x + 8, renderPos.y + 16, 2, 0, Math.PI * 2);
+    ctx.arc(renderPos.x + 16, renderPos.y + 16, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
   render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
+
+    // Get render position with shake offset
+    const renderPos = this.getRenderPosition();
+
     ctx.globalAlpha = 0.6;
     ctx.fillStyle = this.isHit ? "#FFFFFF" : this.getColor();
     ctx.beginPath();
     ctx.ellipse(
-      this.position.x + this.size.x / 2,
-      this.position.y + this.size.y / 2,
+      renderPos.x + this.size.x / 2,
+      renderPos.y + this.size.y / 2,
       this.size.x / 2,
       this.size.y / 2,
       0,
       0,
-      Math.PI * 2
+      Math.PI * 2,
     );
     ctx.fill();
-    
+
     if (!this.isHit) {
       ctx.globalAlpha = 1.0;
       this.renderDetails(ctx);
     }
-    
+
     ctx.restore();
   }
-} 
+
+  private wouldCollideHorizontally(nextX: number, currentY: number, obstacle: SolidBlock): boolean {
+    // Check if the enemy would overlap with the obstacle horizontally
+    const enemyLeft = nextX;
+    const enemyRight = nextX + this.size.x;
+    const enemyTop = currentY;
+    const enemyBottom = currentY + this.size.y;
+
+    const obstacleLeft = obstacle.position.x;
+    const obstacleRight = obstacle.position.x + obstacle.size.x;
+    const obstacleTop = obstacle.position.y;
+    const obstacleBottom = obstacle.position.y + obstacle.size.y;
+
+    // Check if there's overlap in both axes
+    const horizontalOverlap = enemyRight > obstacleLeft && enemyLeft < obstacleRight;
+    const verticalOverlap = enemyBottom > obstacleTop && enemyTop < obstacleBottom;
+
+    return horizontalOverlap && verticalOverlap;
+  }
+}

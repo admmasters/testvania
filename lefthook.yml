@@ -1,0 +1,9 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: npm run typecheck
+      fail_text: "Type checking failed. Please fix the errors before committing."
+    lint:
+      run: npm run lint
+      fail_text: "Linting failed. Please fix the linting errors before committing."
