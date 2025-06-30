@@ -11,7 +11,7 @@ export const levels: LevelData[] = [
   {
     id: "level1",
     name: "Custom Level 1",
-    width: 1600,
+    width: 800,
     height: 600,
     background: {
       color: "#2C1810",
@@ -31,7 +31,7 @@ export const levels: LevelData[] = [
     candles: [],
     enemies: [{ position: vec2(592, 512), type: "landghost" }],
     player: {
-      position: vec2(80, 200),
+      position: vec2(64, 496),
     },
   },
   {
