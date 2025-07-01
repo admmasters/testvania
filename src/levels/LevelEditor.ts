@@ -10,10 +10,6 @@ import type { EditorObject, EditorPlatform, ResizeState } from "./LevelEditor/Ed
 import { EditorUI } from "./LevelEditor/EditorUI";
 import { EditorUtils } from "./LevelEditor/EditorUtils";
 
-interface HasLevelData {
-  levelData?: { width?: number; height?: number };
-}
-
 export class LevelEditor {
   private gameState: GameState;
   private canvas: HTMLCanvasElement;
@@ -87,12 +83,12 @@ export class LevelEditor {
     this.isActive = true;
 
     // Initialize level size from current level if available
-    if ("levelData" in this.gameState) {
-      const levelData = (this.gameState as HasLevelData).levelData;
-      if (levelData) {
-        this.levelWidth = levelData.width ?? 800;
-        this.levelHeight = levelData.height ?? 600;
-      }
+    const currentLevelData = this.gameState.levelManager.getLevelData(
+      this.gameState.currentLevelId ?? "",
+    );
+    if (currentLevelData) {
+      this.levelWidth = currentLevelData.width;
+      this.levelHeight = currentLevelData.height;
     }
 
     // Synchronize editor scroll position with game camera
