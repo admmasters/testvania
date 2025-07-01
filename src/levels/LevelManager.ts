@@ -96,6 +96,8 @@ export class LevelManager {
     for (const enemy of gameState.enemies) {
       levelData.enemies.push({
         position: new Vector2(enemy.position.x, enemy.position.y),
+        type: enemy.type,
+        direction: enemy.direction,
       });
     }
 
