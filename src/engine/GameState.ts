@@ -1,10 +1,11 @@
-import { LevelManager } from "../levels/LevelManager";
-import type { Candle } from "../objects/candle";
-import type { Enemy } from "../objects/enemy";
-import { HitSpark, PoofEffect } from "../objects/hitSpark";
-import type { Platform } from "../objects/platform";
-import { Player } from "../objects/player";
-import type { SolidBlock } from "../objects/solidBlock";
+import { LevelManager } from "@/levels/LevelManager";
+import type { Candle } from "@/objects/candle";
+import type { Enemy } from "@/objects/enemy";
+import type { Heart, HeartSparkle } from "@/objects/heart";
+import { HitSpark, PoofEffect } from "@/objects/hitSpark";
+import type { Platform } from "@/objects/platform";
+import { Player } from "@/objects/player";
+import type { SolidBlock } from "@/objects/solidBlock";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -18,6 +19,8 @@ export class GameState {
   solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
+  hearts: Heart[];
+  heartSparkles: HeartSparkle[];
   input: Input;
   camera: Camera;
   parallaxBackground: ParallaxBackground;
@@ -45,6 +48,8 @@ export class GameState {
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
+    this.hearts = [];
+    this.heartSparkles = [];
 
     // Initialize common game state properties
     this.input = new Input();
@@ -92,7 +97,7 @@ export class GameState {
             attackBounds.bottom > candleTop;
 
           if (isColliding) {
-            candle.break();
+            candle.break(this);
             this.createHitSpark(candle.position.x + candle.size.x / 2, candle.position.y);
           }
         }
@@ -114,11 +119,17 @@ export class GameState {
     // Check for candle collisions
     this.checkCandleCollisions();
 
-    this.player.update(deltaTime, this);
+    // Update hearts
+    for (const heart of this.hearts) {
+      if (heart.active) {
+        heart.update(deltaTime, this);
+      }
+    }
 
-    for (const enemy of this.enemies) {
-      if (enemy.active) {
-        enemy.update(deltaTime, this);
+    // Update heart sparkles
+    for (const sparkle of this.heartSparkles) {
+      if (sparkle.active) {
+        sparkle.update(deltaTime, this);
       }
     }
 
@@ -136,10 +147,22 @@ export class GameState {
       }
     }
 
-    // Remove inactive enemies, hit sparks, and poof effects
-    this.enemies = this.enemies.filter((enemy) => enemy.active);
+    // Clean up inactive objects
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
+    this.hearts = this.hearts.filter((heart) => heart.active);
+    this.heartSparkles = this.heartSparkles.filter((sparkle) => sparkle.active);
     this.poofEffects = this.poofEffects.filter((poof) => poof.active);
+
+    this.player.update(deltaTime, this);
+
+    for (const enemy of this.enemies) {
+      if (enemy.active) {
+        enemy.update(deltaTime, this);
+      }
+    }
+
+    // Remove inactive enemies
+    this.enemies = this.enemies.filter((enemy) => enemy.active);
 
     // Automatic enemy spawning is disabled - enemies are placed via the level editor only
     // The timer is kept but not used for spawning
@@ -236,6 +259,20 @@ export class GameState {
     for (const candle of this.candles) {
       if (candle.active) {
         candle.render(ctx);
+      }
+    }
+
+    // Draw hearts
+    for (const heart of this.hearts) {
+      if (heart.active) {
+        heart.render(ctx);
+      }
+    }
+
+    // Draw heart sparkles (subtle collection effects)
+    for (const sparkle of this.heartSparkles) {
+      if (sparkle.active) {
+        sparkle.render(ctx);
       }
     }
 

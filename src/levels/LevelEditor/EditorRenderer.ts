@@ -1,7 +1,7 @@
 import type { Vector2 } from "@/engine/Vector2";
 import { Platform } from "@/objects/platform";
 import { EditorMode } from "./EditorModes";
-import type { EditorObject, EditorPlatform } from "./EditorTypes";
+import type { EditorObject, EditorPlatform, ResizeState } from "./EditorTypes";
 import { EditorUtils } from "./EditorUtils";
 
 export class EditorRenderer {
@@ -19,11 +19,11 @@ export class EditorRenderer {
     currentPlatform: EditorPlatform | null,
     selectedObject: EditorObject,
     scrollPosition: Vector2,
-    areaSelectionStart?: Vector2 | null,
-    areaSelectionEnd?: Vector2 | null,
+    areaSelectionStart: Vector2 | null,
+    areaSelectionEnd: Vector2 | null,
     selectedObjects?: EditorObject[],
     mousePosition?: Vector2,
-    resizing?: any,
+    resizing?: ResizeState,
   ): void {
     ctx.save();
 
@@ -57,15 +57,7 @@ export class EditorRenderer {
 
     // Draw position/size feedback
     if (mousePosition) {
-      this.drawFeedback(
-        ctx,
-        mode,
-        currentPlatform,
-        selectedObject,
-        mousePosition,
-        scrollPosition,
-        resizing,
-      );
+      this.drawModeFeedback(ctx, mode, mousePosition, scrollPosition, resizing);
     }
 
     ctx.restore();
@@ -159,83 +151,54 @@ export class EditorRenderer {
     ctx.restore();
   }
 
-  private drawFeedback(
+  private drawModeFeedback(
     ctx: CanvasRenderingContext2D,
     mode: EditorMode,
-    currentPlatform: EditorPlatform | null,
-    selectedObject: EditorObject,
     mousePosition: Vector2,
-    scrollPosition: Vector2,
-    resizing?: any,
+    _scrollPosition: Vector2,
+    _resizing?: ResizeState,
   ): void {
     ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
 
-    // Convert world coordinates to screen coordinates for text positioning
-    const screenX = mousePosition.x - scrollPosition.x;
-    const screenY = mousePosition.y - scrollPosition.y;
-
-    // Set up text styling
-    ctx.fillStyle = "#FFFFFF";
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
-    ctx.font = "12px monospace";
-
-    let feedbackText = "";
-
-    // Show position feedback when placing items
-    if (
-      mode === EditorMode.CANDLE ||
-      mode === EditorMode.GHOST ||
-      mode === EditorMode.LANDGHOST ||
-      mode === EditorMode.PLAYER
-    ) {
-      feedbackText = `Position: (${Math.round(mousePosition.x)}, ${Math.round(mousePosition.y)})`;
-    }
-
-    // Show size feedback when scaling platforms/solid blocks
-    if ((mode === EditorMode.PLATFORM || mode === EditorMode.SOLID_BLOCK) && currentPlatform) {
-      const width = Math.round(currentPlatform.size.x);
-      const height = Math.round(currentPlatform.size.y);
-      const x = Math.round(currentPlatform.position.x);
-      const y = Math.round(currentPlatform.position.y);
-      feedbackText = `Size: ${width}×${height} | Position: (${x}, ${y})`;
-    }
-
-    // Show size feedback when resizing selected objects
-    if (resizing && selectedObject && "position" in selectedObject && "size" in selectedObject) {
-      const obj = selectedObject as { position: Vector2; size: Vector2 };
-      const width = Math.round(obj.size.x);
-      const height = Math.round(obj.size.y);
-      const x = Math.round(obj.position.x);
-      const y = Math.round(obj.position.y);
-      feedbackText = `Size: ${width}×${height} | Position: (${x}, ${y})`;
-    }
-
-    if (feedbackText) {
-      // Position text near cursor but avoid going off screen
-      let textX = screenX + 15;
-      let textY = screenY - 10;
-
-      // Measure text to avoid going off screen
-      const textMetrics = ctx.measureText(feedbackText);
-      const textWidth = textMetrics.width;
-      const textHeight = 16; // Approximate height for 12px font
-
-      if (textX + textWidth > this.canvas.width) {
-        textX = screenX - textWidth - 15;
+    switch (mode) {
+      case EditorMode.PLATFORM: {
+        // Show grid snap preview for platform placement
+        const snappedPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(snappedPos.x, snappedPos.y, 64, 32);
+        break;
       }
-      if (textY < textHeight) {
-        textY = screenY + textHeight + 10;
+      case EditorMode.SOLID_BLOCK: {
+        // Show grid snap preview for solid block placement
+        const snappedBlockPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(snappedBlockPos.x, snappedBlockPos.y, 32, 32);
+        break;
       }
-
-      // Draw text background
-      ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-      ctx.fillRect(textX - 4, textY - textHeight + 2, textWidth + 8, textHeight + 4);
-
-      // Draw text with outline for better visibility
-      ctx.strokeText(feedbackText, textX, textY);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(feedbackText, textX, textY);
+      case EditorMode.CANDLE: {
+        // Show placement preview for candle
+        const candlePos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(candlePos.x, candlePos.y, 16, 32);
+        break;
+      }
+      case EditorMode.GHOST: {
+        // Show placement preview for ghost enemy
+        const enemyPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(enemyPos.x, enemyPos.y, 32, 32);
+        break;
+      }
+      case EditorMode.LANDGHOST: {
+        // Show placement preview for landghost enemy
+        const enemyPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(enemyPos.x, enemyPos.y, 32, 32);
+        break;
+      }
+      case EditorMode.PLAYER: {
+        // Show placement preview for player
+        const playerPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(playerPos.x, playerPos.y, 32, 48);
+        break;
+      }
     }
 
     ctx.restore();

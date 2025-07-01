@@ -327,7 +327,10 @@ export class EditorUI {
     }
   }
 
-  createDirectionControls(container: HTMLDivElement, selectedEnemy: any): void {
+  createDirectionControls(
+    container: HTMLDivElement,
+    selectedEnemy: { type?: string; direction?: number } | null,
+  ): void {
     // Remove any existing direction controls
     const existingControls = container.querySelector(".direction-controls");
     if (existingControls) {

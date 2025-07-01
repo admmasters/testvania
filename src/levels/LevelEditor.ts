@@ -1,12 +1,23 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
+import type { Candle } from "@/objects/candle";
+import type { Ghost } from "@/objects/Ghost";
+import type { LandGhost } from "@/objects/LandGhost";
+import type { Platform } from "@/objects/platform";
+import type { SolidBlock } from "@/objects/solidBlock";
 import { EditorLevelSaver } from "./LevelEditor/EditorLevelSaver";
 import { EditorMode } from "./LevelEditor/EditorModes";
 import { EditorMouseHandler } from "./LevelEditor/EditorMouseHandler";
 import { EditorObjectManager } from "./LevelEditor/EditorObjectManager";
 import { EditorRenderer } from "./LevelEditor/EditorRenderer";
 import { EditorStateManager } from "./LevelEditor/EditorStateManager";
-import type { EditorObject, EditorPlatform, ResizeState } from "./LevelEditor/EditorTypes";
+import type {
+  EditorObject,
+  EditorPlatform,
+  PositionedObject,
+  ResizeState,
+  SelectableEnemy,
+} from "./LevelEditor/EditorTypes";
 import { EditorUI } from "./LevelEditor/EditorUI";
 import { EditorUtils } from "./LevelEditor/EditorUtils";
 
@@ -156,7 +167,7 @@ export class LevelEditor {
       this.areaSelectionEnd,
       this.selectedObjects,
       this.mousePosition,
-      this.resizing,
+      this.resizing ?? undefined,
     );
   }
 
@@ -352,7 +363,7 @@ export class LevelEditor {
       (this.selectedObject.type === "ghost" || this.selectedObject.type === "landghost")
     ) {
       this.pushUndoState();
-      (this.selectedObject as any).direction = direction;
+      (this.selectedObject as SelectableEnemy).direction = direction;
       this.updateDirectionControls(); // Update UI to reflect the change
     }
   }
@@ -360,7 +371,14 @@ export class LevelEditor {
   private updateDirectionControls(): void {
     const container = this.ui.getEditorContainer();
     if (container) {
-      this.ui.createDirectionControls(container, this.selectedObject);
+      // Only pass the selected object if it's an enemy with direction property
+      const enemyObject =
+        this.selectedObject &&
+        "type" in this.selectedObject &&
+        (this.selectedObject.type === "ghost" || this.selectedObject.type === "landghost")
+          ? (this.selectedObject as { type: string; direction?: number })
+          : null;
+      this.ui.createDirectionControls(container, enemyObject);
     }
   }
 
@@ -427,7 +445,7 @@ export class LevelEditor {
   }
 
   private isObjectInArea(
-    obj: any,
+    obj: PositionedObject,
     minX: number,
     minY: number,
     maxX: number,
@@ -452,28 +470,28 @@ export class LevelEditor {
     // Remove selected objects from their respective arrays
     for (const obj of this.selectedObjects) {
       // Remove platforms
-      const platformIndex = this.gameState.platforms.indexOf(obj as any);
+      const platformIndex = this.gameState.platforms.indexOf(obj as Platform);
       if (platformIndex !== -1) {
         this.gameState.platforms.splice(platformIndex, 1);
         continue;
       }
 
       // Remove solid blocks
-      const solidBlockIndex = this.gameState.solidBlocks.indexOf(obj as any);
+      const solidBlockIndex = this.gameState.solidBlocks.indexOf(obj as SolidBlock);
       if (solidBlockIndex !== -1) {
         this.gameState.solidBlocks.splice(solidBlockIndex, 1);
         continue;
       }
 
       // Remove candles
-      const candleIndex = this.gameState.candles.indexOf(obj as any);
+      const candleIndex = this.gameState.candles.indexOf(obj as Candle);
       if (candleIndex !== -1) {
         this.gameState.candles.splice(candleIndex, 1);
         continue;
       }
 
       // Remove enemies
-      const enemyIndex = this.gameState.enemies.indexOf(obj as any);
+      const enemyIndex = this.gameState.enemies.indexOf(obj as Ghost | LandGhost);
       if (enemyIndex !== -1) {
         this.gameState.enemies.splice(enemyIndex, 1);
       }
