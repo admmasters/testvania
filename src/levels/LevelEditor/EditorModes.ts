@@ -7,4 +7,5 @@ export enum EditorMode {
   LANDGHOST = "LANDGHOST",
   PLAYER = "PLAYER",
   DELETE = "DELETE",
+  AREA_SELECT = "AREA_SELECT",
 }

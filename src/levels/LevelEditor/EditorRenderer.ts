@@ -19,6 +19,9 @@ export class EditorRenderer {
     currentPlatform: EditorPlatform | null,
     selectedObject: EditorObject,
     scrollPosition: Vector2,
+    areaSelectionStart?: Vector2 | null,
+    areaSelectionEnd?: Vector2 | null,
+    selectedObjects?: EditorObject[],
   ): void {
     ctx.save();
 
@@ -35,6 +38,16 @@ export class EditorRenderer {
     // Highlight selected object
     if (mode === EditorMode.SELECT && selectedObject) {
       this.drawSelectedObject(ctx, selectedObject);
+    }
+
+    // Draw area selection rectangle
+    if (mode === EditorMode.AREA_SELECT && areaSelectionStart && areaSelectionEnd) {
+      this.drawAreaSelection(ctx, areaSelectionStart, areaSelectionEnd);
+    }
+
+    // Highlight selected objects in area selection
+    if (selectedObjects && selectedObjects.length > 0) {
+      this.drawSelectedObjects(ctx, selectedObjects);
     }
 
     // Draw grid for alignment
@@ -89,6 +102,44 @@ export class EditorRenderer {
       ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
       ctx.strokeStyle = "#222";
       ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+    }
+    ctx.restore();
+  }
+
+  private drawAreaSelection(ctx: CanvasRenderingContext2D, start: Vector2, end: Vector2): void {
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+
+    ctx.save();
+    ctx.strokeStyle = "#00FFFF";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+
+    // Semi-transparent fill
+    ctx.fillStyle = "rgba(0, 255, 255, 0.1)";
+    ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+    ctx.restore();
+  }
+
+  private drawSelectedObjects(ctx: CanvasRenderingContext2D, objects: EditorObject[]): void {
+    ctx.save();
+    ctx.strokeStyle = "#FF00FF";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+
+    for (const obj of objects) {
+      const typedObj = obj as { position: Vector2; size: Vector2 };
+      if (typedObj.position && typedObj.size) {
+        ctx.strokeRect(
+          typedObj.position.x - 1,
+          typedObj.position.y - 1,
+          typedObj.size.x + 2,
+          typedObj.size.y + 2,
+        );
+      }
     }
     ctx.restore();
   }

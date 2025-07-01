@@ -170,6 +170,7 @@ export class EditorUI {
     };
 
     createModeButton(EditorMode.SELECT, "Select");
+    createModeButton(EditorMode.AREA_SELECT, "Area Select");
     createModeButton(EditorMode.PLATFORM, "Platform");
     createModeButton(EditorMode.SOLID_BLOCK, "Solid Block");
     createModeButton(EditorMode.CANDLE, "Candle");
@@ -289,6 +290,41 @@ export class EditorUI {
 
   getEditorContainer(): HTMLDivElement | null {
     return this.editorContainer;
+  }
+
+  updateSelectionInfo(selectedCount: number): void {
+    const container = this.getEditorContainer();
+    if (!container) return;
+
+    // Remove existing selection info
+    const existingInfo = container.querySelector(".selection-info");
+    if (existingInfo) {
+      existingInfo.remove();
+    }
+
+    if (selectedCount > 0) {
+      const infoContainer = document.createElement("div");
+      infoContainer.className = "selection-info";
+      infoContainer.style.marginBottom = "10px";
+      infoContainer.style.padding = "8px";
+      infoContainer.style.backgroundColor = "rgba(0, 255, 255, 0.2)";
+      infoContainer.style.borderRadius = "3px";
+      infoContainer.style.border = "1px solid #00FFFF";
+      infoContainer.style.fontSize = "12px";
+
+      const text = document.createElement("div");
+      text.textContent = `${selectedCount} object${selectedCount > 1 ? "s" : ""} selected`;
+      text.style.marginBottom = "5px";
+      infoContainer.appendChild(text);
+
+      const deleteHint = document.createElement("div");
+      deleteHint.textContent = "Press Delete or Backspace to remove";
+      deleteHint.style.fontSize = "11px";
+      deleteHint.style.color = "#aaa";
+      infoContainer.appendChild(deleteHint);
+
+      container.appendChild(infoContainer);
+    }
   }
 
   createDirectionControls(container: HTMLDivElement, selectedEnemy: any): void {
