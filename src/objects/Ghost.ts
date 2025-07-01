@@ -16,6 +16,7 @@ export class Ghost extends Enemy {
     this.hitDuration = 0.3;
     this.health = 2;
     this.maxHealth = 2;
+    this.expValue = 10;
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {

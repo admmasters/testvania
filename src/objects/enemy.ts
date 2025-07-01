@@ -8,6 +8,18 @@ export abstract class Enemy extends GameObject {
   hitTimer: number;
   hitDuration: number;
   isHit: boolean;
+  expValue: number;
+  private damageIndicators: Array<{
+    amount: number;
+    x: number;
+    y: number;
+    alpha: number;
+    vy: number;
+    time: number;
+  }> = [];
+  isDying: boolean = false;
+  deathTimer: number = 0;
+  static DEATH_DURATION = 0.2; // seconds to show damage after death
 
   constructor(args: {
     x: number;
@@ -26,9 +38,19 @@ export abstract class Enemy extends GameObject {
     this.hitTimer = 0;
     this.hitDuration = 0.2;
     this.isHit = false;
+    this.expValue = 10;
   }
 
   update(deltaTime: number, gameState: GameState): void {
+    if (this.isDying) {
+      this.updateTimers(deltaTime);
+      this.deathTimer -= deltaTime;
+      // Only remove when timer is up and all indicators are gone
+      if (this.deathTimer <= 0 && this.damageIndicators.length === 0) {
+        this.active = false;
+      }
+      return;
+    }
     this.updateMovement(deltaTime, gameState);
     this.updateTimers(deltaTime);
     this.handlePlayerAttack(gameState);
@@ -43,20 +65,25 @@ export abstract class Enemy extends GameObject {
         this.isHit = false;
       }
     }
+    // Update damage indicators
+    for (const indicator of this.damageIndicators) {
+      indicator.y -= indicator.vy * deltaTime;
+      indicator.alpha -= deltaTime * 1.2;
+      indicator.time += deltaTime;
+    }
+    // Remove faded indicators
+    this.damageIndicators = this.damageIndicators.filter((d) => d.alpha > 0);
   }
 
   handlePlayerAttack(gameState: GameState): void {
     const player = gameState.player;
     const attackBounds = player.getAttackBounds();
 
-    if (
-      attackBounds &&
-      this.checkCollisionWithBounds(attackBounds) &&
-      !this.isHit
-    ) {
-      this.takeDamage(1);
+    if (attackBounds && this.checkCollisionWithBounds(attackBounds) && !this.isHit) {
+      this.takeDamage(1, gameState);
       this.isHit = true;
       this.hitTimer = this.hitDuration;
+      this.showDamage(1);
 
       // Knockback
       const direction = this.position.x < player.position.x ? -1 : 1;
@@ -95,6 +122,13 @@ export abstract class Enemy extends GameObject {
     // Get render position with shake offset
     const renderPos = this.getRenderPosition();
 
+    // Fade out if dying
+    let alpha = 1.0;
+    if (this.isDying) {
+      alpha = Math.max(0, this.deathTimer / Enemy.DEATH_DURATION);
+    }
+    ctx.globalAlpha = alpha;
+
     // Flash white when hit
     if (this.isHit) {
       ctx.fillStyle = "#FFFFFF";
@@ -108,9 +142,59 @@ export abstract class Enemy extends GameObject {
       this.renderDetails(ctx);
     }
 
+    // Render floating damage indicators
+    for (const d of this.damageIndicators) {
+      ctx.save();
+      ctx.globalAlpha = d.alpha * alpha;
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#FFD700";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.strokeText(
+        `${d.amount}`,
+        d.x - this.position.x + renderPos.x,
+        d.y - this.position.y + renderPos.y,
+      );
+      ctx.fillText(
+        `${d.amount}`,
+        d.x - this.position.x + renderPos.x,
+        d.y - this.position.y + renderPos.y,
+      );
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = 1.0;
     ctx.restore();
   }
 
   protected abstract getColor(): string;
   protected abstract renderDetails(ctx: CanvasRenderingContext2D): void;
+
+  showDamage(amount: number): void {
+    this.damageIndicators.push({
+      amount,
+      x: this.position.x + this.size.x / 2,
+      y: this.position.y - 8,
+      alpha: 1,
+      vy: 32 + Math.random() * 16,
+      time: 0,
+    });
+  }
+
+  takeDamage(amount: number, gameState?: GameState): void {
+    this.health -= amount;
+    if (this.health <= 0 && !this.isDying) {
+      this.isDying = true;
+      this.deathTimer = Enemy.DEATH_DURATION;
+      // Poof effect at center of enemy
+      if (gameState) {
+        gameState.createPoofEffect(
+          this.position.x + this.size.x / 2,
+          this.position.y + this.size.y / 2,
+        );
+      }
+      // Optionally: play death animation or sound here
+    }
+  }
 }

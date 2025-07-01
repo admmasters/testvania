@@ -6,6 +6,7 @@ import type { SolidBlock } from "./solidBlock";
 export class LandGhost extends Enemy {
   constructor(x: number, y: number) {
     super({ x, y, type: "landghost" });
+    this.expValue = 15;
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {

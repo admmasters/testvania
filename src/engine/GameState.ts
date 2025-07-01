@@ -1,10 +1,10 @@
 import { LevelManager } from "../levels/LevelManager";
 import type { Candle } from "../objects/candle";
 import type { Enemy } from "../objects/enemy";
-import { HitSpark } from "../objects/hitSpark";
+import { HitSpark, PoofEffect } from "../objects/hitSpark";
 import type { Platform } from "../objects/platform";
-import type { SolidBlock } from "../objects/solidBlock";
 import { Player } from "../objects/player";
+import type { SolidBlock } from "../objects/solidBlock";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -25,6 +25,7 @@ export class GameState {
   hitPauseDuration: number;
   spawnTimer: number;
   spawnInterval: number;
+  poofEffects: PoofEffect[] = [];
 
   constructor(levelId: string = "level1") {
     // Initialize the level manager
@@ -135,9 +136,17 @@ export class GameState {
       }
     }
 
-    // Remove inactive enemies and hit sparks
+    // Update poof effects
+    for (const poof of this.poofEffects) {
+      if (poof.active) {
+        poof.update(deltaTime, this);
+      }
+    }
+
+    // Remove inactive enemies, hit sparks, and poof effects
     this.enemies = this.enemies.filter((enemy) => enemy.active);
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
+    this.poofEffects = this.poofEffects.filter((poof) => poof.active);
 
     // Automatic enemy spawning is disabled - enemies are placed via the level editor only
     // The timer is kept but not used for spawning
@@ -177,6 +186,10 @@ export class GameState {
 
   createHitSpark(x: number, y: number): void {
     this.hitSparks.push(new HitSpark(x, y));
+  }
+
+  createPoofEffect(x: number, y: number): void {
+    this.poofEffects.push(new PoofEffect(x, y));
   }
 
   levelEditor: {
@@ -227,6 +240,13 @@ export class GameState {
     for (const spark of this.hitSparks) {
       if (spark.active) {
         spark.render(ctx);
+      }
+    }
+
+    // Draw poof effects (on top of hit sparks)
+    for (const poof of this.poofEffects) {
+      if (poof.active) {
+        poof.render(ctx);
       }
     }
 
