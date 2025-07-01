@@ -112,31 +112,65 @@ export class EditorUtils {
     canvas: HTMLCanvasElement;
   }): void {
     const { ctx, scrollPosition, canvas } = args;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 0.5;
 
-    // Calculate grid boundaries based on scroll position and canvas size
-    // We need to calculate grid position in world space
+    // Calculate grid boundaries in world space (slightly extended to avoid gaps at edges)
     const startX = Math.floor(scrollPosition.x / 16) * 16;
     const startY = Math.floor(scrollPosition.y / 16) * 16;
     const endX = startX + canvas.width + 32;
     const endY = startY + canvas.height + 32;
 
-    // Draw vertical lines
-    for (let x = startX; x < endX; x += 16) {
+    // Helper to draw a single line with the desired opacity and width
+    const drawLine = (
+      fromX: number,
+      fromY: number,
+      toX: number,
+      toY: number,
+      alpha: number,
+      width: number,
+    ) => {
       ctx.beginPath();
-      ctx.moveTo(x, startY);
-      ctx.lineTo(x, endY);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = width;
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
       ctx.stroke();
+    };
+
+    // Draw vertical grid lines
+    for (let x = startX; x < endX; x += 16) {
+      const worldX = x;
+      const is64 = worldX % 64 === 0;
+      const is32 = worldX % 32 === 0;
+
+      if (is64) {
+        // Major line every 64px
+        drawLine(x, startY, x, endY, 0.5, 1.5);
+      } else if (is32) {
+        // Medium line every 32px
+        drawLine(x, startY, x, endY, 0.35, 1);
+      } else {
+        // Minor 16px grid line
+        drawLine(x, startY, x, endY, 0.15, 0.5);
+      }
     }
 
-    // Draw horizontal lines
+    // Draw horizontal grid lines
     for (let y = startY; y < endY; y += 16) {
-      ctx.beginPath();
-      ctx.moveTo(startX, y);
-      ctx.lineTo(endX, y);
-      ctx.stroke();
+      const worldY = y;
+      const is64 = worldY % 64 === 0;
+      const is32 = worldY % 32 === 0;
+
+      if (is64) {
+        drawLine(startX, y, endX, y, 0.5, 1.5);
+      } else if (is32) {
+        drawLine(startX, y, endX, y, 0.35, 1);
+      } else {
+        drawLine(startX, y, endX, y, 0.15, 0.5);
+      }
     }
+
+    // Reset default line width
+    ctx.lineWidth = 1;
   }
 
   static getHandleSize(): number {

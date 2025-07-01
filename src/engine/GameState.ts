@@ -101,21 +101,6 @@ export class GameState {
   }
 
   update(deltaTime: number): void {
-    // Handle hit pause
-    if (this.hitPauseTimer > 0) {
-      this.hitPauseTimer -= deltaTime;
-
-      // Update shake effects during hit pause
-      this.player.updateShake(deltaTime);
-      for (const enemy of this.enemies) {
-        if (enemy.active) {
-          enemy.updateShake(deltaTime);
-        }
-      }
-
-      return; // Skip all other updates during hit pause
-    }
-
     // Update candles
     for (const candle of this.candles) {
       if (candle.active) {
@@ -186,16 +171,24 @@ export class GameState {
     this.floatingExpIndicators = this.floatingExpIndicators.filter((e) => e.alpha > 0);
   }
 
-  hitPause(duration: number): void {
-    this.hitPauseTimer = duration;
-    this.hitPauseDuration = duration;
-
-    // Start shake effect on player and enemies during hit pause
-    const shakeIntensity = 2; // 2 pixels shake
+  /**
+   * Apply shake effects to specific enemies and the player without freezing the game.
+   * If no targets are provided, all active enemies will shake (legacy behaviour).
+   */
+  hitPause(duration: number, targetEnemies?: Enemy[]): void {
+    const shakeIntensity = 6; // pixels - increased for more impact
+    // Always shake the player so feedback is clear
     this.player.startShake(shakeIntensity, duration);
-    for (const enemy of this.enemies) {
-      if (enemy.active) {
-        enemy.startShake(shakeIntensity, duration);
+
+    // Determine which enemies to shake
+    if (targetEnemies && targetEnemies.length > 0) {
+      for (const enemy of targetEnemies) {
+        if (enemy.active) enemy.startShake(shakeIntensity, duration);
+      }
+    } else {
+      // Legacy: shake everyone
+      for (const enemy of this.enemies) {
+        if (enemy.active) enemy.startShake(shakeIntensity, duration);
       }
     }
   }

@@ -25,6 +25,7 @@ export class LevelEditor {
   private scrollPosition: Vector2 = new Vector2(0, 0);
   private levelWidth: number = 800;
   private levelHeight: number = 600;
+  private mousePosition: Vector2 = new Vector2(0, 0); // Current mouse position in world coordinates
 
   // Area selection state
   private areaSelectionStart: Vector2 | null = null;
@@ -154,6 +155,8 @@ export class LevelEditor {
       this.areaSelectionStart,
       this.areaSelectionEnd,
       this.selectedObjects,
+      this.mousePosition,
+      this.resizing,
     );
   }
 
@@ -203,6 +206,13 @@ export class LevelEditor {
   };
 
   private handleMouseMove = (e: MouseEvent) => {
+    // Update mouse position for display feedback
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    this.mousePosition.x = x + this.scrollPosition.x;
+    this.mousePosition.y = y + this.scrollPosition.y;
+
     this.mouseHandler.handleMouseMove({
       e,
       mode: this.mode,

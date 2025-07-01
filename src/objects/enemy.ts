@@ -86,19 +86,18 @@ export abstract class Enemy extends GameObject {
       this.hitTimer = this.hitDuration;
       this.showDamage(1);
 
-      // Knockback
+      // Knockback - increased for more dramatic impact
       const direction = this.position.x < player.position.x ? -1 : 1;
-      this.velocity.x = direction * 200;
-      this.velocity.y = -150;
+      this.velocity.x = direction * 300;
+      this.velocity.y = -200;
 
       // Create hit spark at the point of impact
       const sparkX = this.position.x + (direction < 0 ? this.size.x : 0); // Spawn at the side of impact
       const sparkY = this.position.y + this.size.y / 2; // Centered vertically
       gameState.createHitSpark(sparkX, sparkY);
 
-      // Hit pause effect
-      gameState.hitPause(0.1);
-      gameState.camera.shake(0.2, 3);
+      // Hit pause effect (shake only player and this enemy) - increased duration for more impact
+      gameState.hitPause(0.15, [this]);
     }
   }
 

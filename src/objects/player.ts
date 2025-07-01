@@ -331,7 +331,7 @@ export class Player extends GameObject {
         this.velocity.x = direction * 150;
         this.velocity.y = -200;
 
-        gameState.camera.shake(0.3, 5);
+        // No global camera shake; individual objects will shake via GameState.hitPause.
         break;
       }
     }
@@ -343,12 +343,9 @@ export class Player extends GameObject {
   }
 
   // Enhanced attack method that could be called from GameState for screen shake
-  performAttack(gameState?: GameState): void {
+  performAttack(_gameState?: GameState): void {
     this.attack();
-    // Add ultra-intense screen shake for razor-sharp attacks
-    if (gameState?.camera) {
-      gameState.camera.shake(0.04, 4.0);
-    }
+    // No global camera shake; individual objects will shake via GameState.hitPause.
   }
 
   getAttackBounds(): {

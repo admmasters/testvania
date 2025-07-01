@@ -69,8 +69,7 @@ export class Ghost extends Enemy {
       const sparkX = this.position.x + (direction < 0 ? this.size.x : 0);
       const sparkY = this.position.y + this.size.y / 2;
       gameState.createHitSpark(sparkX, sparkY);
-      gameState.hitPause(0.1);
-      gameState.camera.shake(0.1, 2);
+      gameState.hitPause(0.1, [this]);
     }
   }
 
