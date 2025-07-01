@@ -26,6 +26,14 @@ export class GameState {
   spawnTimer: number;
   spawnInterval: number;
   poofEffects: PoofEffect[] = [];
+  floatingExpIndicators: Array<{
+    amount: number;
+    x: number;
+    y: number;
+    alpha: number;
+    vy: number;
+    time: number;
+  }> = [];
 
   constructor(levelId: string = "level1") {
     // Initialize the level manager
@@ -168,6 +176,14 @@ export class GameState {
     }
     this.camera.update(deltaTime);
     this.input.update();
+
+    // Update floating exp indicators
+    for (const exp of this.floatingExpIndicators) {
+      exp.y -= exp.vy * deltaTime;
+      exp.alpha -= deltaTime * 1.2;
+      exp.time += deltaTime;
+    }
+    this.floatingExpIndicators = this.floatingExpIndicators.filter((e) => e.alpha > 0);
   }
 
   hitPause(duration: number): void {
@@ -250,6 +266,20 @@ export class GameState {
       }
     }
 
+    // Draw floating exp indicators (on top of everything else)
+    for (const exp of this.floatingExpIndicators) {
+      ctx.save();
+      ctx.globalAlpha = exp.alpha;
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#00FFAA";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.strokeText(`+${exp.amount} EXP`, exp.x, exp.y);
+      ctx.fillText(`+${exp.amount} EXP`, exp.x, exp.y);
+      ctx.restore();
+    }
+
     // Render level editor UI if active
     if (this.levelEditor?.isEditorActive()) {
       this.levelEditor.render(ctx);
@@ -307,5 +337,17 @@ export class GameState {
 
     // Restore the context state
     ctx.restore();
+  }
+
+  awardExp(amount: number, x: number, y: number): void {
+    this.player.gainExp(amount);
+    this.floatingExpIndicators.push({
+      amount,
+      x,
+      y,
+      alpha: 1,
+      vy: 32 + Math.random() * 16,
+      time: 0,
+    });
   }
 }

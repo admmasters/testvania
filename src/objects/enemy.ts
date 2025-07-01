@@ -9,7 +9,7 @@ export abstract class Enemy extends GameObject {
   hitDuration: number;
   isHit: boolean;
   expValue: number;
-  private damageIndicators: Array<{
+  protected damageIndicators: Array<{
     amount: number;
     x: number;
     y: number;
@@ -193,6 +193,7 @@ export abstract class Enemy extends GameObject {
           this.position.x + this.size.x / 2,
           this.position.y + this.size.y / 2,
         );
+        gameState.awardExp(this.expValue, this.position.x + this.size.x / 2, this.position.y);
       }
       // Optionally: play death animation or sound here
     }

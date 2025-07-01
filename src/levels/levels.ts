@@ -11,7 +11,7 @@ export const levels: LevelData[] = [
   {
     id: "level1",
     name: "Custom Level 1",
-    width: 800,
+    width: 1600,
     height: 600,
     background: {
       color: "#2C1810",
@@ -29,7 +29,15 @@ export const levels: LevelData[] = [
     ],
     solidBlocks: [{ position: vec2(1504, 176), size: vec2(32, 368), color: "#4A4A4A" }],
     candles: [],
-    enemies: [{ position: vec2(592, 512), type: "landghost" }],
+    enemies: [
+      { position: vec2(592, 512), type: "landghost" },
+      { position: vec2(368, 464), type: "ghost" },
+      { position: vec2(496, 464), type: "ghost" },
+      { position: vec2(688, 464), type: "ghost" },
+      { position: vec2(784, 512), type: "landghost" },
+      { position: vec2(944, 512), type: "landghost" },
+      { position: vec2(1072, 512), type: "landghost" },
+    ],
     player: {
       position: vec2(64, 496),
     },
