@@ -27,14 +27,15 @@ export abstract class Enemy extends GameObject {
     type: string;
     width?: number;
     height?: number;
+    direction?: number;
   }) {
-    const { x, y, type, width = 24, height = 32 } = args;
+    const { x, y, type, width = 24, height = 32, direction } = args;
     super({ x, y, width, height });
     this.type = type;
     this.health = 3;
     this.maxHealth = 3;
     this.speed = 50;
-    this.direction = Math.random() > 0.5 ? 1 : -1;
+    this.direction = direction ?? (Math.random() > 0.5 ? 1 : -1);
     this.hitTimer = 0;
     this.hitDuration = 0.2;
     this.isHit = false;

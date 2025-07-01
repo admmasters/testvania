@@ -15,7 +15,7 @@ export interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
   solidBlocks: { position: Vector2; size: Vector2; color: string }[];
   candles: { position: Vector2 }[];
-  enemies: { position: Vector2; type: string }[];
+  enemies: { position: Vector2; type: string; direction?: number }[];
   player: { position: Vector2 };
   scrollPosition: Vector2;
 }

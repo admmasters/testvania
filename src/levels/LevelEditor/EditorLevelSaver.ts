@@ -69,9 +69,10 @@ export class EditorLevelSaver {
     const enemies = this.gameState.enemies
       .map((e) => {
         const enemyType = e.type === "ghost" ? "ghost" : "landghost";
+        const directionStr = e.direction !== undefined ? `, direction: ${e.direction}` : "";
         return `  { position: vec2(${this.utils.snap16(e.position.x)}, ${this.utils.snap16(
           e.position.y,
-        )}), type: "${enemyType}" },`;
+        )}), type: "${enemyType}"${directionStr} },`;
       })
       .join("\n");
 

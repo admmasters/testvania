@@ -296,9 +296,9 @@ export class GameState {
     // Save the current context state
     ctx.save();
 
-    // Draw a semi-transparent background for the UI
+    // Expand UI background to accommodate level and exp info
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(16, 16, 200, 88); // Adjusted to multiples of 8
+    ctx.fillRect(16, 16, 220, 128); // Increased height for level info
 
     // Ensure consistent text alignment for all UI text
     ctx.textAlign = "left";
@@ -306,20 +306,27 @@ export class GameState {
 
     // Draw UI text
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "16px monospace"; // Adjusted to multiple of 8
-    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 32); // Adjusted position
+    ctx.font = "16px monospace";
 
-    // Draw player health/energy bar
-    const healthBarWidth = 160; // Already a multiple of 8
-    const healthBarHeight = 8; // Adjusted to multiple of 8
+    // Player level
+    ctx.fillText(`Level: ${this.player.level}`, 32, 32);
+
+    // Enemy count (moved down)
+    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 48);
+
+    // Draw player health bar
+    const barWidth = 160;
+    const barHeight = 8;
     const healthPercentage = this.player.health / this.player.maxHealth;
 
-    // Draw the empty bar background
+    // Health bar label
+    ctx.fillText("Health:", 32, 64);
+
+    // Draw the empty health bar background
     ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+    ctx.fillRect(32, 80, barWidth, barHeight);
 
     // Draw the filled portion of the health bar
-    // Color changes based on health: green > yellow > red
     if (healthPercentage > 0.6) {
       ctx.fillStyle = "#00FF00"; // Green for good health
     } else if (healthPercentage > 0.3) {
@@ -328,12 +335,35 @@ export class GameState {
       ctx.fillStyle = "#FF0000"; // Red for low health
     }
 
-    ctx.fillRect(32, 56, healthBarWidth * healthPercentage, healthBarHeight); // Adjusted x to multiple of 8
+    ctx.fillRect(32, 80, barWidth * healthPercentage, barHeight);
 
     // Draw border around health bar
     ctx.strokeStyle = "#FFFFFF";
     ctx.lineWidth = 1;
-    ctx.strokeRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+    ctx.strokeRect(32, 80, barWidth, barHeight);
+
+    // Draw experience bar
+    const expPercentage = this.player.exp / this.player.expToNext;
+
+    // Experience bar label and values
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText("Experience:", 32, 96);
+    ctx.font = "12px monospace";
+    ctx.fillText(`${this.player.exp}/${this.player.expToNext}`, 32, 112);
+    ctx.font = "16px monospace";
+
+    // Draw the empty exp bar background
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(32, 128, barWidth, barHeight);
+
+    // Draw the filled portion of the exp bar
+    ctx.fillStyle = "#00AAFF"; // Blue for experience
+    ctx.fillRect(32, 128, barWidth * expPercentage, barHeight);
+
+    // Draw border around exp bar
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(32, 128, barWidth, barHeight);
 
     // Restore the context state
     ctx.restore();

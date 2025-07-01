@@ -71,6 +71,9 @@ export class LevelEditor {
         this.levelWidth = width;
         this.levelHeight = height;
       },
+      onDirectionChange: (direction) => {
+        this.changeSelectedEnemyDirection(direction);
+      },
     });
   }
 
@@ -99,6 +102,9 @@ export class LevelEditor {
       this.levelHeight,
       this.handleUndoRedoKeys,
     );
+
+    // Show direction controls if an enemy is selected
+    this.updateDirectionControls();
 
     // Add event listeners
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
@@ -183,6 +189,7 @@ export class LevelEditor {
       },
       onSelectedObject: (obj: EditorObject) => {
         this.selectedObject = obj;
+        this.updateDirectionControls();
       },
       onPushUndoState: () => this.pushUndoState(),
     });
@@ -306,5 +313,24 @@ export class LevelEditor {
 
   private updateScrollIndicator(): void {
     this.ui.updateScrollIndicator(this.scrollPosition.x, this.scrollPosition.y);
+  }
+
+  private changeSelectedEnemyDirection(direction: number): void {
+    if (
+      this.selectedObject &&
+      "type" in this.selectedObject &&
+      (this.selectedObject.type === "ghost" || this.selectedObject.type === "landghost")
+    ) {
+      this.pushUndoState();
+      (this.selectedObject as any).direction = direction;
+      this.updateDirectionControls(); // Update UI to reflect the change
+    }
+  }
+
+  private updateDirectionControls(): void {
+    const container = this.ui.getEditorContainer();
+    if (container) {
+      this.ui.createDirectionControls(container, this.selectedObject);
+    }
   }
 }

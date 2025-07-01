@@ -10,6 +10,7 @@ export class EditorUI {
   private onClose: () => void;
   private onColorChange: (color: string) => void;
   private onLevelSizeChange: (width: number, height: number) => void;
+  private onDirectionChange: (direction: number) => void;
 
   constructor(callbacks: {
     onModeChange: (mode: EditorMode) => void;
@@ -19,6 +20,7 @@ export class EditorUI {
     onClose: () => void;
     onColorChange: (color: string) => void;
     onLevelSizeChange: (width: number, height: number) => void;
+    onDirectionChange: (direction: number) => void;
   }) {
     this.onModeChange = callbacks.onModeChange;
     this.onUndo = callbacks.onUndo;
@@ -27,6 +29,7 @@ export class EditorUI {
     this.onClose = callbacks.onClose;
     this.onColorChange = callbacks.onColorChange;
     this.onLevelSizeChange = callbacks.onLevelSizeChange;
+    this.onDirectionChange = callbacks.onDirectionChange;
   }
 
   createEditorUI(
@@ -34,7 +37,7 @@ export class EditorUI {
     platformColor: string,
     levelWidth: number,
     levelHeight: number,
-    onUndoRedoKeys: (e: KeyboardEvent) => void
+    onUndoRedoKeys: (e: KeyboardEvent) => void,
   ): void {
     // Create editor container
     const container = document.createElement("div");
@@ -81,7 +84,7 @@ export class EditorUI {
   private createLevelSizeControls(
     container: HTMLDivElement,
     levelWidth: number,
-    levelHeight: number
+    levelHeight: number,
   ): void {
     const sizeContainer = document.createElement("div");
     sizeContainer.style.marginBottom = "10px";
@@ -93,7 +96,7 @@ export class EditorUI {
     const widthLabel = document.createElement("label");
     widthLabel.textContent = "Width: ";
     sizeContainer.appendChild(widthLabel);
-    
+
     const widthInput = document.createElement("input");
     widthInput.type = "number";
     widthInput.min = "320";
@@ -111,7 +114,7 @@ export class EditorUI {
     const heightLabel = document.createElement("label");
     heightLabel.textContent = "Height: ";
     sizeContainer.appendChild(heightLabel);
-    
+
     const heightInput = document.createElement("input");
     heightInput.type = "number";
     heightInput.min = "240";
@@ -181,7 +184,7 @@ export class EditorUI {
   private createColorPicker(
     container: HTMLDivElement,
     currentMode: EditorMode,
-    platformColor: string
+    platformColor: string,
   ): void {
     if (currentMode === EditorMode.PLATFORM) {
       const colorContainer = document.createElement("div");
@@ -284,6 +287,74 @@ export class EditorUI {
     this.scrollIndicator.textContent = `Scroll: ${Math.round(x)}, ${Math.round(y)}`;
   }
 
+  getEditorContainer(): HTMLDivElement | null {
+    return this.editorContainer;
+  }
+
+  createDirectionControls(container: HTMLDivElement, selectedEnemy: any): void {
+    // Remove any existing direction controls
+    const existingControls = container.querySelector(".direction-controls");
+    if (existingControls) {
+      existingControls.remove();
+    }
+
+    if (!selectedEnemy || (selectedEnemy.type !== "ghost" && selectedEnemy.type !== "landghost")) {
+      return;
+    }
+
+    const directionContainer = document.createElement("div");
+    directionContainer.className = "direction-controls";
+    directionContainer.style.marginBottom = "10px";
+    directionContainer.style.padding = "10px";
+    directionContainer.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+    directionContainer.style.borderRadius = "3px";
+
+    const title = document.createElement("div");
+    title.textContent = "Enemy Direction:";
+    title.style.marginBottom = "5px";
+    title.style.fontWeight = "bold";
+    directionContainer.appendChild(title);
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "5px";
+
+    // Left direction button
+    const leftButton = document.createElement("button");
+    leftButton.textContent = "← Left";
+    leftButton.style.padding = "5px 10px";
+    leftButton.style.cursor = "pointer";
+    leftButton.style.backgroundColor = selectedEnemy.direction === -1 ? "#007bff" : "#343a40";
+    leftButton.style.border = "none";
+    leftButton.style.borderRadius = "3px";
+    leftButton.style.color = "white";
+    leftButton.addEventListener("click", () => {
+      this.onDirectionChange(-1);
+      leftButton.style.backgroundColor = "#007bff";
+      rightButton.style.backgroundColor = "#343a40";
+    });
+    buttonContainer.appendChild(leftButton);
+
+    // Right direction button
+    const rightButton = document.createElement("button");
+    rightButton.textContent = "Right →";
+    rightButton.style.padding = "5px 10px";
+    rightButton.style.cursor = "pointer";
+    rightButton.style.backgroundColor = selectedEnemy.direction === 1 ? "#007bff" : "#343a40";
+    rightButton.style.border = "none";
+    rightButton.style.borderRadius = "3px";
+    rightButton.style.color = "white";
+    rightButton.addEventListener("click", () => {
+      this.onDirectionChange(1);
+      rightButton.style.backgroundColor = "#007bff";
+      leftButton.style.backgroundColor = "#343a40";
+    });
+    buttonContainer.appendChild(rightButton);
+
+    directionContainer.appendChild(buttonContainer);
+    container.appendChild(directionContainer);
+  }
+
   cleanup(): void {
     if (this.editorContainer?.parentElement) {
       this.editorContainer.parentElement.removeChild(this.editorContainer);
@@ -295,4 +366,4 @@ export class EditorUI {
       this.scrollIndicator = null;
     }
   }
-} 
+}

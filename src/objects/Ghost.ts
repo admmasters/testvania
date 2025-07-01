@@ -7,8 +7,8 @@ export class Ghost extends Enemy {
   floatAmplitude: number;
   baseY: number;
 
-  constructor(x: number, y: number) {
-    super({ x, y, type: "ghost" });
+  constructor(x: number, y: number, direction?: number) {
+    super({ x, y, type: "ghost", direction });
     this.speed = 40;
     this.floatTimer = Math.random() * Math.PI * 2;
     this.floatAmplitude = 10;

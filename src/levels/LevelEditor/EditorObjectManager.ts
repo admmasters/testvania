@@ -154,8 +154,8 @@ export class EditorObjectManager {
     const ghostX = snapped.x - 12; // Center the 24px wide ghost
     const ghostY = snapped.y - 16; // Position the 32px tall ghost
 
-    // Create the ghost
-    const newGhost = new Ghost(ghostX, ghostY);
+    // Create the ghost with default direction (right)
+    const newGhost = new Ghost(ghostX, ghostY, 1);
     this.gameState.enemies.push(newGhost);
   }
 
@@ -166,8 +166,8 @@ export class EditorObjectManager {
     const enemyX = snapped.x - 12; // Center the 24px wide enemy
     const enemyY = snapped.y - 16; // Position the 32px tall enemy
 
-    // Create the enemy
-    const newEnemy = new LandGhost(enemyX, enemyY);
+    // Create the enemy with default direction (right)
+    const newEnemy = new LandGhost(enemyX, enemyY, 1);
 
     // When creating an enemy through the editor, initialize with zero vertical velocity
     // to prevent immediate falling
