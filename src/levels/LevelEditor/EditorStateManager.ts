@@ -35,6 +35,7 @@ export class EditorStateManager {
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
         type: e.type,
+        direction: e.direction,
       })),
       player: { position: this.gameState.player.position.copy() },
       scrollPosition: scrollPosition.copy(),
@@ -87,6 +88,7 @@ export class EditorStateManager {
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
         type: e.type,
+        direction: e.direction,
       })),
       player: { position: this.gameState.player.position.copy() },
       scrollPosition: scrollPosition.copy(),
@@ -96,24 +98,26 @@ export class EditorStateManager {
   private restoreState(state: EditorState): void {
     // Restore platforms
     this.gameState.platforms = state.platforms.map(
-      (p) => new Platform({
-        x: p.position.x,
-        y: p.position.y,
-        width: p.size.x,
-        height: p.size.y,
-        color: p.color,
-      }),
+      (p) =>
+        new Platform({
+          x: p.position.x,
+          y: p.position.y,
+          width: p.size.x,
+          height: p.size.y,
+          color: p.color,
+        }),
     );
 
     // Restore solid blocks
     this.gameState.solidBlocks = (state.solidBlocks || []).map(
-      (sb) => new SolidBlock({
-        x: sb.position.x,
-        y: sb.position.y,
-        width: sb.size.x,
-        height: sb.size.y,
-        color: sb.color,
-      }),
+      (sb) =>
+        new SolidBlock({
+          x: sb.position.x,
+          y: sb.position.y,
+          width: sb.size.x,
+          height: sb.size.y,
+          color: sb.color,
+        }),
     );
 
     // Restore candles
@@ -123,9 +127,9 @@ export class EditorStateManager {
     this.gameState.enemies = state.enemies.map((e) => {
       const enemyType = e.type || "landghost"; // Default to landghost for backward compatibility
       if (enemyType === "ghost") {
-        return new Ghost(e.position.x, e.position.y);
+        return new Ghost(e.position.x, e.position.y, e.direction);
       } else {
-        return new LandGhost(e.position.x, e.position.y);
+        return new LandGhost(e.position.x, e.position.y, e.direction);
       }
     });
 

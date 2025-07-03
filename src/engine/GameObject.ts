@@ -87,6 +87,9 @@ export class GameObject {
   }
 
   getRenderPosition(): Vector2 {
-    return new Vector2(this.position.x + this.shakeOffset.x, this.position.y + this.shakeOffset.y);
+    // Round to integer pixels for pixel-perfect rendering
+    const x = Math.round(this.position.x + this.shakeOffset.x);
+    const y = Math.round(this.position.y + this.shakeOffset.y);
+    return new Vector2(x, y);
   }
 }

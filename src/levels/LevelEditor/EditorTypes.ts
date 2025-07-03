@@ -15,7 +15,7 @@ export interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
   solidBlocks: { position: Vector2; size: Vector2; color: string }[];
   candles: { position: Vector2 }[];
-  enemies: { position: Vector2; type: string }[];
+  enemies: { position: Vector2; type: string; direction?: number }[];
   player: { position: Vector2 };
   scrollPosition: Vector2;
 }
@@ -32,4 +32,21 @@ export interface ResizeHandle {
   y: number;
 }
 
+// Type for enemies that have direction property
+export interface EnemyWithDirection {
+  type: string;
+  direction: number;
+  position: Vector2;
+  size: Vector2;
+}
+
+// Type for objects that can be positioned and sized in the editor
+export interface PositionedObject {
+  position: Vector2;
+  size: Vector2;
+}
+
 export type EditorObject = Platform | SolidBlock | Candle | LandGhost | Ghost | object | null;
+
+// Type for selected enemy objects that can have their direction changed
+export type SelectableEnemy = (Ghost | LandGhost) & { type: string; direction?: number };

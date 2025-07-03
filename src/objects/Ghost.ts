@@ -7,8 +7,8 @@ export class Ghost extends Enemy {
   floatAmplitude: number;
   baseY: number;
 
-  constructor(x: number, y: number) {
-    super({ x, y, type: "ghost" });
+  constructor(x: number, y: number, direction?: number) {
+    super({ x, y, type: "ghost", direction });
     this.speed = 40;
     this.floatTimer = Math.random() * Math.PI * 2;
     this.floatAmplitude = 10;
@@ -16,6 +16,7 @@ export class Ghost extends Enemy {
     this.hitDuration = 0.3;
     this.health = 2;
     this.maxHealth = 2;
+    this.expValue = 10;
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {
@@ -57,7 +58,8 @@ export class Ghost extends Enemy {
     const player = gameState.player;
     const attackBounds = player.getAttackBounds();
     if (attackBounds && this.checkCollisionWithBounds(attackBounds) && !this.isHit) {
-      this.takeDamage(1);
+      this.takeDamage(1, gameState);
+      this.showDamage(1);
       this.isHit = true;
       this.hitTimer = this.hitDuration;
       // Knockback (ghosts float, so just a little push)
@@ -67,8 +69,7 @@ export class Ghost extends Enemy {
       const sparkX = this.position.x + (direction < 0 ? this.size.x : 0);
       const sparkY = this.position.y + this.size.y / 2;
       gameState.createHitSpark(sparkX, sparkY);
-      gameState.hitPause(0.1);
-      gameState.camera.shake(0.1, 2);
+      gameState.hitPause(0.1, [this]);
     }
   }
 
@@ -92,7 +93,14 @@ export class Ghost extends Enemy {
     // Get render position with shake offset
     const renderPos = this.getRenderPosition();
 
-    ctx.globalAlpha = 0.6;
+    // Fade out if dying (match Enemy)
+    let alpha = 1.0;
+    if (this.isDying) {
+      alpha = Math.max(0, this.deathTimer / (this.constructor as typeof Enemy).DEATH_DURATION);
+    }
+    ctx.globalAlpha = alpha;
+
+    ctx.globalAlpha *= 0.6;
     ctx.fillStyle = this.isHit ? "#FFFFFF" : this.getColor();
     ctx.beginPath();
     ctx.ellipse(
@@ -107,8 +115,30 @@ export class Ghost extends Enemy {
     ctx.fill();
 
     if (!this.isHit) {
-      ctx.globalAlpha = 1.0;
+      ctx.globalAlpha = alpha; // restore full alpha for details
       this.renderDetails(ctx);
+    }
+
+    // Render floating damage indicators (copied from Enemy)
+    for (const d of this.damageIndicators) {
+      ctx.save();
+      ctx.globalAlpha = d.alpha * alpha * 0.6; // match ghost alpha and fade
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#FFD700";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.strokeText(
+        `${d.amount}`,
+        d.x - this.position.x + renderPos.x,
+        d.y - this.position.y + renderPos.y,
+      );
+      ctx.fillText(
+        `${d.amount}`,
+        d.x - this.position.x + renderPos.x,
+        d.y - this.position.y + renderPos.y,
+      );
+      ctx.restore();
     }
 
     ctx.restore();

@@ -1,18 +1,25 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
+import type { Candle } from "@/objects/candle";
+import type { Ghost } from "@/objects/Ghost";
+import type { LandGhost } from "@/objects/LandGhost";
+import type { Platform } from "@/objects/platform";
+import type { SolidBlock } from "@/objects/solidBlock";
 import { EditorLevelSaver } from "./LevelEditor/EditorLevelSaver";
 import { EditorMode } from "./LevelEditor/EditorModes";
 import { EditorMouseHandler } from "./LevelEditor/EditorMouseHandler";
 import { EditorObjectManager } from "./LevelEditor/EditorObjectManager";
 import { EditorRenderer } from "./LevelEditor/EditorRenderer";
 import { EditorStateManager } from "./LevelEditor/EditorStateManager";
-import type { EditorObject, EditorPlatform, ResizeState } from "./LevelEditor/EditorTypes";
+import type {
+  EditorObject,
+  EditorPlatform,
+  PositionedObject,
+  ResizeState,
+  SelectableEnemy,
+} from "./LevelEditor/EditorTypes";
 import { EditorUI } from "./LevelEditor/EditorUI";
 import { EditorUtils } from "./LevelEditor/EditorUtils";
-
-interface HasLevelData {
-  levelData?: { width?: number; height?: number };
-}
 
 export class LevelEditor {
   private gameState: GameState;
@@ -29,6 +36,12 @@ export class LevelEditor {
   private scrollPosition: Vector2 = new Vector2(0, 0);
   private levelWidth: number = 800;
   private levelHeight: number = 600;
+  private mousePosition: Vector2 = new Vector2(0, 0); // Current mouse position in world coordinates
+
+  // Area selection state
+  private areaSelectionStart: Vector2 | null = null;
+  private areaSelectionEnd: Vector2 | null = null;
+  private selectedObjects: EditorObject[] = [];
 
   // Module instances
   private ui: EditorUI;
@@ -71,6 +84,9 @@ export class LevelEditor {
         this.levelWidth = width;
         this.levelHeight = height;
       },
+      onDirectionChange: (direction) => {
+        this.changeSelectedEnemyDirection(direction);
+      },
     });
   }
 
@@ -79,12 +95,12 @@ export class LevelEditor {
     this.isActive = true;
 
     // Initialize level size from current level if available
-    if ("levelData" in this.gameState) {
-      const levelData = (this.gameState as HasLevelData).levelData;
-      if (levelData) {
-        this.levelWidth = levelData.width ?? 800;
-        this.levelHeight = levelData.height ?? 600;
-      }
+    const currentLevelData = this.gameState.levelManager.getLevelData(
+      this.gameState.currentLevelId ?? "",
+    );
+    if (currentLevelData) {
+      this.levelWidth = currentLevelData.width;
+      this.levelHeight = currentLevelData.height;
     }
 
     // Synchronize editor scroll position with game camera
@@ -99,6 +115,9 @@ export class LevelEditor {
       this.levelHeight,
       this.handleUndoRedoKeys,
     );
+
+    // Show direction controls if an enemy is selected
+    this.updateDirectionControls();
 
     // Add event listeners
     this.canvas.addEventListener("mousedown", this.handleMouseDown);
@@ -144,6 +163,11 @@ export class LevelEditor {
       this.currentPlatform,
       this.selectedObject,
       this.scrollPosition,
+      this.areaSelectionStart,
+      this.areaSelectionEnd,
+      this.selectedObjects,
+      this.mousePosition,
+      this.resizing ?? undefined,
     );
   }
 
@@ -183,12 +207,23 @@ export class LevelEditor {
       },
       onSelectedObject: (obj: EditorObject) => {
         this.selectedObject = obj;
+        this.updateDirectionControls();
+      },
+      onAreaSelectionStart: (worldPos: Vector2) => {
+        this.startAreaSelection(worldPos);
       },
       onPushUndoState: () => this.pushUndoState(),
     });
   };
 
   private handleMouseMove = (e: MouseEvent) => {
+    // Update mouse position for display feedback
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    this.mousePosition.x = x + this.scrollPosition.x;
+    this.mousePosition.y = y + this.scrollPosition.y;
+
     this.mouseHandler.handleMouseMove({
       e,
       mode: this.mode,
@@ -205,6 +240,9 @@ export class LevelEditor {
         this.currentPlatform = platform;
       },
       onUpdateScrollIndicator: () => this.updateScrollIndicator(),
+      onAreaSelectionUpdate: (worldPos: Vector2) => {
+        this.updateAreaSelection(worldPos);
+      },
     });
   };
 
@@ -230,6 +268,9 @@ export class LevelEditor {
         this.currentPlatform = platform;
       },
       onPushUndoState: () => this.pushUndoState(),
+      onAreaSelectionFinish: () => {
+        this.finishAreaSelection();
+      },
     });
   };
 
@@ -271,6 +312,13 @@ export class LevelEditor {
         this.scrollPosition.x += scrollAmount;
         e.preventDefault();
         break;
+      case "Delete":
+      case "Backspace":
+        if (this.selectedObjects.length > 0) {
+          this.deleteSelectedObjects();
+          e.preventDefault();
+        }
+        break;
       default:
         return;
     }
@@ -306,5 +354,150 @@ export class LevelEditor {
 
   private updateScrollIndicator(): void {
     this.ui.updateScrollIndicator(this.scrollPosition.x, this.scrollPosition.y);
+  }
+
+  private changeSelectedEnemyDirection(direction: number): void {
+    if (
+      this.selectedObject &&
+      "type" in this.selectedObject &&
+      (this.selectedObject.type === "ghost" || this.selectedObject.type === "landghost")
+    ) {
+      this.pushUndoState();
+      (this.selectedObject as SelectableEnemy).direction = direction;
+      this.updateDirectionControls(); // Update UI to reflect the change
+    }
+  }
+
+  private updateDirectionControls(): void {
+    const container = this.ui.getEditorContainer();
+    if (container) {
+      // Only pass the selected object if it's an enemy with direction property
+      const enemyObject =
+        this.selectedObject &&
+        "type" in this.selectedObject &&
+        (this.selectedObject.type === "ghost" || this.selectedObject.type === "landghost")
+          ? (this.selectedObject as { type: string; direction?: number })
+          : null;
+      this.ui.createDirectionControls(container, enemyObject);
+    }
+  }
+
+  private startAreaSelection(worldPos: Vector2): void {
+    this.areaSelectionStart = worldPos.copy();
+    this.areaSelectionEnd = worldPos.copy();
+    this.selectedObjects = [];
+  }
+
+  private updateAreaSelection(worldPos: Vector2): void {
+    if (this.areaSelectionStart) {
+      this.areaSelectionEnd = worldPos.copy();
+      this.updateSelectedObjectsInArea();
+    }
+  }
+
+  private finishAreaSelection(): void {
+    // Keep the selected objects for potential deletion
+    // Clear the selection rectangle
+    this.areaSelectionStart = null;
+    this.areaSelectionEnd = null;
+  }
+
+  private updateSelectedObjectsInArea(): void {
+    if (!this.areaSelectionStart || !this.areaSelectionEnd) return;
+
+    const minX = Math.min(this.areaSelectionStart.x, this.areaSelectionEnd.x);
+    const maxX = Math.max(this.areaSelectionStart.x, this.areaSelectionEnd.x);
+    const minY = Math.min(this.areaSelectionStart.y, this.areaSelectionEnd.y);
+    const maxY = Math.max(this.areaSelectionStart.y, this.areaSelectionEnd.y);
+
+    this.selectedObjects = [];
+
+    // Check platforms
+    for (const platform of this.gameState.platforms) {
+      if (this.isObjectInArea(platform, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(platform);
+      }
+    }
+
+    // Check solid blocks
+    for (const solidBlock of this.gameState.solidBlocks) {
+      if (this.isObjectInArea(solidBlock, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(solidBlock);
+      }
+    }
+
+    // Check candles
+    for (const candle of this.gameState.candles) {
+      if (this.isObjectInArea(candle, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(candle);
+      }
+    }
+
+    // Check enemies
+    for (const enemy of this.gameState.enemies) {
+      if (this.isObjectInArea(enemy, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(enemy);
+      }
+    }
+
+    // Update UI to show selection count
+    this.ui.updateSelectionInfo(this.selectedObjects.length);
+  }
+
+  private isObjectInArea(
+    obj: PositionedObject,
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+  ): boolean {
+    if (!obj.position || !obj.size) return false;
+
+    const objLeft = obj.position.x;
+    const objRight = obj.position.x + obj.size.x;
+    const objTop = obj.position.y;
+    const objBottom = obj.position.y + obj.size.y;
+
+    // Check if object overlaps with selection area
+    return !(objRight < minX || objLeft > maxX || objBottom < minY || objTop > maxY);
+  }
+
+  private deleteSelectedObjects(): void {
+    if (this.selectedObjects.length === 0) return;
+
+    this.pushUndoState();
+
+    // Remove selected objects from their respective arrays
+    for (const obj of this.selectedObjects) {
+      // Remove platforms
+      const platformIndex = this.gameState.platforms.indexOf(obj as Platform);
+      if (platformIndex !== -1) {
+        this.gameState.platforms.splice(platformIndex, 1);
+        continue;
+      }
+
+      // Remove solid blocks
+      const solidBlockIndex = this.gameState.solidBlocks.indexOf(obj as SolidBlock);
+      if (solidBlockIndex !== -1) {
+        this.gameState.solidBlocks.splice(solidBlockIndex, 1);
+        continue;
+      }
+
+      // Remove candles
+      const candleIndex = this.gameState.candles.indexOf(obj as Candle);
+      if (candleIndex !== -1) {
+        this.gameState.candles.splice(candleIndex, 1);
+        continue;
+      }
+
+      // Remove enemies
+      const enemyIndex = this.gameState.enemies.indexOf(obj as Ghost | LandGhost);
+      if (enemyIndex !== -1) {
+        this.gameState.enemies.splice(enemyIndex, 1);
+      }
+    }
+
+    this.selectedObjects = [];
+    this.ui.updateSelectionInfo(0);
   }
 }

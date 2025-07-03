@@ -1,4 +1,6 @@
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2";
+import { Heart } from "./heart";
 
 export class Candle {
   position: Vector2;
@@ -55,53 +57,66 @@ export class Candle {
         ctx.fillRect(x, y, 8, 8);
       }
     } else {
-      // Draw candle base
-      ctx.fillStyle = "#DDDDDD";
-      ctx.fillRect(this.position.x, this.position.y, this.size.x, this.size.y);
+      // Draw candle holder/base (bronze/gold color)
+      ctx.fillStyle = "#CD7F32";
+      ctx.fillRect(this.position.x + 2, this.position.y + this.size.y - 6, this.size.x - 4, 6);
 
-      // Draw candle wax
-      ctx.fillStyle = "#FF4444";
-      ctx.fillRect(
-        this.position.x + 2,
-        this.position.y + 2,
-        this.size.x - 4,
-        this.size.y - 4
-      );
+      // Draw candle body (white/cream)
+      ctx.fillStyle = "#FFFEF7";
+      ctx.fillRect(this.position.x + 4, this.position.y + 4, this.size.x - 8, this.size.y - 10);
 
-      // Draw flame
+      // Draw candle wick (dark)
+      ctx.fillStyle = "#333333";
+      ctx.fillRect(this.position.x + this.size.x / 2 - 1, this.position.y + 2, 2, 4);
+
+      // Draw animated flame
+      const flameX = this.position.x + this.size.x / 2;
+      let flameY: number, flameSize: number;
+
       if (this.animationFrame === 0) {
-        ctx.fillStyle = "#FFFF00";
-        ctx.beginPath();
-        ctx.arc(
-          this.position.x + this.size.x / 2,
-          this.position.y - 4,
-          3,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        flameY = this.position.y - 2;
+        flameSize = 3;
       } else {
-        ctx.fillStyle = "#FF8800";
-        ctx.beginPath();
-        ctx.arc(
-          this.position.x + this.size.x / 2,
-          this.position.y - 6,
-          2,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        flameY = this.position.y - 4;
+        flameSize = 2.5;
       }
+
+      // Outer flame (orange)
+      ctx.fillStyle = "#FF4500";
+      ctx.beginPath();
+      ctx.ellipse(flameX, flameY, flameSize, flameSize * 1.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner flame (yellow)
+      ctx.fillStyle = "#FFFF00";
+      ctx.beginPath();
+      ctx.ellipse(flameX, flameY, flameSize * 0.6, flameSize * 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core flame (white)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.ellipse(flameX, flameY, flameSize * 0.3, flameSize * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.restore();
   }
 
-  break(): void {
+  break(gameState?: GameState): void {
     if (this.active && !this.isBreaking) {
       this.isBreaking = true;
       this.breakTimer = 0;
-      // Play break sound here if you have audio
+
+      // Drop a heart when broken
+      if (gameState) {
+        const heart = new Heart(
+          this.position.x + this.size.x / 2 - 6, // Center the heart
+          this.position.y + this.size.y / 2,
+        );
+        gameState.hearts = gameState.hearts || [];
+        gameState.hearts.push(heart);
+      }
     }
   }
 

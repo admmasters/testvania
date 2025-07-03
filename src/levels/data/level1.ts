@@ -1,0 +1,77 @@
+import { Vector2 } from "@/engine/Vector2";
+import type { LevelData } from "../LevelData";
+
+const vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);
+
+export const level1: LevelData = {
+  id: "level1",
+  name: "Custom Level1",
+  width: 3200,
+  height: 600,
+  background: {
+    color: "#2C1810",
+  },
+  platforms: [
+    { position: vec2(0, 544), size: vec2(3200, 64), color: "#654321" },
+    { position: vec2(576, 320), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(768, 256), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(960, 320), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(1152, 384), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(1344, 320), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(1664, 320), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(1856, 384), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(2048, 448), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(768, 384), size: vec2(128, 32), color: "#654321" },
+    { position: vec2(960, 448), size: vec2(128, 32), color: "#654321" },
+  ],
+  solidBlocks: [{ position: vec2(1536, 256), size: vec2(64, 288), color: "#4A4A4A" }],
+  candles: [
+    { position: vec2(1208, 352) },
+    { position: vec2(1016, 288) },
+    { position: vec2(824, 224) },
+    { position: vec2(632, 288) },
+    { position: vec2(248, 512) },
+    { position: vec2(440, 512) },
+    { position: vec2(632, 512) },
+    { position: vec2(824, 512) },
+    { position: vec2(1016, 512) },
+    { position: vec2(1208, 512) },
+    { position: vec2(1400, 512) },
+    { position: vec2(1400, 288) },
+    { position: vec2(1016, 416) },
+    { position: vec2(824, 352) },
+    { position: vec2(1560, 224) },
+    { position: vec2(1720, 288) },
+    { position: vec2(1912, 352) },
+    { position: vec2(2104, 416) },
+  ],
+  enemies: [
+    { position: vec2(601.4900000000038, 288), type: "landghost", direction: 1 },
+    { position: vec2(793.4900000000038, 352), type: "landghost", direction: 1 },
+    { position: vec2(985.490000000004, 416), type: "landghost", direction: 1 },
+    { position: vec2(793.4900000000038, 224), type: "landghost", direction: 1 },
+    { position: vec2(985.490000000004, 288), type: "landghost", direction: 1 },
+    { position: vec2(1177.490000000004, 352), type: "landghost", direction: 1 },
+    { position: vec2(1369.490000000004, 288), type: "landghost", direction: 1 },
+    { position: vec2(2201.1680000000147, 249.3905124163785), type: "ghost", direction: 1 },
+    { position: vec2(2393.16799999995, 314.041389810379), type: "ghost", direction: 1 },
+    { position: vec2(2585.1679999999174, 393.99050406845134), type: "ghost", direction: 1 },
+    { position: vec2(2263.4600000000287, 512), type: "landghost", direction: 1 },
+    { position: vec2(2455.46000000008, 512), type: "landghost", direction: 1 },
+    { position: vec2(2647.460000000119, 512), type: "landghost", direction: 1 },
+    { position: vec2(2839.460000000119, 512), type: "landghost", direction: 1 },
+    { position: vec2(3031.460000000119, 512), type: "landghost", direction: 1 },
+    { position: vec2(532, 480), type: "ghost", direction: 1 },
+    { position: vec2(340, 480), type: "ghost", direction: 1 },
+    { position: vec2(724, 512), type: "landghost", direction: 1 },
+    { position: vec2(916, 512), type: "landghost", direction: 1 },
+    { position: vec2(1108, 512), type: "landghost", direction: 1 },
+    { position: vec2(1300, 512), type: "landghost", direction: 1 },
+    { position: vec2(1492, 512), type: "landghost", direction: 1 },
+  ],
+  player: {
+    position: vec2(64, 496),
+  },
+};
+
+export default level1;

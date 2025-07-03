@@ -23,6 +23,7 @@ export interface CandleData {
 export interface EnemyData {
   position: Vector2;
   type?: string;
+  direction?: number; // 1 for right, -1 for left
 }
 
 // Define player starting position

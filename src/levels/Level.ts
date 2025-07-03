@@ -57,9 +57,13 @@ export class Level {
     // Create enemies
     for (const enemyData of this.data.enemies) {
       if (enemyData.type === "ghost") {
-        gameState.enemies.push(new Ghost(enemyData.position.x, enemyData.position.y));
+        gameState.enemies.push(
+          new Ghost(enemyData.position.x, enemyData.position.y, enemyData.direction),
+        );
       } else {
-        gameState.enemies.push(new LandGhost(enemyData.position.x, enemyData.position.y));
+        gameState.enemies.push(
+          new LandGhost(enemyData.position.x, enemyData.position.y, enemyData.direction),
+        );
       }
     }
 

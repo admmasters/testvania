@@ -1,10 +1,11 @@
-import { LevelManager } from "../levels/LevelManager";
-import type { Candle } from "../objects/candle";
-import type { Enemy } from "../objects/enemy";
-import { HitSpark } from "../objects/hitSpark";
-import type { Platform } from "../objects/platform";
-import type { SolidBlock } from "../objects/solidBlock";
-import { Player } from "../objects/player";
+import { LevelManager } from "@/levels/LevelManager";
+import type { Candle } from "@/objects/candle";
+import type { Enemy } from "@/objects/enemy";
+import type { Heart, HeartSparkle } from "@/objects/heart";
+import { HitSpark, PoofEffect } from "@/objects/hitSpark";
+import type { Platform } from "@/objects/platform";
+import { Player } from "@/objects/player";
+import type { SolidBlock } from "@/objects/solidBlock";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -18,6 +19,8 @@ export class GameState {
   solidBlocks: SolidBlock[];
   hitSparks: HitSpark[];
   candles: Candle[];
+  hearts: Heart[];
+  heartSparkles: HeartSparkle[];
   input: Input;
   camera: Camera;
   parallaxBackground: ParallaxBackground;
@@ -25,6 +28,15 @@ export class GameState {
   hitPauseDuration: number;
   spawnTimer: number;
   spawnInterval: number;
+  poofEffects: PoofEffect[] = [];
+  floatingExpIndicators: Array<{
+    amount: number;
+    x: number;
+    y: number;
+    alpha: number;
+    vy: number;
+    time: number;
+  }> = [];
 
   constructor(levelId: string = "level1") {
     // Initialize the level manager
@@ -36,6 +48,8 @@ export class GameState {
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
+    this.hearts = [];
+    this.heartSparkles = [];
 
     // Initialize common game state properties
     this.input = new Input();
@@ -83,7 +97,7 @@ export class GameState {
             attackBounds.bottom > candleTop;
 
           if (isColliding) {
-            candle.break();
+            candle.break(this);
             this.createHitSpark(candle.position.x + candle.size.x / 2, candle.position.y);
           }
         }
@@ -92,21 +106,6 @@ export class GameState {
   }
 
   update(deltaTime: number): void {
-    // Handle hit pause
-    if (this.hitPauseTimer > 0) {
-      this.hitPauseTimer -= deltaTime;
-
-      // Update shake effects during hit pause
-      this.player.updateShake(deltaTime);
-      for (const enemy of this.enemies) {
-        if (enemy.active) {
-          enemy.updateShake(deltaTime);
-        }
-      }
-
-      return; // Skip all other updates during hit pause
-    }
-
     // Update candles
     for (const candle of this.candles) {
       if (candle.active) {
@@ -120,11 +119,17 @@ export class GameState {
     // Check for candle collisions
     this.checkCandleCollisions();
 
-    this.player.update(deltaTime, this);
+    // Update hearts
+    for (const heart of this.hearts) {
+      if (heart.active) {
+        heart.update(deltaTime, this);
+      }
+    }
 
-    for (const enemy of this.enemies) {
-      if (enemy.active) {
-        enemy.update(deltaTime, this);
+    // Update heart sparkles
+    for (const sparkle of this.heartSparkles) {
+      if (sparkle.active) {
+        sparkle.update(deltaTime, this);
       }
     }
 
@@ -135,9 +140,29 @@ export class GameState {
       }
     }
 
-    // Remove inactive enemies and hit sparks
-    this.enemies = this.enemies.filter((enemy) => enemy.active);
+    // Update poof effects
+    for (const poof of this.poofEffects) {
+      if (poof.active) {
+        poof.update(deltaTime, this);
+      }
+    }
+
+    // Clean up inactive objects
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
+    this.hearts = this.hearts.filter((heart) => heart.active);
+    this.heartSparkles = this.heartSparkles.filter((sparkle) => sparkle.active);
+    this.poofEffects = this.poofEffects.filter((poof) => poof.active);
+
+    this.player.update(deltaTime, this);
+
+    for (const enemy of this.enemies) {
+      if (enemy.active) {
+        enemy.update(deltaTime, this);
+      }
+    }
+
+    // Remove inactive enemies
+    this.enemies = this.enemies.filter((enemy) => enemy.active);
 
     // Automatic enemy spawning is disabled - enemies are placed via the level editor only
     // The timer is kept but not used for spawning
@@ -159,24 +184,44 @@ export class GameState {
     }
     this.camera.update(deltaTime);
     this.input.update();
+
+    // Update floating exp indicators
+    for (const exp of this.floatingExpIndicators) {
+      exp.y -= exp.vy * deltaTime;
+      exp.alpha -= deltaTime * 1.2;
+      exp.time += deltaTime;
+    }
+    this.floatingExpIndicators = this.floatingExpIndicators.filter((e) => e.alpha > 0);
   }
 
-  hitPause(duration: number): void {
-    this.hitPauseTimer = duration;
-    this.hitPauseDuration = duration;
-
-    // Start shake effect on player and enemies during hit pause
-    const shakeIntensity = 2; // 2 pixels shake
+  /**
+   * Apply shake effects to specific enemies and the player without freezing the game.
+   * If no targets are provided, all active enemies will shake (legacy behaviour).
+   */
+  hitPause(duration: number, targetEnemies?: Enemy[]): void {
+    const shakeIntensity = 6; // pixels - increased for more impact
+    // Always shake the player so feedback is clear
     this.player.startShake(shakeIntensity, duration);
-    for (const enemy of this.enemies) {
-      if (enemy.active) {
-        enemy.startShake(shakeIntensity, duration);
+
+    // Determine which enemies to shake
+    if (targetEnemies && targetEnemies.length > 0) {
+      for (const enemy of targetEnemies) {
+        if (enemy.active) enemy.startShake(shakeIntensity, duration);
+      }
+    } else {
+      // Legacy: shake everyone
+      for (const enemy of this.enemies) {
+        if (enemy.active) enemy.startShake(shakeIntensity, duration);
       }
     }
   }
 
   createHitSpark(x: number, y: number): void {
     this.hitSparks.push(new HitSpark(x, y));
+  }
+
+  createPoofEffect(x: number, y: number): void {
+    this.poofEffects.push(new PoofEffect(x, y));
   }
 
   levelEditor: {
@@ -217,6 +262,20 @@ export class GameState {
       }
     }
 
+    // Draw hearts
+    for (const heart of this.hearts) {
+      if (heart.active) {
+        heart.render(ctx);
+      }
+    }
+
+    // Draw heart sparkles (subtle collection effects)
+    for (const sparkle of this.heartSparkles) {
+      if (sparkle.active) {
+        sparkle.render(ctx);
+      }
+    }
+
     for (const enemy of this.enemies) {
       if (enemy.active) {
         enemy.render(ctx);
@@ -228,6 +287,27 @@ export class GameState {
       if (spark.active) {
         spark.render(ctx);
       }
+    }
+
+    // Draw poof effects (on top of hit sparks)
+    for (const poof of this.poofEffects) {
+      if (poof.active) {
+        poof.render(ctx);
+      }
+    }
+
+    // Draw floating exp indicators (on top of everything else)
+    for (const exp of this.floatingExpIndicators) {
+      ctx.save();
+      ctx.globalAlpha = exp.alpha;
+      ctx.font = "bold 18px Arial";
+      ctx.fillStyle = "#00FFAA";
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.textAlign = "center";
+      ctx.strokeText(`+${exp.amount} EXP`, exp.x, exp.y);
+      ctx.fillText(`+${exp.amount} EXP`, exp.x, exp.y);
+      ctx.restore();
     }
 
     // Render level editor UI if active
@@ -246,9 +326,9 @@ export class GameState {
     // Save the current context state
     ctx.save();
 
-    // Draw a semi-transparent background for the UI
+    // Expand UI background to accommodate level and exp info
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(16, 16, 200, 88); // Adjusted to multiples of 8
+    ctx.fillRect(16, 16, 220, 128); // Increased height for level info
 
     // Ensure consistent text alignment for all UI text
     ctx.textAlign = "left";
@@ -256,20 +336,27 @@ export class GameState {
 
     // Draw UI text
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "16px monospace"; // Adjusted to multiple of 8
-    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 32); // Adjusted position
+    ctx.font = "16px monospace";
 
-    // Draw player health/energy bar
-    const healthBarWidth = 160; // Already a multiple of 8
-    const healthBarHeight = 8; // Adjusted to multiple of 8
+    // Player level
+    ctx.fillText(`Level: ${this.player.level}`, 32, 32);
+
+    // Enemy count (moved down)
+    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 48);
+
+    // Draw player health bar
+    const barWidth = 160;
+    const barHeight = 8;
     const healthPercentage = this.player.health / this.player.maxHealth;
 
-    // Draw the empty bar background
+    // Health bar label
+    ctx.fillText("Health:", 32, 64);
+
+    // Draw the empty health bar background
     ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+    ctx.fillRect(32, 80, barWidth, barHeight);
 
     // Draw the filled portion of the health bar
-    // Color changes based on health: green > yellow > red
     if (healthPercentage > 0.6) {
       ctx.fillStyle = "#00FF00"; // Green for good health
     } else if (healthPercentage > 0.3) {
@@ -278,14 +365,49 @@ export class GameState {
       ctx.fillStyle = "#FF0000"; // Red for low health
     }
 
-    ctx.fillRect(32, 56, healthBarWidth * healthPercentage, healthBarHeight); // Adjusted x to multiple of 8
+    ctx.fillRect(32, 80, barWidth * healthPercentage, barHeight);
 
     // Draw border around health bar
     ctx.strokeStyle = "#FFFFFF";
     ctx.lineWidth = 1;
-    ctx.strokeRect(32, 56, healthBarWidth, healthBarHeight); // Adjusted to multiples of 8
+    ctx.strokeRect(32, 80, barWidth, barHeight);
+
+    // Draw experience bar
+    const expPercentage = this.player.exp / this.player.expToNext;
+
+    // Experience bar label and values
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText("Experience:", 32, 96);
+    ctx.font = "12px monospace";
+    ctx.fillText(`${this.player.exp}/${this.player.expToNext}`, 32, 112);
+    ctx.font = "16px monospace";
+
+    // Draw the empty exp bar background
+    ctx.fillStyle = "#333333";
+    ctx.fillRect(32, 128, barWidth, barHeight);
+
+    // Draw the filled portion of the exp bar
+    ctx.fillStyle = "#00AAFF"; // Blue for experience
+    ctx.fillRect(32, 128, barWidth * expPercentage, barHeight);
+
+    // Draw border around exp bar
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(32, 128, barWidth, barHeight);
 
     // Restore the context state
     ctx.restore();
+  }
+
+  awardExp(amount: number, x: number, y: number): void {
+    this.player.gainExp(amount);
+    this.floatingExpIndicators.push({
+      amount,
+      x,
+      y,
+      alpha: 1,
+      vy: 32 + Math.random() * 16,
+      time: 0,
+    });
   }
 }

@@ -4,8 +4,9 @@ import type { Platform } from "./platform";
 import type { SolidBlock } from "./solidBlock";
 
 export class LandGhost extends Enemy {
-  constructor(x: number, y: number) {
-    super({ x, y, type: "landghost" });
+  constructor(x: number, y: number, direction?: number) {
+    super({ x, y, type: "landghost", direction });
+    this.expValue = 15;
   }
 
   updateMovement(deltaTime: number, gameState: GameState): void {

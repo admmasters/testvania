@@ -24,12 +24,32 @@ export class Player extends GameObject {
   invulnerabilityDuration: number;
   coyoteTime: number;
   coyoteTimer: number;
+  level: number;
+  exp: number;
+  expToNext: number;
+  strength: number;
+  defense: number;
+  speedStat: number;
+
+  // Stat growth per level (could be made configurable)
+  static BASE_EXP_TO_NEXT = 100;
+  static EXP_GROWTH = 1.5;
+  static BASE_MAX_HEALTH = 16;
+  static BASE_STRENGTH = 2;
+  static BASE_DEFENSE = 1;
+  static BASE_SPEED = 220;
 
   constructor(x: number, y: number) {
     super({ x, y, width: 32, height: 48 });
-    this.health = 16;
-    this.maxHealth = 16;
-    this.speed = 220;
+    this.level = 1;
+    this.exp = 0;
+    this.expToNext = Player.BASE_EXP_TO_NEXT;
+    this.strength = Player.BASE_STRENGTH;
+    this.defense = Player.BASE_DEFENSE;
+    this.maxHealth = Player.BASE_MAX_HEALTH;
+    this.health = this.maxHealth;
+    this.speedStat = Player.BASE_SPEED;
+    this.speed = this.speedStat;
     this.jumpPower = 430;
     this.grounded = false;
     this.facingRight = true;
@@ -301,7 +321,7 @@ export class Player extends GameObject {
     if (this.invulnerable) return;
 
     for (const enemy of gameState.enemies) {
-      if (enemy.active && this.checkCollision(enemy)) {
+      if (enemy.active && !enemy.isDying && this.checkCollision(enemy)) {
         this.takeDamage(1);
         this.invulnerable = true;
         this.invulnerabilityTimer = this.invulnerabilityDuration;
@@ -311,7 +331,7 @@ export class Player extends GameObject {
         this.velocity.x = direction * 150;
         this.velocity.y = -200;
 
-        gameState.camera.shake(0.3, 5);
+        // No global camera shake; individual objects will shake via GameState.hitPause.
         break;
       }
     }
@@ -323,12 +343,9 @@ export class Player extends GameObject {
   }
 
   // Enhanced attack method that could be called from GameState for screen shake
-  performAttack(gameState?: GameState): void {
+  performAttack(_gameState?: GameState): void {
     this.attack();
-    // Add ultra-intense screen shake for razor-sharp attacks
-    if (gameState?.camera) {
-      gameState.camera.shake(0.04, 4.0);
-    }
+    // No global camera shake; individual objects will shake via GameState.hitPause.
   }
 
   getAttackBounds(): {
@@ -544,5 +561,32 @@ export class Player extends GameObject {
     }
 
     ctx.restore();
+  }
+
+  gainExp(amount: number): void {
+    this.exp += amount;
+    while (this.exp >= this.expToNext) {
+      this.exp -= this.expToNext;
+      this.levelUp();
+    }
+  }
+
+  levelUp(): void {
+    this.level++;
+    // Stat increases per level (customize as desired)
+    this.maxHealth += 4;
+    this.strength += 1;
+    this.defense += 1;
+    this.speedStat += 5;
+    this.expToNext = Math.floor(this.expToNext * Player.EXP_GROWTH);
+    this.health = this.maxHealth; // Heal on level up
+    this.speed = this.speedStat;
+    this.displayLevelUp();
+    // TODO: Hook for stat allocation UI or animation
+  }
+
+  displayLevelUp(): void {
+    // Placeholder: Add UI feedback, animation, or sound here
+    // Example: console.log(`Level Up! Now level ${this.level}`);
   }
 }

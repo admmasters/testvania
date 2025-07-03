@@ -15,6 +15,7 @@ interface HandleMouseDownArgs {
   onScrolling: () => void;
   onSelectedObject: (obj: EditorObject) => void;
   onPushUndoState: () => void;
+  onAreaSelectionStart?: (worldPos: Vector2) => void;
 }
 
 interface HandleMouseMoveArgs {
@@ -29,6 +30,7 @@ interface HandleMouseMoveArgs {
   onScrolling: () => void;
   onCurrentPlatform: (platform: EditorPlatform | null) => void;
   onUpdateScrollIndicator: () => void;
+  onAreaSelectionUpdate?: (worldPos: Vector2) => void;
 }
 
 interface HandleMouseUpArgs {
@@ -44,6 +46,7 @@ interface HandleMouseUpArgs {
   onStartPosition: (pos: Vector2 | null) => void;
   onCurrentPlatform: (platform: EditorPlatform | null) => void;
   onPushUndoState: () => void;
+  onAreaSelectionFinish?: () => void;
 }
 
 export class EditorMouseHandler {
@@ -77,6 +80,7 @@ export class EditorMouseHandler {
       onScrolling,
       onSelectedObject,
       onPushUndoState,
+      onAreaSelectionStart,
     } = args;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -108,6 +112,7 @@ export class EditorMouseHandler {
       onCurrentPlatform,
       onSelectedObject,
       onPushUndoState,
+      onAreaSelectionStart,
     });
   };
 
@@ -124,6 +129,7 @@ export class EditorMouseHandler {
       onScrolling,
       onCurrentPlatform,
       onUpdateScrollIndicator,
+      onAreaSelectionUpdate,
     } = args;
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -157,7 +163,14 @@ export class EditorMouseHandler {
     // Convert screen position to world position
     const worldPos = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
 
-    this.handleModeMovement({ mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform });
+    this.handleModeMovement({
+      mode,
+      worldPos,
+      selectedObject,
+      currentPlatform,
+      onCurrentPlatform,
+      onAreaSelectionUpdate,
+    });
   };
 
   handleMouseUp = (args: HandleMouseUpArgs) => {
@@ -174,6 +187,7 @@ export class EditorMouseHandler {
       onStartPosition,
       onCurrentPlatform,
       onPushUndoState,
+      onAreaSelectionFinish,
     } = args;
     // Stop scrolling if middle mouse button was released
     if (e.button === this.dragButton) {
@@ -206,6 +220,7 @@ export class EditorMouseHandler {
       currentPlatform,
       onCurrentPlatform,
       onPushUndoState,
+      onAreaSelectionFinish,
     });
 
     onStartPosition(null);
@@ -270,6 +285,7 @@ export class EditorMouseHandler {
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
     onSelectedObject: (obj: EditorObject) => void;
     onPushUndoState: () => void;
+    onAreaSelectionStart?: (worldPos: Vector2) => void;
   }): void {
     const {
       mode,
@@ -278,6 +294,7 @@ export class EditorMouseHandler {
       onCurrentPlatform,
       onSelectedObject,
       onPushUndoState,
+      onAreaSelectionStart,
     } = args;
     switch (mode) {
       case EditorMode.SELECT: {
@@ -326,6 +343,12 @@ export class EditorMouseHandler {
         onPushUndoState();
         this.objectManager.deleteObjectAt(worldPos);
         break;
+      case EditorMode.AREA_SELECT:
+        if (onAreaSelectionStart) {
+          onAreaSelectionStart(worldPos);
+        }
+        onStartPosition(worldPos);
+        break;
     }
   }
 
@@ -335,8 +358,16 @@ export class EditorMouseHandler {
     selectedObject: EditorObject;
     currentPlatform: EditorPlatform | null;
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onAreaSelectionUpdate?: (worldPos: Vector2) => void;
   }): void {
-    const { mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform } = args;
+    const {
+      mode,
+      worldPos,
+      selectedObject,
+      currentPlatform,
+      onCurrentPlatform,
+      onAreaSelectionUpdate,
+    } = args;
     switch (mode) {
       case EditorMode.PLATFORM:
       case EditorMode.SOLID_BLOCK:
@@ -351,6 +382,11 @@ export class EditorMouseHandler {
           onCurrentPlatform(currentPlatform);
         }
         break;
+      case EditorMode.AREA_SELECT:
+        if (onAreaSelectionUpdate) {
+          onAreaSelectionUpdate(worldPos);
+        }
+        break;
     }
   }
 
@@ -361,9 +397,17 @@ export class EditorMouseHandler {
     currentPlatform: EditorPlatform | null;
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
     onPushUndoState: () => void;
+    onAreaSelectionFinish?: () => void;
   }): void {
-    const { mode, worldPos, selectedObject, currentPlatform, onCurrentPlatform, onPushUndoState } =
-      args;
+    const {
+      mode,
+      worldPos,
+      selectedObject,
+      currentPlatform,
+      onCurrentPlatform,
+      onPushUndoState,
+      onAreaSelectionFinish,
+    } = args;
     switch (mode) {
       case EditorMode.PLATFORM:
         this.objectManager.finishPlatform(currentPlatform, worldPos);
@@ -382,6 +426,11 @@ export class EditorMouseHandler {
           platform.size.x = currentPlatform.size.x;
           platform.size.y = currentPlatform.size.y;
           onCurrentPlatform(null);
+        }
+        break;
+      case EditorMode.AREA_SELECT:
+        if (onAreaSelectionFinish) {
+          onAreaSelectionFinish();
         }
         break;
     }

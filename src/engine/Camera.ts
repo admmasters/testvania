@@ -28,7 +28,7 @@ export class Camera {
     levelWidth: number,
     levelHeight: number,
     viewportWidth: number,
-    viewportHeight: number
+    viewportHeight: number,
   ): void {
     // Center camera on player
     let camX = playerPos.x - viewportWidth / 2;
@@ -38,8 +38,9 @@ export class Camera {
     camX = Math.max(0, Math.min(camX, levelWidth - viewportWidth));
     camY = Math.max(0, Math.min(camY, levelHeight - viewportHeight));
 
-    this.position.x = camX;
-    this.position.y = camY;
+    // Round to integer pixels for pixel-perfect rendering
+    this.position.x = Math.round(camX);
+    this.position.y = Math.round(camY);
   }
 
   update(deltaTime: number): void {
@@ -50,8 +51,7 @@ export class Camera {
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaTime;
 
-      const intensity =
-        (this.shakeTimer / this.shakeDuration) * this.shakeIntensity;
+      const intensity = (this.shakeTimer / this.shakeDuration) * this.shakeIntensity;
       this.shakeOffset.x = (Math.random() - 0.5) * intensity * 2;
       this.shakeOffset.y = (Math.random() - 0.5) * intensity * 2;
     } else {
@@ -67,16 +67,16 @@ export class Camera {
   }
 
   apply(ctx: CanvasRenderingContext2D): void {
-    ctx.translate(
-      -this.position.x + this.shakeOffset.x,
-      -this.position.y + this.shakeOffset.y
-    );
+    // Round to integer pixels for pixel-perfect rendering
+    const x = Math.round(-this.position.x + this.shakeOffset.x);
+    const y = Math.round(-this.position.y + this.shakeOffset.y);
+    ctx.translate(x, y);
   }
 
   reset(ctx: CanvasRenderingContext2D): void {
-    ctx.translate(
-      this.position.x - this.shakeOffset.x,
-      this.position.y - this.shakeOffset.y
-    );
+    // Round to integer pixels for pixel-perfect rendering
+    const x = Math.round(this.position.x - this.shakeOffset.x);
+    const y = Math.round(this.position.y - this.shakeOffset.y);
+    ctx.translate(x, y);
   }
 }
