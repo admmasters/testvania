@@ -103,18 +103,21 @@ export class Game {
     uiContainer.style.bottom = "10px";
     uiContainer.style.left = "50%";
     uiContainer.style.transform = "translateX(-50%)";
-    uiContainer.style.padding = "10px";
-    uiContainer.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    uiContainer.style.borderRadius = "5px";
+    uiContainer.style.padding = "15px";
+    uiContainer.style.background =
+      "linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(26, 26, 46, 0.9))";
+    uiContainer.style.borderRadius = "10px";
     uiContainer.style.zIndex = "1000";
+    uiContainer.style.border = "2px solid #D4AF37";
+    uiContainer.style.boxShadow = "0 0 20px rgba(212, 175, 55, 0.3)";
+    uiContainer.style.fontFamily = "'Orbitron', monospace";
 
     // Create level buttons
     levelIds.forEach((levelId) => {
       const button = document.createElement("button");
       button.textContent = `Level ${levelId.replace("level", "")}`;
+      button.className = "arcade-button";
       button.style.margin = "0 5px";
-      button.style.padding = "5px 10px";
-      button.style.cursor = "pointer";
 
       button.addEventListener("click", () => {
         this.gameState.loadLevel(levelId);
@@ -126,13 +129,8 @@ export class Game {
     // Add level editor button
     const editorButton = document.createElement("button");
     editorButton.textContent = "Level Editor";
+    editorButton.className = "arcade-button";
     editorButton.style.margin = "0 5px";
-    editorButton.style.padding = "5px 10px";
-    editorButton.style.backgroundColor = "#007bff";
-    editorButton.style.color = "white";
-    editorButton.style.border = "none";
-    editorButton.style.borderRadius = "3px";
-    editorButton.style.cursor = "pointer";
 
     // Create level editor instance if not exists
     if (!this.gameState.levelEditor) {
@@ -143,10 +141,12 @@ export class Game {
       if (this.gameState.levelEditor?.isEditorActive()) {
         this.gameState.levelEditor.deactivate();
         editorButton.textContent = "Level Editor";
+        editorButton.classList.remove("selected");
         this.running = true; // Resume game loop
       } else if (this.gameState.levelEditor) {
         this.gameState.levelEditor.activate();
         editorButton.textContent = "Close Editor";
+        editorButton.classList.add("selected");
         this.running = false; // Pause game loop when editor is active
       }
     });

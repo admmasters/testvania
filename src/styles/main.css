@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap");
+
 body {
   margin: 0;
   padding: 0;
@@ -6,11 +8,13 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  font-family: monospace;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
 }
 
 canvas {
   border: 2px solid #444;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
 
   /* Pixel-perfect rendering */
   image-rendering: pixelated;
@@ -34,6 +38,49 @@ canvas {
   position: absolute;
   top: 10px;
   left: 10px;
-  color: white;
-  font-size: 12px;
+  color: #ffd700;
+  font-size: 14px;
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  background: linear-gradient(145deg, rgba(25, 15, 40, 0.95), rgba(15, 10, 30, 0.95));
+  padding: 10px;
+  border-radius: 5px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+}
+
+/* Arcade-style button styling */
+.arcade-button {
+  font-family: "Orbitron", monospace;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 16px;
+  border: 2px solid #d4af37;
+  background: linear-gradient(145deg, #2a1b3d, #1a0f2e);
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.arcade-button:hover {
+  background: linear-gradient(145deg, #3a2b4d, #2a1b3d);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+  transform: translateY(-2px);
+}
+
+.arcade-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.arcade-button.selected {
+  background: linear-gradient(145deg, #ffd700, #daa520);
+  color: #2a1b3d;
+  text-shadow: none;
+  border-color: #b8860b;
 }

@@ -34,7 +34,7 @@ export class EditorRenderer {
 
     // Draw current solid block being created
     if (mode === EditorMode.SOLID_BLOCK && currentPlatform) {
-      this.drawCurrentPlatform(ctx, currentPlatform, "#00FFFF"); // Cyan to distinguish from platforms
+      this.drawCurrentPlatform(ctx, currentPlatform, "#87CEEB"); // Light blue to distinguish from platforms
     }
 
     // Highlight selected object
@@ -120,13 +120,13 @@ export class EditorRenderer {
     const maxY = Math.max(start.y, end.y);
 
     ctx.save();
-    ctx.strokeStyle = "#00FFFF";
+    ctx.strokeStyle = "#D4AF37";
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
 
     // Semi-transparent fill
-    ctx.fillStyle = "rgba(0, 255, 255, 0.1)";
+    ctx.fillStyle = "rgba(212, 175, 55, 0.1)";
     ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
     ctx.restore();
   }

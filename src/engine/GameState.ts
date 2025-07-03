@@ -300,11 +300,13 @@ export class GameState {
     for (const exp of this.floatingExpIndicators) {
       ctx.save();
       ctx.globalAlpha = exp.alpha;
-      ctx.font = "bold 18px Arial";
+      ctx.font = "bold 18px 'Orbitron', monospace";
       ctx.fillStyle = "#00FFAA";
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 3;
       ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(0, 255, 170, 0.8)";
+      ctx.shadowBlur = 15;
       ctx.strokeText(`+${exp.amount} EXP`, exp.x, exp.y);
       ctx.fillText(`+${exp.amount} EXP`, exp.x, exp.y);
       ctx.restore();
@@ -326,77 +328,175 @@ export class GameState {
     // Save the current context state
     ctx.save();
 
-    // Expand UI background to accommodate level and exp info
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(16, 16, 220, 128); // Increased height for level info
-
-    // Ensure consistent text alignment for all UI text
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-
-    // Draw UI text
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "16px monospace";
-
-    // Player level
-    ctx.fillText(`Level: ${this.player.level}`, 32, 32);
-
-    // Enemy count (moved down)
-    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 48);
-
-    // Draw player health bar
-    const barWidth = 160;
-    const barHeight = 8;
-    const healthPercentage = this.player.health / this.player.maxHealth;
-
-    // Health bar label
-    ctx.fillText("Health:", 32, 64);
-
-    // Draw the empty health bar background
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 80, barWidth, barHeight);
-
-    // Draw the filled portion of the health bar
-    if (healthPercentage > 0.6) {
-      ctx.fillStyle = "#00FF00"; // Green for good health
-    } else if (healthPercentage > 0.3) {
-      ctx.fillStyle = "#FFFF00"; // Yellow for medium health
-    } else {
-      ctx.fillStyle = "#FF0000"; // Red for low health
-    }
-
-    ctx.fillRect(32, 80, barWidth * healthPercentage, barHeight);
-
-    // Draw border around health bar
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(32, 80, barWidth, barHeight);
-
-    // Draw experience bar
-    const expPercentage = this.player.exp / this.player.expToNext;
-
-    // Experience bar label and values
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText("Experience:", 32, 96);
-    ctx.font = "12px monospace";
-    ctx.fillText(`${this.player.exp}/${this.player.expToNext}`, 32, 112);
-    ctx.font = "16px monospace";
-
-    // Draw the empty exp bar background
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 128, barWidth, barHeight);
-
-    // Draw the filled portion of the exp bar
-    ctx.fillStyle = "#00AAFF"; // Blue for experience
-    ctx.fillRect(32, 128, barWidth * expPercentage, barHeight);
-
-    // Draw border around exp bar
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(32, 128, barWidth, barHeight);
+    // Draw clean Castlevania-style UI
+    this.drawCastlevaniaUI(ctx);
 
     // Restore the context state
     ctx.restore();
+  }
+
+  private drawCastlevaniaUI(ctx: CanvasRenderingContext2D): void {
+    // Main UI background - dark purple with subtle gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 120);
+    gradient.addColorStop(0, "rgba(25, 15, 40, 0.95)");
+    gradient.addColorStop(1, "rgba(15, 10, 30, 0.95)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(10, 10, 280, 120);
+
+    // Clean border - gold outline
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, 280, 120);
+
+    // Inner border
+    ctx.strokeStyle = "#8B4513";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(12, 12, 276, 116);
+
+    // Top decorative stripe
+    ctx.fillStyle = "#D4AF37";
+    ctx.fillRect(15, 15, 270, 8);
+
+    // Add pattern to top stripe
+    ctx.fillStyle = "#8B4513";
+    for (let i = 0; i < 15; i++) {
+      ctx.fillRect(20 + i * 16, 16, 2, 6);
+    }
+
+    // Player Level
+    ctx.font = "bold 14px 'Orbitron', monospace";
+    ctx.fillStyle = "#FFD700";
+    ctx.textAlign = "left";
+    ctx.fillText(`LEVEL ${this.player.level}`, 20, 40);
+
+    // Enemy count
+    ctx.font = "11px 'Orbitron', monospace";
+    ctx.fillStyle = "#C0C0C0";
+    ctx.fillText(`ENEMIES: ${this.enemies.length}`, 20, 57);
+
+    // Health section
+    ctx.font = "bold 11px 'Orbitron', monospace";
+    ctx.fillStyle = "#FFD700";
+    ctx.fillText("HEALTH", 20, 75);
+
+    // Health bar
+    const healthBarX = 20;
+    const healthBarY = 80;
+    const healthBarWidth = 180;
+    const healthBarHeight = 10;
+    const healthPercentage = this.player.health / this.player.maxHealth;
+
+    // Health bar background
+    ctx.fillStyle = "#2A1B3D";
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+    // Health bar fill
+    if (healthPercentage > 0) {
+      if (healthPercentage > 0.6) {
+        ctx.fillStyle = "#00FF00";
+      } else if (healthPercentage > 0.3) {
+        ctx.fillStyle = "#FFFF00";
+      } else {
+        ctx.fillStyle = "#FF0000";
+      }
+      ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
+    }
+
+    // Health bar border
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+    // Health numbers
+    ctx.font = "9px 'Orbitron', monospace";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "right";
+    ctx.fillText(
+      `${this.player.health}/${this.player.maxHealth}`,
+      healthBarX + healthBarWidth - 5,
+      healthBarY + 7,
+    );
+
+    // Experience section
+    ctx.font = "bold 11px 'Orbitron', monospace";
+    ctx.fillStyle = "#87CEEB";
+    ctx.textAlign = "left";
+    ctx.fillText("EXPERIENCE", 20, 105);
+
+    // Experience bar
+    const expBarX = 20;
+    const expBarY = 110;
+    const expBarWidth = 180;
+    const expBarHeight = 8;
+    const expPercentage = this.player.exp / this.player.expToNext;
+
+    // Experience bar background
+    ctx.fillStyle = "#1A1A2E";
+    ctx.fillRect(expBarX, expBarY, expBarWidth, expBarHeight);
+
+    // Experience bar fill
+    if (expPercentage > 0) {
+      ctx.fillStyle = "#00AAFF";
+      ctx.fillRect(expBarX, expBarY, expBarWidth * expPercentage, expBarHeight);
+    }
+
+    // Experience bar border
+    ctx.strokeStyle = "#4169E1";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(expBarX, expBarY, expBarWidth, expBarHeight);
+
+    // Experience numbers
+    ctx.font = "8px 'Orbitron', monospace";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      `${this.player.exp}/${this.player.expToNext}`,
+      expBarX + expBarWidth / 2,
+      expBarY + 6,
+    );
+
+    // Add small decorative elements
+    this.drawSimpleDecorations(ctx);
+  }
+
+  private drawSimpleDecorations(ctx: CanvasRenderingContext2D): void {
+    // Small corner decorations
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 1;
+
+    // Top corners
+    ctx.beginPath();
+    ctx.moveTo(15, 25);
+    ctx.lineTo(25, 25);
+    ctx.moveTo(15, 25);
+    ctx.lineTo(15, 35);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(285, 25);
+    ctx.lineTo(275, 25);
+    ctx.moveTo(285, 25);
+    ctx.lineTo(285, 35);
+    ctx.stroke();
+
+    // Health gem
+    ctx.fillStyle = "#FF6B6B";
+    ctx.beginPath();
+    ctx.arc(210, 85, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Experience gem
+    ctx.fillStyle = "#4ECDC4";
+    ctx.beginPath();
+    ctx.arc(210, 114, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#87CEEB";
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 
   awardExp(amount: number, x: number, y: number): void {

@@ -44,13 +44,16 @@ export class EditorUI {
     container.style.position = "fixed";
     container.style.top = "10px";
     container.style.left = "10px";
-    container.style.padding = "10px";
-    container.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    container.style.color = "white";
-    container.style.borderRadius = "5px";
+    container.style.padding = "15px";
+    container.style.background =
+      "linear-gradient(145deg, rgba(25, 15, 40, 0.95), rgba(15, 10, 30, 0.95))";
+    container.style.color = "#FFD700";
+    container.style.borderRadius = "10px";
     container.style.zIndex = "1000";
-    container.style.fontFamily = "Arial, sans-serif";
+    container.style.fontFamily = "'Orbitron', monospace";
     container.style.fontSize = "14px";
+    container.style.border = "2px solid #D4AF37";
+    container.style.boxShadow = "0 0 20px rgba(212, 175, 55, 0.3)";
 
     // Create title
     const title = document.createElement("h3");
@@ -149,21 +152,19 @@ export class EditorUI {
     const createModeButton = (mode: EditorMode, label: string) => {
       const button = document.createElement("button");
       button.textContent = label;
+      button.className = "arcade-button";
       button.style.margin = "0 5px 5px 0";
-      button.style.padding = "5px 10px";
-      button.style.cursor = "pointer";
-      button.style.backgroundColor = currentMode === mode ? "#007bff" : "#343a40";
-      button.style.border = "none";
-      button.style.borderRadius = "3px";
-      button.style.color = "white";
+      if (currentMode === mode) {
+        button.classList.add("selected");
+      }
 
       button.addEventListener("click", () => {
         this.onModeChange(mode);
         // Update button styles
         Array.from(modeContainer.children).forEach((btn) => {
-          (btn as HTMLButtonElement).style.backgroundColor = "#343a40";
+          (btn as HTMLButtonElement).classList.remove("selected");
         });
-        button.style.backgroundColor = "#007bff";
+        button.classList.add("selected");
       });
 
       modeContainer.appendChild(button);
@@ -213,52 +214,32 @@ export class EditorUI {
     // Undo button
     const undoButton = document.createElement("button");
     undoButton.textContent = "Undo";
+    undoButton.className = "arcade-button";
     undoButton.style.margin = "0 5px 0 0";
-    undoButton.style.padding = "5px 10px";
-    undoButton.style.cursor = "pointer";
-    undoButton.style.backgroundColor = "#ffc107";
-    undoButton.style.border = "none";
-    undoButton.style.borderRadius = "3px";
-    undoButton.style.color = "black";
     undoButton.addEventListener("click", () => this.onUndo());
     actionContainer.appendChild(undoButton);
 
     // Redo button
     const redoButton = document.createElement("button");
     redoButton.textContent = "Redo";
+    redoButton.className = "arcade-button";
     redoButton.style.margin = "0 5px 0 0";
-    redoButton.style.padding = "5px 10px";
-    redoButton.style.cursor = "pointer";
-    redoButton.style.backgroundColor = "#17a2b8";
-    redoButton.style.border = "none";
-    redoButton.style.borderRadius = "3px";
-    redoButton.style.color = "white";
     redoButton.addEventListener("click", () => this.onRedo());
     actionContainer.appendChild(redoButton);
 
     // Save button
     const saveButton = document.createElement("button");
     saveButton.textContent = "Save Level";
+    saveButton.className = "arcade-button";
     saveButton.style.margin = "0 5px 0 0";
-    saveButton.style.padding = "5px 10px";
-    saveButton.style.cursor = "pointer";
-    saveButton.style.backgroundColor = "#28a745";
-    saveButton.style.border = "none";
-    saveButton.style.borderRadius = "3px";
-    saveButton.style.color = "white";
     saveButton.addEventListener("click", () => this.onSave());
     actionContainer.appendChild(saveButton);
 
     // Close button
     const cancelButton = document.createElement("button");
     cancelButton.textContent = "Close Editor";
+    cancelButton.className = "arcade-button";
     cancelButton.style.margin = "0";
-    cancelButton.style.padding = "5px 10px";
-    cancelButton.style.cursor = "pointer";
-    cancelButton.style.backgroundColor = "#dc3545";
-    cancelButton.style.border = "none";
-    cancelButton.style.borderRadius = "3px";
-    cancelButton.style.color = "white";
     cancelButton.addEventListener("click", () => this.onClose());
     actionContainer.appendChild(cancelButton);
 
@@ -270,13 +251,16 @@ export class EditorUI {
     indicator.style.position = "fixed";
     indicator.style.bottom = "10px";
     indicator.style.right = "10px";
-    indicator.style.padding = "5px 10px";
-    indicator.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    indicator.style.color = "white";
-    indicator.style.borderRadius = "3px";
+    indicator.style.padding = "8px 12px";
+    indicator.style.background =
+      "linear-gradient(145deg, rgba(25, 15, 40, 0.95), rgba(15, 10, 30, 0.95))";
+    indicator.style.color = "#FFD700";
+    indicator.style.borderRadius = "5px";
     indicator.style.zIndex = "1000";
-    indicator.style.fontFamily = "Arial, sans-serif";
+    indicator.style.fontFamily = "'Orbitron', monospace";
     indicator.style.fontSize = "12px";
+    indicator.style.border = "1px solid #D4AF37";
+    indicator.style.boxShadow = "0 0 10px rgba(212, 175, 55, 0.3)";
     indicator.textContent = "Scroll: 0, 0";
 
     document.body.appendChild(indicator);
@@ -307,9 +291,9 @@ export class EditorUI {
       infoContainer.className = "selection-info";
       infoContainer.style.marginBottom = "10px";
       infoContainer.style.padding = "8px";
-      infoContainer.style.backgroundColor = "rgba(0, 255, 255, 0.2)";
+      infoContainer.style.backgroundColor = "rgba(255, 215, 0, 0.2)";
       infoContainer.style.borderRadius = "3px";
-      infoContainer.style.border = "1px solid #00FFFF";
+      infoContainer.style.border = "1px solid #D4AF37";
       infoContainer.style.fontSize = "12px";
 
       const text = document.createElement("div");
@@ -361,32 +345,28 @@ export class EditorUI {
     // Left direction button
     const leftButton = document.createElement("button");
     leftButton.textContent = "← Left";
-    leftButton.style.padding = "5px 10px";
-    leftButton.style.cursor = "pointer";
-    leftButton.style.backgroundColor = selectedEnemy.direction === -1 ? "#007bff" : "#343a40";
-    leftButton.style.border = "none";
-    leftButton.style.borderRadius = "3px";
-    leftButton.style.color = "white";
+    leftButton.className = "arcade-button";
+    if (selectedEnemy.direction === -1) {
+      leftButton.classList.add("selected");
+    }
     leftButton.addEventListener("click", () => {
       this.onDirectionChange(-1);
-      leftButton.style.backgroundColor = "#007bff";
-      rightButton.style.backgroundColor = "#343a40";
+      leftButton.classList.add("selected");
+      rightButton.classList.remove("selected");
     });
     buttonContainer.appendChild(leftButton);
 
     // Right direction button
     const rightButton = document.createElement("button");
     rightButton.textContent = "Right →";
-    rightButton.style.padding = "5px 10px";
-    rightButton.style.cursor = "pointer";
-    rightButton.style.backgroundColor = selectedEnemy.direction === 1 ? "#007bff" : "#343a40";
-    rightButton.style.border = "none";
-    rightButton.style.borderRadius = "3px";
-    rightButton.style.color = "white";
+    rightButton.className = "arcade-button";
+    if (selectedEnemy.direction === 1) {
+      rightButton.classList.add("selected");
+    }
     rightButton.addEventListener("click", () => {
       this.onDirectionChange(1);
-      rightButton.style.backgroundColor = "#007bff";
-      leftButton.style.backgroundColor = "#343a40";
+      rightButton.classList.add("selected");
+      leftButton.classList.remove("selected");
     });
     buttonContainer.appendChild(rightButton);
 
