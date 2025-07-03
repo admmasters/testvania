@@ -1,5 +1,6 @@
 import { LevelEditor } from "../levels/LevelEditor";
 import { GameState } from "./GameState";
+import { Scanlines } from "./Scanlines";
 
 interface ExtendedCanvasRenderingContext2D extends CanvasRenderingContext2D {
   webkitImageSmoothingEnabled?: boolean;
@@ -14,6 +15,7 @@ export class Game {
   gameState: GameState;
   lastTime: number;
   running: boolean;
+  scanlines: Scanlines;
 
   constructor(initialLevelId: string = "level1") {
     this.canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
@@ -25,6 +27,7 @@ export class Game {
     this.gameState = new GameState(initialLevelId);
     this.lastTime = 0;
     this.running = true;
+    this.scanlines = new Scanlines(0.6, 2, 0.5); // More pronounced scanlines for authentic retro look
 
     // Set up UI for level switching
     this.setupLevelSwitchUI();
@@ -180,6 +183,9 @@ export class Game {
 
     // Always render, even in editor mode
     this.gameState.render(this.ctx);
+
+    // Apply scanlines effect over everything
+    this.scanlines.render(this.ctx, this.canvas.width, this.canvas.height);
 
     requestAnimationFrame((time) => this.gameLoop(time));
   }
