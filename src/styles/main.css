@@ -11,7 +11,23 @@ body {
 
 canvas {
   border: 2px solid #444;
-  image-rendering: crisp-edges;
+
+  /* Pixel-perfect rendering */
+  image-rendering: pixelated;
+
+  /* Disable antialiasing and smoothing */
+  -ms-interpolation-mode: nearest-neighbor;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+
+  /* Ensure perfect pixel positioning */
+  transform: translateZ(0); /* Force hardware acceleration */
+  backface-visibility: hidden;
+  perspective: 1000;
+
+  /* Prevent blurring on scaling */
+  object-fit: contain;
+  object-position: center;
 }
 
 .controls {

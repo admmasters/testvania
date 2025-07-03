@@ -12,7 +12,7 @@ export class Heart extends GameObject {
   healAmount: number;
 
   constructor(x: number, y: number) {
-    super({ x, y, width: 12, height: 12 });
+    super({ x, y, width: 20, height: 20 });
     this.maxLifeTime = 8.0; // Hearts last 8 seconds before disappearing
     this.lifeTime = this.maxLifeTime;
     this.floatTimer = 0;
@@ -113,34 +113,158 @@ export class Heart extends GameObject {
     const centerX = renderPos.x + this.size.x / 2;
     const centerY = renderPos.y + this.size.y / 2;
 
-    ctx.fillStyle = "#FF69B4"; // Hot pink color for heart
+    // Scale factor for the heart
+    const scale = 0.8;
+    const heartWidth = 16 * scale;
+    const heartHeight = 14 * scale;
+
+    // Create a proper heart shape using bezier curves
     ctx.beginPath();
 
-    // Heart shape using two circles and a triangle
-    const heartSize = 5;
+    // Start from the bottom point
+    const bottomX = centerX;
+    const bottomY = centerY + heartHeight / 2;
 
-    // Left bump of heart
-    ctx.arc(centerX - heartSize / 2, centerY - heartSize / 2, heartSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(bottomX, bottomY);
 
-    // Right bump of heart
-    ctx.beginPath();
-    ctx.arc(centerX + heartSize / 2, centerY - heartSize / 2, heartSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Left side of heart
+    ctx.bezierCurveTo(
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight / 2, // Control point 1
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight, // Control point 2
+      bottomX - heartWidth / 4,
+      bottomY - heartHeight * 0.7, // End point
+    );
 
-    // Bottom point of heart
-    ctx.beginPath();
-    ctx.moveTo(centerX - heartSize, centerY);
-    ctx.lineTo(centerX, centerY + heartSize);
-    ctx.lineTo(centerX + heartSize, centerY);
+    // Left top curve
+    ctx.bezierCurveTo(
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight, // Control point 1
+      bottomX - heartWidth / 8,
+      bottomY - heartHeight, // Control point 2
+      bottomX,
+      bottomY - heartHeight * 0.7, // End point (top center)
+    );
+
+    // Right top curve
+    ctx.bezierCurveTo(
+      bottomX + heartWidth / 8,
+      bottomY - heartHeight, // Control point 1
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight, // Control point 2
+      bottomX + heartWidth / 4,
+      bottomY - heartHeight * 0.7, // End point
+    );
+
+    // Right side of heart
+    ctx.bezierCurveTo(
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight, // Control point 1
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight / 2, // Control point 2
+      bottomX,
+      bottomY, // End point (bottom)
+    );
+
     ctx.closePath();
+
+    // Add a subtle glow effect
+    ctx.shadowColor = "#FF1493";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Fill with gradient for depth
+    const gradient = ctx.createRadialGradient(
+      centerX - heartWidth / 6,
+      centerY - heartHeight / 6,
+      0,
+      centerX,
+      centerY,
+      heartWidth / 2,
+    );
+    gradient.addColorStop(0, "#FF69B4"); // Bright pink center
+    gradient.addColorStop(0.7, "#FF1493"); // Deep pink
+    gradient.addColorStop(1, "#DC143C"); // Dark red edge
+
+    ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Add a white highlight
-    ctx.fillStyle = "#FFFFFF";
+    // Remove shadow for highlight
+    ctx.shadowBlur = 0;
+
+    // Add a more realistic highlight
     ctx.beginPath();
-    ctx.arc(centerX - heartSize / 3, centerY - heartSize / 3, heartSize / 4, 0, Math.PI * 2);
+    const highlightX = centerX - heartWidth / 5;
+    const highlightY = centerY - heartHeight / 3;
+    const highlightSize = 3 * scale;
+
+    ctx.ellipse(
+      highlightX,
+      highlightY,
+      highlightSize,
+      highlightSize * 0.7,
+      -Math.PI / 6,
+      0,
+      Math.PI * 2,
+    );
+
+    const highlightGradient = ctx.createRadialGradient(
+      highlightX,
+      highlightY,
+      0,
+      highlightX,
+      highlightY,
+      highlightSize,
+    );
+    highlightGradient.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+    highlightGradient.addColorStop(1, "rgba(255, 255, 255, 0.1)");
+
+    ctx.fillStyle = highlightGradient;
     ctx.fill();
+
+    // Add a subtle outer glow for extra appeal
+    ctx.beginPath();
+    ctx.moveTo(bottomX, bottomY);
+    ctx.bezierCurveTo(
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight / 2,
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight,
+      bottomX - heartWidth / 4,
+      bottomY - heartHeight * 0.7,
+    );
+    ctx.bezierCurveTo(
+      bottomX - heartWidth / 2,
+      bottomY - heartHeight,
+      bottomX - heartWidth / 8,
+      bottomY - heartHeight,
+      bottomX,
+      bottomY - heartHeight * 0.7,
+    );
+    ctx.bezierCurveTo(
+      bottomX + heartWidth / 8,
+      bottomY - heartHeight,
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight,
+      bottomX + heartWidth / 4,
+      bottomY - heartHeight * 0.7,
+    );
+    ctx.bezierCurveTo(
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight,
+      bottomX + heartWidth / 2,
+      bottomY - heartHeight / 2,
+      bottomX,
+      bottomY,
+    );
+    ctx.closePath();
+
+    // Outer glow
+    ctx.strokeStyle = "rgba(255, 105, 180, 0.3)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     ctx.restore();
   }
