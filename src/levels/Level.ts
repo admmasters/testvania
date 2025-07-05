@@ -1,6 +1,7 @@
 import { LandGhost } from "@/objects/LandGhost";
 import type { GameState } from "../engine/GameState";
 import { Candle } from "../objects/candle";
+import { DiagonalPlatform } from "../objects/diagonalPlatform";
 import { Ghost } from "../objects/Ghost";
 import { Platform } from "../objects/platform";
 import { Player } from "../objects/player";
@@ -19,6 +20,7 @@ export class Level {
     // Clear existing objects
     gameState.platforms = [];
     gameState.solidBlocks = [];
+    gameState.diagonalPlatforms = [];
     gameState.enemies = [];
     gameState.candles = [];
     gameState.hitSparks = [];
@@ -45,6 +47,18 @@ export class Level {
           width: solidBlockData.size.x,
           height: solidBlockData.size.y,
           color: solidBlockData.color,
+        }),
+      );
+    }
+
+    // Create diagonal platforms
+    for (const diagonalPlatformData of this.data.diagonalPlatforms) {
+      gameState.diagonalPlatforms.push(
+        new DiagonalPlatform({
+          startPoint: diagonalPlatformData.startPoint,
+          endPoint: diagonalPlatformData.endPoint,
+          thickness: diagonalPlatformData.thickness,
+          color: diagonalPlatformData.color,
         }),
       );
     }

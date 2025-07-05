@@ -1,6 +1,7 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
 import type { Candle } from "@/objects/candle";
+import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Ghost } from "@/objects/Ghost";
 import type { LandGhost } from "@/objects/LandGhost";
 import type { Platform } from "@/objects/platform";
@@ -12,6 +13,7 @@ import { EditorObjectManager } from "./LevelEditor/EditorObjectManager";
 import { EditorRenderer } from "./LevelEditor/EditorRenderer";
 import { EditorStateManager } from "./LevelEditor/EditorStateManager";
 import type {
+  EditorDiagonalPlatform,
   EditorObject,
   EditorPlatform,
   PositionedObject,
@@ -30,6 +32,7 @@ export class LevelEditor {
   private mode: EditorMode = EditorMode.SELECT;
   private startPosition: Vector2 | null = null;
   private currentPlatform: EditorPlatform | null = null;
+  private currentDiagonalPlatform: EditorDiagonalPlatform | null = null;
   private selectedObject: EditorObject = null;
   private resizing: ResizeState | null = null;
   private platformColor: string = "#654321";
@@ -161,6 +164,7 @@ export class LevelEditor {
       ctx,
       this.mode,
       this.currentPlatform,
+      this.currentDiagonalPlatform,
       this.selectedObject,
       this.scrollPosition,
       this.areaSelectionStart,
@@ -199,6 +203,9 @@ export class LevelEditor {
       onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
       },
+      onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => {
+        this.currentDiagonalPlatform = platform;
+      },
       onResizing: (resizing: ResizeState | null) => {
         this.resizing = resizing;
       },
@@ -229,6 +236,7 @@ export class LevelEditor {
       mode: this.mode,
       selectedObject: this.selectedObject,
       currentPlatform: this.currentPlatform,
+      currentDiagonalPlatform: this.currentDiagonalPlatform,
       resizing: this.resizing,
       startPosition: this.startPosition,
       scrollPosition: this.scrollPosition,
@@ -238,6 +246,9 @@ export class LevelEditor {
       },
       onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
+      },
+      onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => {
+        this.currentDiagonalPlatform = platform;
       },
       onUpdateScrollIndicator: () => this.updateScrollIndicator(),
       onAreaSelectionUpdate: (worldPos: Vector2) => {
@@ -252,6 +263,7 @@ export class LevelEditor {
       mode: this.mode,
       selectedObject: this.selectedObject,
       currentPlatform: this.currentPlatform,
+      currentDiagonalPlatform: this.currentDiagonalPlatform,
       resizing: this.resizing,
       startPosition: this.startPosition,
       scrollPosition: this.scrollPosition,
@@ -266,6 +278,9 @@ export class LevelEditor {
       },
       onCurrentPlatform: (platform: EditorPlatform | null) => {
         this.currentPlatform = platform;
+      },
+      onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => {
+        this.currentDiagonalPlatform = platform;
       },
       onPushUndoState: () => this.pushUndoState(),
       onAreaSelectionFinish: () => {
@@ -433,6 +448,13 @@ export class LevelEditor {
       }
     }
 
+    // Check diagonal platforms
+    for (const diagonalPlatform of this.gameState.diagonalPlatforms) {
+      if (this.isObjectInArea(diagonalPlatform, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(diagonalPlatform);
+      }
+    }
+
     // Check enemies
     for (const enemy of this.gameState.enemies) {
       if (this.isObjectInArea(enemy, minX, minY, maxX, maxY)) {
@@ -487,6 +509,15 @@ export class LevelEditor {
       const candleIndex = this.gameState.candles.indexOf(obj as Candle);
       if (candleIndex !== -1) {
         this.gameState.candles.splice(candleIndex, 1);
+        continue;
+      }
+
+      // Remove diagonal platforms
+      const diagonalPlatformIndex = this.gameState.diagonalPlatforms.indexOf(
+        obj as DiagonalPlatform,
+      );
+      if (diagonalPlatformIndex !== -1) {
+        this.gameState.diagonalPlatforms.splice(diagonalPlatformIndex, 1);
         continue;
       }
 

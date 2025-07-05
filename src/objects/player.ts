@@ -1,5 +1,6 @@
 import { GameObject } from "../engine/GameObject";
 import type { GameState } from "../engine/GameState";
+import type { DiagonalPlatform } from "./diagonalPlatform";
 import type { Platform } from "./platform";
 import type { SolidBlock } from "./solidBlock";
 
@@ -126,6 +127,26 @@ export class Player extends GameObject {
     // Apply horizontal movement if no collision
     if (canMoveHorizontally) {
       this.position.x = nextX;
+
+      // Check if player is walking on a diagonal platform and adjust Y position
+      if (this.grounded) {
+        for (const diagonalPlatform of gameState.diagonalPlatforms as DiagonalPlatform[]) {
+          const playerLeft = this.position.x;
+          const playerRight = this.position.x + this.size.x;
+          const playerBottom = this.position.y + this.size.y;
+
+          // Check if player is currently on this diagonal platform
+          if (diagonalPlatform.isPlayerOnSurface(playerLeft, playerRight, playerBottom)) {
+            // Adjust player Y position to stay on the diagonal surface
+            const surfaceY = diagonalPlatform.getPlayerSurfaceY(playerLeft, playerRight);
+            if (surfaceY !== null) {
+              // Position player exactly on the platform surface
+              this.position.y = surfaceY - this.size.y;
+              break; // Only adjust for one platform
+            }
+          }
+        }
+      }
     } else {
       this.velocity.x = 0; // Stop horizontal movement on collision
     }
@@ -137,6 +158,7 @@ export class Player extends GameObject {
     // Check vertical collisions with platforms and solid blocks
     let highestPlatform: Platform | SolidBlock | null = null;
     let highestPlatformY = Number.MAX_VALUE;
+    let diagonalLandingY: number | null = null;
     let hitCeiling = false;
 
     // Check platforms
@@ -156,11 +178,41 @@ export class Player extends GameObject {
             if (platform.position.y < highestPlatformY) {
               highestPlatform = platform;
               highestPlatformY = platform.position.y;
+              diagonalLandingY = null; // Clear diagonal landing if regular platform is higher
             }
           }
         }
       }
       // Do NOT check for hitting ceiling with platforms (allow jumping through)
+    }
+
+    // Check diagonal platforms
+    for (const diagonalPlatform of gameState.diagonalPlatforms as DiagonalPlatform[]) {
+      // Check if player is falling and would land on the diagonal platform
+      if (this.velocity.y > 0) {
+        const playerBottom = this.position.y + this.size.y;
+        const nextPlayerBottom = nextY + this.size.y;
+        const playerLeft = this.position.x;
+        const playerRight = this.position.x + this.size.x;
+
+        // Use improved collision detection
+        const landingCheck = diagonalPlatform.checkPlayerLanding(
+          playerLeft,
+          playerRight,
+          playerBottom,
+          nextPlayerBottom,
+        );
+        if (landingCheck.canLand) {
+          // Check if this is the highest platform the player would land on
+          const adjustedLandingY = landingCheck.landingY;
+          if (adjustedLandingY < highestPlatformY) {
+            // Store diagonal platform landing info separately
+            highestPlatform = null; // Clear regular platform
+            highestPlatformY = adjustedLandingY;
+            diagonalLandingY = adjustedLandingY;
+          }
+        }
+      }
     }
 
     // Check solid blocks
@@ -205,8 +257,13 @@ export class Player extends GameObject {
 
     // Apply vertical movement
     if (highestPlatform) {
-      // Land on platform
+      // Land on regular platform or solid block
       this.position.y = highestPlatform.position.y - this.size.y;
+      this.velocity.y = 0;
+      this.grounded = true;
+    } else if (diagonalLandingY !== null) {
+      // Land on diagonal platform - landingY is already the surface position where player bottom should be
+      this.position.y = diagonalLandingY - this.size.y;
       this.velocity.y = 0;
       this.grounded = true;
     } else if (hitCeiling) {

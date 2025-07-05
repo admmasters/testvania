@@ -1,5 +1,6 @@
 import type { Vector2 } from "@/engine/Vector2";
 import type { Candle } from "@/objects/candle";
+import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Ghost } from "@/objects/Ghost";
 import type { LandGhost } from "@/objects/LandGhost";
 import type { Platform } from "@/objects/platform";
@@ -11,9 +12,17 @@ export interface EditorPlatform {
   color: string;
 }
 
+export interface EditorDiagonalPlatform {
+  startPoint: Vector2;
+  endPoint: Vector2;
+  thickness: number;
+  color: string;
+}
+
 export interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
   solidBlocks: { position: Vector2; size: Vector2; color: string }[];
+  diagonalPlatforms: { startPoint: Vector2; endPoint: Vector2; thickness: number; color: string }[];
   candles: { position: Vector2 }[];
   enemies: { position: Vector2; type: string; direction?: number }[];
   player: { position: Vector2 };
@@ -46,7 +55,15 @@ export interface PositionedObject {
   size: Vector2;
 }
 
-export type EditorObject = Platform | SolidBlock | Candle | LandGhost | Ghost | object | null;
+export type EditorObject =
+  | Platform
+  | SolidBlock
+  | DiagonalPlatform
+  | Candle
+  | LandGhost
+  | Ghost
+  | object
+  | null;
 
 // Type for selected enemy objects that can have their direction changed
 export type SelectableEnemy = (Ghost | LandGhost) & { type: string; direction?: number };

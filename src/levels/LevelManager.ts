@@ -60,6 +60,7 @@ export class LevelManager {
       },
       platforms: [],
       solidBlocks: [],
+      diagonalPlatforms: [],
       candles: [],
       enemies: [],
       player: {

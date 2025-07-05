@@ -1,11 +1,12 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
 import { Candle } from "@/objects/candle";
+import { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import { Ghost } from "@/objects/Ghost";
 import { LandGhost } from "@/objects/LandGhost";
 import { Platform } from "@/objects/platform";
 import { SolidBlock } from "@/objects/solidBlock";
-import type { EditorObject, EditorPlatform } from "./EditorTypes";
+import type { EditorDiagonalPlatform, EditorObject, EditorPlatform } from "./EditorTypes";
 import type { EditorUtils } from "./EditorUtils";
 
 export class EditorObjectManager {
@@ -38,6 +39,13 @@ export class EditorObjectManager {
     for (const platform of this.gameState.platforms) {
       if (this.isPointInObject(pos, platform)) {
         return platform;
+      }
+    }
+
+    // Check diagonal platforms
+    for (const diagonalPlatform of this.gameState.diagonalPlatforms) {
+      if (this.isPointInDiagonalPlatform(pos, diagonalPlatform)) {
+        return diagonalPlatform;
       }
     }
 
@@ -108,6 +116,47 @@ export class EditorObjectManager {
         y: currentPlatform.position.y,
         width: currentPlatform.size.x,
         height: currentPlatform.size.y,
+        color: currentPlatform.color,
+      }),
+    );
+  }
+
+  startDiagonalPlatformCreation(pos: Vector2, color: string): EditorDiagonalPlatform {
+    const snapped = this.utils.snapVec2(pos);
+    return {
+      startPoint: snapped,
+      endPoint: snapped,
+      thickness: 16,
+      color: color,
+    };
+  }
+
+  updateDiagonalPlatformSize(currentPlatform: EditorDiagonalPlatform, pos: Vector2): void {
+    const snapped = this.utils.snapVec2(pos);
+    currentPlatform.endPoint = snapped;
+  }
+
+  finishDiagonalPlatform(currentPlatform: EditorDiagonalPlatform | null, pos: Vector2): void {
+    if (!currentPlatform) return;
+
+    // Update end point one last time
+    this.updateDiagonalPlatformSize(currentPlatform, pos);
+
+    // Prevent zero-length diagonal platforms
+    const dx = currentPlatform.endPoint.x - currentPlatform.startPoint.x;
+    const dy = currentPlatform.endPoint.y - currentPlatform.startPoint.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    if (length < 10) {
+      return;
+    }
+
+    // Add diagonal platform to game state
+    this.gameState.diagonalPlatforms.push(
+      new DiagonalPlatform({
+        startPoint: currentPlatform.startPoint,
+        endPoint: currentPlatform.endPoint,
+        thickness: currentPlatform.thickness,
         color: currentPlatform.color,
       }),
     );
@@ -202,6 +251,15 @@ export class EditorObjectManager {
       }
     }
 
+    // Check diagonal platforms
+    for (let i = 0; i < this.gameState.diagonalPlatforms.length; i++) {
+      const diagonalPlatform = this.gameState.diagonalPlatforms[i];
+      if (this.isPointInDiagonalPlatform(pos, diagonalPlatform)) {
+        this.gameState.diagonalPlatforms.splice(i, 1);
+        return;
+      }
+    }
+
     // Check candles
     for (let i = 0; i < this.gameState.candles.length; i++) {
       const candle = this.gameState.candles[i];
@@ -237,5 +295,11 @@ export class EditorObjectManager {
       );
     }
     return false;
+  }
+
+  private isPointInDiagonalPlatform(pos: Vector2, diagonalPlatform: DiagonalPlatform): boolean {
+    // Use the diagonal platform's own surface detection method
+    const surfaceCheck = diagonalPlatform.isPointOnSurface(pos.x, pos.y);
+    return surfaceCheck.isOn;
   }
 }

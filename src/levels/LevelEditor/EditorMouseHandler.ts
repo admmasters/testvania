@@ -1,7 +1,12 @@
 import { Vector2 } from "@/engine/Vector2";
 import { EditorMode } from "./EditorModes";
 import type { EditorObjectManager } from "./EditorObjectManager";
-import type { EditorObject, EditorPlatform, ResizeState } from "./EditorTypes";
+import type {
+  EditorDiagonalPlatform,
+  EditorObject,
+  EditorPlatform,
+  ResizeState,
+} from "./EditorTypes";
 import type { EditorUtils } from "./EditorUtils";
 
 interface HandleMouseDownArgs {
@@ -11,6 +16,7 @@ interface HandleMouseDownArgs {
   scrollPosition: Vector2;
   onStartPosition: (pos: Vector2 | null) => void;
   onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
   onResizing: (resizing: ResizeState | null) => void;
   onScrolling: () => void;
   onSelectedObject: (obj: EditorObject) => void;
@@ -23,12 +29,14 @@ interface HandleMouseMoveArgs {
   mode: EditorMode;
   selectedObject: EditorObject;
   currentPlatform: EditorPlatform | null;
+  currentDiagonalPlatform: EditorDiagonalPlatform | null;
   resizing: ResizeState | null;
   startPosition: Vector2 | null;
   scrollPosition: Vector2;
   onScrollPosition: () => void;
   onScrolling: () => void;
   onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
   onUpdateScrollIndicator: () => void;
   onAreaSelectionUpdate?: (worldPos: Vector2) => void;
 }
@@ -38,6 +46,7 @@ interface HandleMouseUpArgs {
   mode: EditorMode;
   selectedObject: EditorObject;
   currentPlatform: EditorPlatform | null;
+  currentDiagonalPlatform: EditorDiagonalPlatform | null;
   resizing: ResizeState | null;
   startPosition: Vector2 | null;
   scrollPosition: Vector2;
@@ -45,6 +54,7 @@ interface HandleMouseUpArgs {
   onResizing: (resizing: ResizeState | null) => void;
   onStartPosition: (pos: Vector2 | null) => void;
   onCurrentPlatform: (platform: EditorPlatform | null) => void;
+  onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
   onPushUndoState: () => void;
   onAreaSelectionFinish?: () => void;
 }
@@ -76,6 +86,7 @@ export class EditorMouseHandler {
       scrollPosition,
       onStartPosition,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onResizing,
       onScrolling,
       onSelectedObject,
@@ -110,6 +121,7 @@ export class EditorMouseHandler {
       worldPos,
       onStartPosition,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onSelectedObject,
       onPushUndoState,
       onAreaSelectionStart,
@@ -122,12 +134,14 @@ export class EditorMouseHandler {
       mode,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       resizing,
       startPosition,
       scrollPosition,
       onScrollPosition,
       onScrolling,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onUpdateScrollIndicator,
       onAreaSelectionUpdate,
     } = args;
@@ -168,7 +182,9 @@ export class EditorMouseHandler {
       worldPos,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onAreaSelectionUpdate,
     });
   };
@@ -179,6 +195,7 @@ export class EditorMouseHandler {
       mode,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       resizing,
       startPosition,
       scrollPosition,
@@ -186,6 +203,7 @@ export class EditorMouseHandler {
       onResizing,
       onStartPosition,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onPushUndoState,
       onAreaSelectionFinish,
     } = args;
@@ -218,7 +236,9 @@ export class EditorMouseHandler {
       worldPos,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onPushUndoState,
       onAreaSelectionFinish,
     });
@@ -283,6 +303,7 @@ export class EditorMouseHandler {
     worldPos: Vector2;
     onStartPosition: (pos: Vector2 | null) => void;
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
     onSelectedObject: (obj: EditorObject) => void;
     onPushUndoState: () => void;
     onAreaSelectionStart?: (worldPos: Vector2) => void;
@@ -292,6 +313,7 @@ export class EditorMouseHandler {
       worldPos,
       onStartPosition,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onSelectedObject,
       onPushUndoState,
       onAreaSelectionStart,
@@ -321,6 +343,13 @@ export class EditorMouseHandler {
       case EditorMode.SOLID_BLOCK:
         onPushUndoState();
         onCurrentPlatform(this.objectManager.startSolidBlockCreation(worldPos));
+        onStartPosition(worldPos);
+        break;
+      case EditorMode.DIAGONAL_PLATFORM:
+        onPushUndoState();
+        onCurrentDiagonalPlatform(
+          this.objectManager.startDiagonalPlatformCreation(worldPos, "#654321"),
+        );
         onStartPosition(worldPos);
         break;
       case EditorMode.CANDLE:
@@ -357,7 +386,9 @@ export class EditorMouseHandler {
     worldPos: Vector2;
     selectedObject: EditorObject;
     currentPlatform: EditorPlatform | null;
+    currentDiagonalPlatform: EditorDiagonalPlatform | null;
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
     onAreaSelectionUpdate?: (worldPos: Vector2) => void;
   }): void {
     const {
@@ -365,7 +396,9 @@ export class EditorMouseHandler {
       worldPos,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onAreaSelectionUpdate,
     } = args;
     switch (mode) {
@@ -374,6 +407,12 @@ export class EditorMouseHandler {
         if (currentPlatform) {
           this.objectManager.updatePlatformSize(currentPlatform, worldPos);
           onCurrentPlatform(currentPlatform);
+        }
+        break;
+      case EditorMode.DIAGONAL_PLATFORM:
+        if (currentDiagonalPlatform) {
+          this.objectManager.updateDiagonalPlatformSize(currentDiagonalPlatform, worldPos);
+          onCurrentDiagonalPlatform(currentDiagonalPlatform);
         }
         break;
       case EditorMode.SELECT:
@@ -395,7 +434,9 @@ export class EditorMouseHandler {
     worldPos: Vector2;
     selectedObject: EditorObject;
     currentPlatform: EditorPlatform | null;
+    currentDiagonalPlatform: EditorDiagonalPlatform | null;
     onCurrentPlatform: (platform: EditorPlatform | null) => void;
+    onCurrentDiagonalPlatform: (platform: EditorDiagonalPlatform | null) => void;
     onPushUndoState: () => void;
     onAreaSelectionFinish?: () => void;
   }): void {
@@ -404,7 +445,9 @@ export class EditorMouseHandler {
       worldPos,
       selectedObject,
       currentPlatform,
+      currentDiagonalPlatform,
       onCurrentPlatform,
+      onCurrentDiagonalPlatform,
       onPushUndoState,
       onAreaSelectionFinish,
     } = args;
@@ -416,6 +459,10 @@ export class EditorMouseHandler {
       case EditorMode.SOLID_BLOCK:
         this.objectManager.finishSolidBlock(currentPlatform, worldPos);
         onCurrentPlatform(null);
+        break;
+      case EditorMode.DIAGONAL_PLATFORM:
+        this.objectManager.finishDiagonalPlatform(currentDiagonalPlatform, worldPos);
+        onCurrentDiagonalPlatform(null);
         break;
       case EditorMode.SELECT:
         if (selectedObject && this.objectManager.isPlatform(selectedObject) && currentPlatform) {

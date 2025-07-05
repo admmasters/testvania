@@ -1,5 +1,6 @@
 import { LevelManager } from "@/levels/LevelManager";
 import type { Candle } from "@/objects/candle";
+import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Enemy } from "@/objects/enemy";
 import type { Heart, HeartSparkle } from "@/objects/heart";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
@@ -17,6 +18,7 @@ export class GameState {
   enemies: Enemy[];
   platforms: Platform[];
   solidBlocks: SolidBlock[];
+  diagonalPlatforms: DiagonalPlatform[];
   hitSparks: HitSpark[];
   candles: Candle[];
   hearts: Heart[];
@@ -45,6 +47,7 @@ export class GameState {
     // Initialize empty arrays
     this.platforms = [];
     this.solidBlocks = [];
+    this.diagonalPlatforms = [];
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
@@ -250,6 +253,11 @@ export class GameState {
     // Draw solid blocks
     for (const solidBlock of this.solidBlocks) {
       solidBlock.render(ctx);
+    }
+
+    // Draw diagonal platforms
+    for (const diagonalPlatform of this.diagonalPlatforms) {
+      diagonalPlatform.render(ctx);
     }
 
     // Draw game objects

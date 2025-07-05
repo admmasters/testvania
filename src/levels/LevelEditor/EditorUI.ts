@@ -174,6 +174,7 @@ export class EditorUI {
     createModeButton(EditorMode.AREA_SELECT, "Area Select");
     createModeButton(EditorMode.PLATFORM, "Platform");
     createModeButton(EditorMode.SOLID_BLOCK, "Solid Block");
+    createModeButton(EditorMode.DIAGONAL_PLATFORM, "Diagonal Platform");
     createModeButton(EditorMode.CANDLE, "Candle");
     createModeButton(EditorMode.GHOST, "Ghost");
     createModeButton(EditorMode.LANDGHOST, "Land Ghost");
@@ -188,7 +189,7 @@ export class EditorUI {
     currentMode: EditorMode,
     platformColor: string,
   ): void {
-    if (currentMode === EditorMode.PLATFORM) {
+    if (currentMode === EditorMode.PLATFORM || currentMode === EditorMode.DIAGONAL_PLATFORM) {
       const colorContainer = document.createElement("div");
       colorContainer.style.marginBottom = "10px";
 

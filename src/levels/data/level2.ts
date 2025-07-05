@@ -14,6 +14,7 @@ export const level2: LevelData = {
   },
   platforms: [],
   solidBlocks: [],
+  diagonalPlatforms: [],
   candles: [],
   enemies: [],
   player: {
