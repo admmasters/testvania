@@ -1,3 +1,4 @@
+import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
 import type { Candle } from "@/objects/candle";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
@@ -31,6 +32,7 @@ export class GameState {
   spawnTimer: number;
   spawnInterval: number;
   poofEffects: PoofEffect[] = [];
+  hud: HUD;
   floatingExpIndicators: Array<{
     amount: number;
     x: number;
@@ -62,6 +64,9 @@ export class GameState {
     this.hitPauseDuration = 0;
     this.spawnTimer = 0;
     this.spawnInterval = 3;
+
+    // Initialize HUD
+    this.hud = new HUD();
 
     // Initialize default player (will be overwritten by level)
     this.player = new Player(100, 330);
@@ -333,126 +338,7 @@ export class GameState {
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {
-    // Save the current context state
-    ctx.save();
-
-    // Draw clean Castlevania-style UI
-    this.drawCastlevaniaUI(ctx);
-
-    // Restore the context state
-    ctx.restore();
-  }
-
-  private drawCastlevaniaUI(ctx: CanvasRenderingContext2D): void {
-    // Main UI background - dark purple with subtle gradient (smaller)
-    const gradient = ctx.createLinearGradient(0, 0, 0, 80);
-    gradient.addColorStop(0, "rgba(25, 15, 40, 0.95)");
-    gradient.addColorStop(1, "rgba(15, 10, 30, 0.95)");
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(10, 10, 280, 80);
-
-    // Clean border - gold outline
-    ctx.strokeStyle = "#D4AF37";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, 280, 80);
-
-    // Inner border
-    ctx.strokeStyle = "#8B4513";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(12, 12, 276, 76);
-
-    // Top decorative stripe
-    ctx.fillStyle = "#D4AF37";
-    ctx.fillRect(15, 15, 270, 8);
-
-    // Add pattern to top stripe
-    ctx.fillStyle = "#8B4513";
-    for (let i = 0; i < 15; i++) {
-      ctx.fillRect(20 + i * 16, 16, 2, 6);
-    }
-
-    // Player Level
-    ctx.font = "bold 14px 'Orbitron', monospace";
-    ctx.fillStyle = "#FFD700";
-    ctx.textAlign = "left";
-    ctx.fillText(`LEVEL ${this.player.level}`, 20, 42);
-
-    // Health section
-    ctx.font = "bold 11px 'Orbitron', monospace";
-    ctx.fillStyle = "#FFD700";
-    ctx.fillText("HEALTH", 20, 60);
-
-    // Health bar
-    const healthBarX = 20;
-    const healthBarY = 70;
-    const healthBarWidth = 180;
-    const healthBarHeight = 12;
-    const healthPercentage = this.player.health / this.player.maxHealth;
-
-    // Health bar background
-    ctx.fillStyle = "#2A1B3D";
-    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health bar fill
-    if (healthPercentage > 0) {
-      if (healthPercentage > 0.6) {
-        ctx.fillStyle = "#00FF00";
-      } else if (healthPercentage > 0.3) {
-        ctx.fillStyle = "#FFFF00";
-      } else {
-        ctx.fillStyle = "#FF0000";
-      }
-      ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
-    }
-
-    // Health bar border
-    ctx.strokeStyle = "#D4AF37";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health numbers
-    ctx.font = "10px 'Orbitron', monospace";
-    ctx.fillStyle = "#FFFFFF";
-    ctx.textAlign = "right";
-    ctx.fillText(
-      `${this.player.health}/${this.player.maxHealth}`,
-      healthBarX + healthBarWidth - 5,
-      healthBarY + 8,
-    );
-
-    // Add small decorative elements
-    this.drawSimpleDecorations(ctx);
-  }
-
-  private drawSimpleDecorations(ctx: CanvasRenderingContext2D): void {
-    // Small corner decorations
-    ctx.strokeStyle = "#D4AF37";
-    ctx.lineWidth = 1;
-
-    // Top corners
-    ctx.beginPath();
-    ctx.moveTo(15, 25);
-    ctx.lineTo(25, 25);
-    ctx.moveTo(15, 25);
-    ctx.lineTo(15, 35);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(285, 25);
-    ctx.lineTo(275, 25);
-    ctx.moveTo(285, 25);
-    ctx.lineTo(285, 35);
-    ctx.stroke();
-
-    // Health gem
-    ctx.fillStyle = "#FF6B6B";
-    ctx.beginPath();
-    ctx.arc(210, 76, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#FFD700";
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    this.hud.render(ctx, this.player);
   }
 
   awardExp(amount: number, x: number, y: number): void {
