@@ -1,6 +1,7 @@
 import type { GameState } from "@/engine/GameState";
 import type { Vector2 } from "@/engine/Vector2";
 import { Candle } from "@/objects/candle";
+import { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import { Ghost } from "@/objects/Ghost";
 import { LandGhost } from "@/objects/LandGhost";
 import { Platform } from "@/objects/platform";
@@ -28,6 +29,12 @@ export class EditorStateManager {
         position: sb.position.copy(),
         size: sb.size.copy(),
         color: sb.color,
+      })),
+      diagonalPlatforms: this.gameState.diagonalPlatforms.map((dp) => ({
+        startPoint: dp.startPoint.copy(),
+        endPoint: dp.endPoint.copy(),
+        thickness: dp.thickness,
+        color: dp.color,
       })),
       candles: this.gameState.candles.map((c) => ({
         position: c.position.copy(),
@@ -82,6 +89,12 @@ export class EditorStateManager {
         size: sb.size.copy(),
         color: sb.color,
       })),
+      diagonalPlatforms: this.gameState.diagonalPlatforms.map((dp) => ({
+        startPoint: dp.startPoint.copy(),
+        endPoint: dp.endPoint.copy(),
+        thickness: dp.thickness,
+        color: dp.color,
+      })),
       candles: this.gameState.candles.map((c) => ({
         position: c.position.copy(),
       })),
@@ -117,6 +130,17 @@ export class EditorStateManager {
           width: sb.size.x,
           height: sb.size.y,
           color: sb.color,
+        }),
+    );
+
+    // Restore diagonal platforms
+    this.gameState.diagonalPlatforms = (state.diagonalPlatforms || []).map(
+      (dp) =>
+        new DiagonalPlatform({
+          startPoint: dp.startPoint,
+          endPoint: dp.endPoint,
+          thickness: dp.thickness,
+          color: dp.color,
         }),
     );
 

@@ -1,7 +1,12 @@
 import type { Vector2 } from "@/engine/Vector2";
 import { Platform } from "@/objects/platform";
 import { EditorMode } from "./EditorModes";
-import type { EditorObject, EditorPlatform, ResizeState } from "./EditorTypes";
+import type {
+  EditorDiagonalPlatform,
+  EditorObject,
+  EditorPlatform,
+  ResizeState,
+} from "./EditorTypes";
 import { EditorUtils } from "./EditorUtils";
 
 export class EditorRenderer {
@@ -17,6 +22,7 @@ export class EditorRenderer {
     ctx: CanvasRenderingContext2D,
     mode: EditorMode,
     currentPlatform: EditorPlatform | null,
+    currentDiagonalPlatform: EditorDiagonalPlatform | null,
     selectedObject: EditorObject,
     scrollPosition: Vector2,
     areaSelectionStart: Vector2 | null,
@@ -34,7 +40,12 @@ export class EditorRenderer {
 
     // Draw current solid block being created
     if (mode === EditorMode.SOLID_BLOCK && currentPlatform) {
-      this.drawCurrentPlatform(ctx, currentPlatform, "#00FFFF"); // Cyan to distinguish from platforms
+      this.drawCurrentPlatform(ctx, currentPlatform, "#87CEEB"); // Light blue to distinguish from platforms
+    }
+
+    // Draw current diagonal platform being created
+    if (mode === EditorMode.DIAGONAL_PLATFORM && currentDiagonalPlatform) {
+      this.drawCurrentDiagonalPlatform(ctx, currentDiagonalPlatform, "#FFD700"); // Gold to distinguish
     }
 
     // Highlight selected object
@@ -73,6 +84,48 @@ export class EditorRenderer {
 
     ctx.strokeStyle = strokeColor;
     ctx.strokeRect(platform.position.x, platform.position.y, platform.size.x, platform.size.y);
+  }
+
+  private drawCurrentDiagonalPlatform(
+    ctx: CanvasRenderingContext2D,
+    diagonalPlatform: EditorDiagonalPlatform,
+    strokeColor: string,
+  ): void {
+    const { startPoint, endPoint, thickness } = diagonalPlatform;
+
+    // Calculate the perpendicular vector for thickness
+    const dx = endPoint.x - startPoint.x;
+    const dy = endPoint.y - startPoint.y;
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    if (length === 0) return;
+
+    const perpX = ((-dy / length) * thickness) / 2;
+    const perpY = ((dx / length) * thickness) / 2;
+
+    // Calculate the four corners of the platform
+    const corners = [
+      { x: startPoint.x + perpX, y: startPoint.y + perpY },
+      { x: startPoint.x - perpX, y: startPoint.y - perpY },
+      { x: endPoint.x - perpX, y: endPoint.y - perpY },
+      { x: endPoint.x + perpX, y: endPoint.y + perpY },
+    ];
+
+    // Main platform body
+    ctx.fillStyle = diagonalPlatform.color;
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    corners.forEach((corner) => {
+      ctx.lineTo(corner.x, corner.y);
+    });
+    ctx.closePath();
+    ctx.fill();
+
+    // Stroke outline
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1;
   }
 
   private drawSelectedObject(ctx: CanvasRenderingContext2D, selectedObject: EditorObject): void {
@@ -120,13 +173,13 @@ export class EditorRenderer {
     const maxY = Math.max(start.y, end.y);
 
     ctx.save();
-    ctx.strokeStyle = "#00FFFF";
+    ctx.strokeStyle = "#D4AF37";
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
 
     // Semi-transparent fill
-    ctx.fillStyle = "rgba(0, 255, 255, 0.1)";
+    ctx.fillStyle = "rgba(212, 175, 55, 0.1)";
     ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
     ctx.restore();
   }
@@ -173,6 +226,21 @@ export class EditorRenderer {
         // Show grid snap preview for solid block placement
         const snappedBlockPos = this.utils.snapVec2(mousePosition);
         ctx.strokeRect(snappedBlockPos.x, snappedBlockPos.y, 32, 32);
+        break;
+      }
+      case EditorMode.DIAGONAL_PLATFORM: {
+        // Show crosshair for diagonal platform placement
+        const snappedPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeStyle = "#FFD700";
+        ctx.lineWidth = 2;
+        // Draw crosshair
+        ctx.beginPath();
+        ctx.moveTo(snappedPos.x - 8, snappedPos.y);
+        ctx.lineTo(snappedPos.x + 8, snappedPos.y);
+        ctx.moveTo(snappedPos.x, snappedPos.y - 8);
+        ctx.lineTo(snappedPos.x, snappedPos.y + 8);
+        ctx.stroke();
+        ctx.lineWidth = 1;
         break;
       }
       case EditorMode.CANDLE: {

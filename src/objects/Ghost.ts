@@ -123,11 +123,13 @@ export class Ghost extends Enemy {
     for (const d of this.damageIndicators) {
       ctx.save();
       ctx.globalAlpha = d.alpha * alpha * 0.6; // match ghost alpha and fade
-      ctx.font = "bold 18px Arial";
+      ctx.font = "bold 18px 'Orbitron', monospace";
       ctx.fillStyle = "#FFD700";
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 3;
       ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(255, 215, 0, 0.8)";
+      ctx.shadowBlur = 15;
       ctx.strokeText(
         `${d.amount}`,
         d.x - this.position.x + renderPos.x,

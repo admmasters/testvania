@@ -14,6 +14,14 @@ export interface SolidBlockData {
   color: string;
 }
 
+// Define the structure for diagonal platform data
+export interface DiagonalPlatformData {
+  startPoint: Vector2;
+  endPoint: Vector2;
+  thickness?: number;
+  color: string;
+}
+
 // Define candle positions
 export interface CandleData {
   position: Vector2;
@@ -48,6 +56,7 @@ export interface LevelData {
   };
   platforms: PlatformData[];
   solidBlocks: SolidBlockData[];
+  diagonalPlatforms: DiagonalPlatformData[];
   candles: CandleData[];
   enemies: EnemyData[];
   player: PlayerStartData;

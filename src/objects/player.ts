@@ -1,5 +1,6 @@
 import { GameObject } from "../engine/GameObject";
 import type { GameState } from "../engine/GameState";
+import type { DiagonalPlatform } from "./diagonalPlatform";
 import type { Platform } from "./platform";
 import type { SolidBlock } from "./solidBlock";
 
@@ -126,6 +127,26 @@ export class Player extends GameObject {
     // Apply horizontal movement if no collision
     if (canMoveHorizontally) {
       this.position.x = nextX;
+
+      // Check if player is walking on a diagonal platform and adjust Y position
+      if (this.grounded) {
+        for (const diagonalPlatform of gameState.diagonalPlatforms as DiagonalPlatform[]) {
+          const playerLeft = this.position.x;
+          const playerRight = this.position.x + this.size.x;
+          const playerBottom = this.position.y + this.size.y;
+
+          // Check if player is currently on this diagonal platform
+          if (diagonalPlatform.isPlayerOnSurface(playerLeft, playerRight, playerBottom)) {
+            // Adjust player Y position to stay on the diagonal surface
+            const surfaceY = diagonalPlatform.getPlayerSurfaceY(playerLeft, playerRight);
+            if (surfaceY !== null) {
+              // Position player exactly on the platform surface
+              this.position.y = surfaceY - this.size.y;
+              break; // Only adjust for one platform
+            }
+          }
+        }
+      }
     } else {
       this.velocity.x = 0; // Stop horizontal movement on collision
     }
@@ -137,6 +158,7 @@ export class Player extends GameObject {
     // Check vertical collisions with platforms and solid blocks
     let highestPlatform: Platform | SolidBlock | null = null;
     let highestPlatformY = Number.MAX_VALUE;
+    let diagonalLandingY: number | null = null;
     let hitCeiling = false;
 
     // Check platforms
@@ -156,11 +178,41 @@ export class Player extends GameObject {
             if (platform.position.y < highestPlatformY) {
               highestPlatform = platform;
               highestPlatformY = platform.position.y;
+              diagonalLandingY = null; // Clear diagonal landing if regular platform is higher
             }
           }
         }
       }
       // Do NOT check for hitting ceiling with platforms (allow jumping through)
+    }
+
+    // Check diagonal platforms
+    for (const diagonalPlatform of gameState.diagonalPlatforms as DiagonalPlatform[]) {
+      // Check if player is falling and would land on the diagonal platform
+      if (this.velocity.y > 0) {
+        const playerBottom = this.position.y + this.size.y;
+        const nextPlayerBottom = nextY + this.size.y;
+        const playerLeft = this.position.x;
+        const playerRight = this.position.x + this.size.x;
+
+        // Use improved collision detection
+        const landingCheck = diagonalPlatform.checkPlayerLanding(
+          playerLeft,
+          playerRight,
+          playerBottom,
+          nextPlayerBottom,
+        );
+        if (landingCheck.canLand) {
+          // Check if this is the highest platform the player would land on
+          const adjustedLandingY = landingCheck.landingY;
+          if (adjustedLandingY < highestPlatformY) {
+            // Store diagonal platform landing info separately
+            highestPlatform = null; // Clear regular platform
+            highestPlatformY = adjustedLandingY;
+            diagonalLandingY = adjustedLandingY;
+          }
+        }
+      }
     }
 
     // Check solid blocks
@@ -205,8 +257,13 @@ export class Player extends GameObject {
 
     // Apply vertical movement
     if (highestPlatform) {
-      // Land on platform
+      // Land on regular platform or solid block
       this.position.y = highestPlatform.position.y - this.size.y;
+      this.velocity.y = 0;
+      this.grounded = true;
+    } else if (diagonalLandingY !== null) {
+      // Land on diagonal platform - landingY is already the surface position where player bottom should be
+      this.position.y = diagonalLandingY - this.size.y;
       this.velocity.y = 0;
       this.grounded = true;
     } else if (hitCeiling) {
@@ -396,168 +453,127 @@ export class Player extends GameObject {
     ctx.fillRect(renderPos.x + 10, renderPos.y + 12, 2, 2);
     ctx.fillRect(renderPos.x + 20, renderPos.y + 12, 2, 2);
 
-    // Alucard-style ultra-fast sword swipe
+    // Classic Castlevania sword blade swipe
     if (this.attacking) {
       const progress = this.attackAnimationPhase;
       const centerX = renderPos.x + this.size.x / 2;
       const centerY = renderPos.y + this.size.y / 2;
       const direction = this.facingRight ? 1 : -1;
 
-      // Multiple simultaneous slash lines for instant impact
-      const slashCount = 3; // Reduced for thinner appearance
-      const baseLength = 60; // Slightly shorter visual reach
+      // Sword blade properties
+      const bladeLength = 80; // Long, elegant blade
+      const bladeWidth = 8; // Thin blade width
+      const hiltLength = 12; // Sword hilt
 
-      // Intense white flash effect at the start - more dramatic with lighting
-      if (progress < 0.3) {
-        const flashAlpha = 1.0 - progress / 0.5;
+      // Calculate sword position based on attack progress
+      const swordAngle = direction * (progress * 0.5 - 0.25) * Math.PI; // Smooth arc motion
+      const swordStartX = centerX + direction * 8; // Start near player
+      const swordStartY = centerY;
+      const swordEndX = swordStartX + Math.cos(swordAngle) * bladeLength * direction;
+      const swordEndY = swordStartY + Math.sin(swordAngle) * bladeLength * 0.3; // Slight vertical arc
 
-        // Outer light bloom - smaller and bright blue
-        const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35);
-        gradient.addColorStop(0, `rgba(220, 240, 255, ${flashAlpha * 0.8})`);
-        gradient.addColorStop(0.3, `rgba(180, 220, 255, ${flashAlpha * 0.6})`);
-        gradient.addColorStop(0.6, `rgba(140, 190, 255, ${flashAlpha * 0.3})`);
-        gradient.addColorStop(1, `rgba(100, 150, 255, 0)`);
+      // Draw sword hilt (dark brown/black)
+      ctx.save();
+      ctx.strokeStyle = "#2C1810";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(swordStartX, swordStartY);
+      ctx.lineTo(
+        swordStartX + Math.cos(swordAngle) * hiltLength * direction,
+        swordStartY + Math.sin(swordAngle) * hiltLength * 0.3,
+      );
+      ctx.stroke();
 
-        ctx.fillStyle = gradient;
-        ctx.fillRect(centerX - 35, centerY - 35, 70, 70);
+      // Draw sword guard (metallic gold)
+      ctx.strokeStyle = "#D4AF37";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      const guardX = swordStartX + Math.cos(swordAngle) * hiltLength * direction;
+      const guardY = swordStartY + Math.sin(swordAngle) * hiltLength * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(guardX - 8, guardY - 4);
+      ctx.lineTo(guardX + 8, guardY + 4);
+      ctx.stroke();
 
-        // Core bright flash - smaller light blue
-        ctx.globalAlpha = flashAlpha * 0.8;
-        ctx.fillStyle = "#DDEEff";
-        ctx.fillRect(centerX - 20, centerY - 20, 40, 40);
+      // Draw main blade (bright silver/white with subtle glow)
+      ctx.strokeStyle = "#F0F0F0";
+      ctx.lineWidth = bladeWidth;
+      ctx.lineCap = "round";
+      ctx.shadowColor = "#FFFFFF";
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(guardX, guardY);
+      ctx.lineTo(swordEndX, swordEndY);
+      ctx.stroke();
+
+      // Draw blade highlight (bright white center line)
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 2;
+      ctx.beginPath();
+      ctx.moveTo(guardX, guardY);
+      ctx.lineTo(swordEndX, swordEndY);
+      ctx.stroke();
+
+      // Draw blade edge (ultra-thin bright line)
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 0.5;
+      ctx.shadowBlur = 1;
+      ctx.beginPath();
+      ctx.moveTo(guardX, guardY);
+      ctx.lineTo(swordEndX, swordEndY);
+      ctx.stroke();
+
+      // Motion blur effect - draw several blade positions for speed
+      if (progress > 0.2) {
+        ctx.globalAlpha = 0.3;
+        for (let i = 1; i <= 3; i++) {
+          const blurProgress = Math.max(0, progress - i * 0.05);
+          const blurAngle = direction * (blurProgress * 0.5 - 0.25) * Math.PI;
+          const blurEndX = swordStartX + Math.cos(blurAngle) * bladeLength * direction;
+          const blurEndY = swordStartY + Math.sin(blurAngle) * bladeLength * 0.3;
+
+          ctx.strokeStyle = "#E0E0E0";
+          ctx.lineWidth = bladeWidth * 0.8;
+          ctx.shadowBlur = 2;
+          ctx.beginPath();
+          ctx.moveTo(guardX, guardY);
+          ctx.lineTo(blurEndX, blurEndY);
+          ctx.stroke();
+        }
         ctx.globalAlpha = 1.0;
       }
 
-      // Draw multiple horizontal slash lines instantly - razor sharp
-      for (let i = 0; i < slashCount; i++) {
-        const yOffset = (i - 1) * 2; // Thinner vertical spread for sleeker appearance
+      // Subtle sparkle at blade tip during peak of swing
+      if (progress > 0.4 && progress < 0.8) {
+        const sparkIntensity = 1.0 - Math.abs(progress - 0.6) * 5; // Peak at 0.6
+        ctx.globalAlpha = sparkIntensity * 0.8;
 
-        const length = baseLength + i * 8 + progress * 40;
-        const startX = centerX - direction * length * 0.1; // Much less behind the character
-        const startY = centerY + yOffset;
-        const endX = centerX + direction * length * 0.9; // More in front
-        const endY = centerY + yOffset;
+        // Small bright flash at tip
+        ctx.fillStyle = "#FFFFFF";
+        ctx.shadowColor = "#FFFFFF";
+        ctx.shadowBlur = 8;
+        ctx.fillRect(swordEndX - 2, swordEndY - 2, 4, 4);
 
-        // Outer lighting bloom - thinner and more elegant
-        ctx.strokeStyle = "#66BBDD";
-        ctx.lineWidth = 4; // Reduced from 6
-        ctx.globalAlpha = 0.4; // Slightly more transparent
-        ctx.lineCap = "round";
-        ctx.shadowColor = "#66BBDD";
-        ctx.shadowBlur = 6; // Reduced blur
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-
-        // Mid glow layer - thinner
-        ctx.strokeStyle = "#88CCEE";
-        ctx.lineWidth = 2; // Reduced from 3
-        ctx.globalAlpha = 0.6; // Slightly more transparent
-        ctx.shadowBlur = 4; // Reduced blur
-        ctx.lineCap = "butt";
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-
-        // Main slash - thinner bright light blue
-        ctx.strokeStyle = "#BBDDFF";
-        ctx.lineWidth = 1; // Reduced from 1.5
-        ctx.globalAlpha = 1.0;
-        ctx.shadowColor = "#BBDDFF";
-        ctx.shadowBlur = 2; // Reduced blur
-        ctx.lineCap = "butt";
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-
-        // Ultra-sharp inner core - very thin
-        ctx.strokeStyle = "#DDEEFF";
-        ctx.lineWidth = 0.3; // Reduced from 0.5
-        ctx.globalAlpha = 1.0;
-        ctx.shadowBlur = 1; // Reduced blur
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-
-        // Reset shadow for other elements
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
-      }
-
-      // Sharp speed lines effect - thinner and more refined
-      ctx.globalAlpha = 0.6; // More subtle
-      ctx.strokeStyle = "#CCDDFF";
-      ctx.lineWidth = 0.5; // Thinner speed lines
-      ctx.lineCap = "butt";
-      ctx.shadowColor = "#BBDDFF";
-      ctx.shadowBlur = 1; // Less blur
-      for (let i = 0; i < 4; i++) {
-        // Fewer speed lines for cleaner look
-        const lineLength = 30 + i * 5; // Slightly shorter
-        const yOffset = (i - 1.5) * 3; // Tighter vertical spread
-
-        const lineStartX = centerX - direction * lineLength * 0.2; // Less behind
-        const lineStartY = centerY + yOffset;
-        const lineEndX = centerX + direction * lineLength * 0.8; // More forward
-        const lineEndY = centerY + yOffset;
-
-        ctx.beginPath();
-        ctx.moveTo(lineStartX, lineStartY);
-        ctx.lineTo(lineEndX, lineEndY);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1.0;
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-
-      // Explosive sparkle burst at sword tip - with dramatic lighting
-      if (progress > 0.15) {
-        // Start after initial flash for better pacing
-        const tipX = centerX + direction * (baseLength + 40) * 0.8; // More forward
-        const tipY = centerY;
-
-        // Outer light bloom around tip - smaller blue-white
-        const sparkGradient = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, 18);
-        sparkGradient.addColorStop(0, "rgba(240, 250, 255, 0.8)");
-        sparkGradient.addColorStop(0.4, "rgba(200, 230, 255, 0.6)");
-        sparkGradient.addColorStop(0.7, "rgba(160, 200, 255, 0.3)");
-        sparkGradient.addColorStop(1, "rgba(120, 170, 255, 0)");
-
-        ctx.fillStyle = sparkGradient;
-        ctx.fillRect(tipX - 18, tipY - 18, 36, 36);
-
-        // Small spark explosion with blue glow
-        ctx.shadowColor = "#AADDFF";
+        // Tiny sparkles around tip
+        ctx.fillStyle = "#F0F0F0";
         ctx.shadowBlur = 4;
-        ctx.fillStyle = "#CCDDFF";
-        for (let i = 0; i < 8; i++) {
-          // Fewer sparks
-          const sparkAngle = (i / 8) * Math.PI * 2;
-          const sparkDist = 4 + Math.random() * 6;
-          const sparkX = tipX + Math.cos(sparkAngle) * sparkDist;
-          const sparkY = tipY + Math.sin(sparkAngle) * sparkDist;
-          ctx.fillRect(sparkX - 1, sparkY - 1, 2, 2);
+        for (let i = 0; i < 4; i++) {
+          const sparkAngle = (i / 4) * Math.PI * 2;
+          const sparkDist = 6 + Math.random() * 4;
+          const sparkX = swordEndX + Math.cos(sparkAngle) * sparkDist;
+          const sparkY = swordEndY + Math.sin(sparkAngle) * sparkDist;
+          ctx.fillRect(sparkX - 0.5, sparkY - 0.5, 1, 1);
         }
 
-        // Small central burst with blue glow
-        ctx.shadowColor = "#DDEEFF";
-        ctx.shadowBlur = 6;
-        ctx.fillStyle = "#EEFFFF";
-        ctx.fillRect(tipX - 2, tipY - 2, 4, 4);
-
-        // Small bright core
-        ctx.shadowBlur = 3;
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(tipX - 1, tipY - 1, 2, 2);
-
-        // Reset shadow
-        ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1.0;
       }
+
+      // Reset shadow and restore context
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.restore();
     }
 
     ctx.restore();

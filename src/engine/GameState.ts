@@ -1,5 +1,7 @@
+import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
 import type { Candle } from "@/objects/candle";
+import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Enemy } from "@/objects/enemy";
 import type { Heart, HeartSparkle } from "@/objects/heart";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
@@ -17,6 +19,7 @@ export class GameState {
   enemies: Enemy[];
   platforms: Platform[];
   solidBlocks: SolidBlock[];
+  diagonalPlatforms: DiagonalPlatform[];
   hitSparks: HitSpark[];
   candles: Candle[];
   hearts: Heart[];
@@ -29,6 +32,7 @@ export class GameState {
   spawnTimer: number;
   spawnInterval: number;
   poofEffects: PoofEffect[] = [];
+  hud: HUD;
   floatingExpIndicators: Array<{
     amount: number;
     x: number;
@@ -45,6 +49,7 @@ export class GameState {
     // Initialize empty arrays
     this.platforms = [];
     this.solidBlocks = [];
+    this.diagonalPlatforms = [];
     this.enemies = [];
     this.hitSparks = [];
     this.candles = [];
@@ -59,6 +64,9 @@ export class GameState {
     this.hitPauseDuration = 0;
     this.spawnTimer = 0;
     this.spawnInterval = 3;
+
+    // Initialize HUD
+    this.hud = new HUD();
 
     // Initialize default player (will be overwritten by level)
     this.player = new Player(100, 330);
@@ -252,6 +260,11 @@ export class GameState {
       solidBlock.render(ctx);
     }
 
+    // Draw diagonal platforms
+    for (const diagonalPlatform of this.diagonalPlatforms) {
+      diagonalPlatform.render(ctx);
+    }
+
     // Draw game objects
     this.player.render(ctx);
 
@@ -300,11 +313,13 @@ export class GameState {
     for (const exp of this.floatingExpIndicators) {
       ctx.save();
       ctx.globalAlpha = exp.alpha;
-      ctx.font = "bold 18px Arial";
+      ctx.font = "bold 18px 'Orbitron', monospace";
       ctx.fillStyle = "#00FFAA";
-      ctx.strokeStyle = "#222";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 3;
       ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(0, 255, 170, 0.8)";
+      ctx.shadowBlur = 15;
       ctx.strokeText(`+${exp.amount} EXP`, exp.x, exp.y);
       ctx.fillText(`+${exp.amount} EXP`, exp.x, exp.y);
       ctx.restore();
@@ -323,80 +338,7 @@ export class GameState {
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {
-    // Save the current context state
-    ctx.save();
-
-    // Expand UI background to accommodate level and exp info
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-    ctx.fillRect(16, 16, 220, 128); // Increased height for level info
-
-    // Ensure consistent text alignment for all UI text
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-
-    // Draw UI text
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "16px monospace";
-
-    // Player level
-    ctx.fillText(`Level: ${this.player.level}`, 32, 32);
-
-    // Enemy count (moved down)
-    ctx.fillText(`Enemies: ${this.enemies.length}`, 32, 48);
-
-    // Draw player health bar
-    const barWidth = 160;
-    const barHeight = 8;
-    const healthPercentage = this.player.health / this.player.maxHealth;
-
-    // Health bar label
-    ctx.fillText("Health:", 32, 64);
-
-    // Draw the empty health bar background
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 80, barWidth, barHeight);
-
-    // Draw the filled portion of the health bar
-    if (healthPercentage > 0.6) {
-      ctx.fillStyle = "#00FF00"; // Green for good health
-    } else if (healthPercentage > 0.3) {
-      ctx.fillStyle = "#FFFF00"; // Yellow for medium health
-    } else {
-      ctx.fillStyle = "#FF0000"; // Red for low health
-    }
-
-    ctx.fillRect(32, 80, barWidth * healthPercentage, barHeight);
-
-    // Draw border around health bar
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(32, 80, barWidth, barHeight);
-
-    // Draw experience bar
-    const expPercentage = this.player.exp / this.player.expToNext;
-
-    // Experience bar label and values
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText("Experience:", 32, 96);
-    ctx.font = "12px monospace";
-    ctx.fillText(`${this.player.exp}/${this.player.expToNext}`, 32, 112);
-    ctx.font = "16px monospace";
-
-    // Draw the empty exp bar background
-    ctx.fillStyle = "#333333";
-    ctx.fillRect(32, 128, barWidth, barHeight);
-
-    // Draw the filled portion of the exp bar
-    ctx.fillStyle = "#00AAFF"; // Blue for experience
-    ctx.fillRect(32, 128, barWidth * expPercentage, barHeight);
-
-    // Draw border around exp bar
-    ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(32, 128, barWidth, barHeight);
-
-    // Restore the context state
-    ctx.restore();
+    this.hud.render(ctx, this.player);
   }
 
   awardExp(amount: number, x: number, y: number): void {
