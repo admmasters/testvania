@@ -32,6 +32,16 @@ export class Player extends GameObject {
   defense: number;
   speedStat: number;
 
+  // Power bar system for charged attacks
+  power: number;
+  maxPower: number;
+  powerRechargeRate: number;
+  isChargingAttack: boolean;
+  chargeTime: number;
+  maxChargeTime: number;
+  chargeLevel: number; // 0 = no charge, 1 = partial, 2 = full charge
+  chargingSound: boolean;
+
   // Stat growth per level (could be made configurable)
   static BASE_EXP_TO_NEXT = 100;
   static EXP_GROWTH = 1.5;
@@ -65,6 +75,16 @@ export class Player extends GameObject {
     this.invulnerabilityDuration = 1.0;
     this.coyoteTime = 0.1;
     this.coyoteTimer = 0;
+
+    // Initialize power bar system
+    this.power = 0; // Start at zero
+    this.maxPower = 100;
+    this.powerRechargeRate = 50; // Power units per second - faster charging
+    this.isChargingAttack = false;
+    this.chargeTime = 0;
+    this.maxChargeTime = 2.0; // 2 seconds for full charge
+    this.chargeLevel = 0;
+    this.chargingSound = false;
   }
 
   update(deltaTime: number, gameState: GameState): void {
@@ -100,9 +120,28 @@ export class Player extends GameObject {
       this.velocity.y *= 0.5; // Reduce upward velocity when jump key released
     }
 
-    // Attack - allow attack if not currently attacking and cooldown is over
+    // Attack system - X key handling
     if (input.isKeyPressed("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+      // Key just pressed - always do regular sword attack first
       this.performAttack(gameState);
+    } else if (input.isKeyDown("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+      // Key is being held - start charging power and attack
+      if (!this.isChargingAttack) {
+        this.isChargingAttack = true;
+        this.chargeTime = 0;
+        this.chargeLevel = 0;
+      }
+    } else if (this.isChargingAttack && !input.isKeyDown("KeyX")) {
+      // Key released - check if we should fire energy blast
+      if (this.power >= this.maxPower && this.chargeLevel >= 2) {
+        // Full power and charged long enough, fire energy blast
+        this.releaseChargedAttack(gameState);
+      } else {
+        // Not enough power or not charged long enough, just stop charging
+        this.isChargingAttack = false;
+        this.chargeTime = 0;
+        this.chargeLevel = 0;
+      }
     }
   }
 
@@ -357,6 +396,34 @@ export class Player extends GameObject {
       this.attackCooldownTimer -= deltaTime;
     }
 
+    // Update charging attack
+    if (this.isChargingAttack) {
+      this.chargeTime += deltaTime;
+
+      // Fill power bar while charging
+      if (this.power < this.maxPower) {
+        this.power = Math.min(this.maxPower, this.power + this.powerRechargeRate * deltaTime);
+      }
+
+      // Update charge level based on time (only matters when power is full)
+      if (this.power >= this.maxPower) {
+        if (this.chargeTime >= this.maxChargeTime) {
+          this.chargeLevel = 2; // Full charge
+        } else if (this.chargeTime >= this.maxChargeTime * 0.5) {
+          this.chargeLevel = 1; // Partial charge
+        } else {
+          this.chargeLevel = 0; // No charge
+        }
+      } else {
+        this.chargeLevel = 0; // No charge until power is full
+      }
+    }
+
+    // Power drains when not charging
+    if (!this.isChargingAttack && this.power > 0) {
+      this.power = Math.max(0, this.power - this.powerRechargeRate * 2 * deltaTime); // Drain faster than it fills
+    }
+
     if (this.invulnerable) {
       this.invulnerabilityTimer -= deltaTime;
       if (this.invulnerabilityTimer <= 0) {
@@ -405,6 +472,31 @@ export class Player extends GameObject {
     // No global camera shake; individual objects will shake via GameState.hitPause.
   }
 
+  releaseChargedAttack(gameState?: GameState): void {
+    if (!this.isChargingAttack || !gameState) return;
+
+    // Only shoot energy blast if power is full and we've charged long enough
+    if (this.power >= this.maxPower && this.chargeLevel >= 2) {
+      // Drain all power
+      this.power = 0;
+
+      // Create energy blast
+      const centerX = this.position.x + this.size.x / 2;
+      const centerY = this.position.y + this.size.y / 2;
+      const blastDamage = 8; // Full power blast
+
+      gameState.createEnergyBlast(centerX, centerY, this.facingRight, blastDamage);
+
+      // Set attack cooldown
+      this.attackCooldownTimer = this.attackCooldown;
+    }
+
+    // Reset charging state
+    this.isChargingAttack = false;
+    this.chargeTime = 0;
+    this.chargeLevel = 0;
+  }
+
   getAttackBounds(): {
     left: number;
     right: number;
@@ -441,6 +533,13 @@ export class Player extends GameObject {
     // Get render position with shake offset
     const renderPos = this.getRenderPosition();
 
+    // Flash white when fully charged
+    if (this.power >= this.maxPower && this.isChargingAttack) {
+      const flashIntensity = 0.3 + 0.4 * Math.sin(Date.now() * 0.08); // 4x faster flashing
+      ctx.fillStyle = `rgba(255, 255, 255, ${flashIntensity})`;
+      ctx.fillRect(renderPos.x - 2, renderPos.y - 2, this.size.x + 4, this.size.y + 4);
+    }
+
     ctx.fillStyle = "#8B4513";
     ctx.fillRect(renderPos.x, renderPos.y, this.size.x, this.size.y);
 
@@ -452,6 +551,47 @@ export class Player extends GameObject {
     ctx.fillStyle = "#000";
     ctx.fillRect(renderPos.x + 10, renderPos.y + 12, 2, 2);
     ctx.fillRect(renderPos.x + 20, renderPos.y + 12, 2, 2);
+
+    // Charging effects - show when charging (power building up)
+    if (this.isChargingAttack) {
+      const centerX = renderPos.x + this.size.x / 2;
+      const centerY = renderPos.y + this.size.y / 2;
+      const time = Date.now() * 0.03; // 3x faster animation
+
+      // Energy aura based on power level and charge level
+      const powerPercent = this.power / this.maxPower;
+      const auraIntensity = powerPercent * (this.chargeLevel === 2 ? 1.0 : 0.6);
+      const auraColor =
+        this.chargeLevel === 2 ? "#FF4500" : powerPercent >= 1.0 ? "#FFFF00" : "#88FF88";
+
+      ctx.save();
+      ctx.globalAlpha = auraIntensity * (0.5 + 0.4 * Math.sin(time * 2)); // Faster pulsing
+      ctx.shadowColor = auraColor;
+      ctx.shadowBlur = 15;
+      ctx.strokeStyle = auraColor;
+      ctx.lineWidth = 2;
+
+      // Draw energy rings
+      for (let i = 0; i < 3; i++) {
+        const radius = 20 + i * 8 + Math.sin(time * 1.5 + i) * 6; // Faster and more pronounced movement
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Energy particles
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + time * 2; // Faster rotation
+        const distance = 25 + Math.sin(time * 3 + i) * 10; // Faster and more movement
+        const sparkX = centerX + Math.cos(angle) * distance;
+        const sparkY = centerY + Math.sin(angle) * distance;
+
+        ctx.fillStyle = auraColor;
+        ctx.fillRect(sparkX - 1, sparkY - 1, 2, 2);
+      }
+
+      ctx.restore();
+    }
 
     // Classic Castlevania sword blade swipe
     if (this.attacking) {
@@ -585,6 +725,10 @@ export class Player extends GameObject {
       this.exp -= this.expToNext;
       this.levelUp();
     }
+  }
+
+  gainPower(amount: number): void {
+    this.power = Math.min(this.maxPower, this.power + amount);
   }
 
   levelUp(): void {

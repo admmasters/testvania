@@ -7,6 +7,7 @@ import type { Heart, HeartSparkle } from "@/objects/heart";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
 import type { Platform } from "@/objects/platform";
 import { Player } from "@/objects/player";
+import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
@@ -24,6 +25,7 @@ export class GameState {
   candles: Candle[];
   hearts: Heart[];
   heartSparkles: HeartSparkle[];
+  energyBlasts: EnergyBlast[];
   input: Input;
   camera: Camera;
   parallaxBackground: ParallaxBackground;
@@ -55,6 +57,7 @@ export class GameState {
     this.candles = [];
     this.hearts = [];
     this.heartSparkles = [];
+    this.energyBlasts = [];
 
     // Initialize common game state properties
     this.input = new Input();
@@ -155,11 +158,19 @@ export class GameState {
       }
     }
 
+    // Update energy blasts
+    for (const blast of this.energyBlasts) {
+      if (blast.active) {
+        blast.update(deltaTime, this);
+      }
+    }
+
     // Clean up inactive objects
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
     this.hearts = this.hearts.filter((heart) => heart.active);
     this.heartSparkles = this.heartSparkles.filter((sparkle) => sparkle.active);
     this.poofEffects = this.poofEffects.filter((poof) => poof.active);
+    this.energyBlasts = this.energyBlasts.filter((blast) => blast.active);
 
     this.player.update(deltaTime, this);
 
@@ -230,6 +241,10 @@ export class GameState {
 
   createPoofEffect(x: number, y: number): void {
     this.poofEffects.push(new PoofEffect(x, y));
+  }
+
+  createEnergyBlast(x: number, y: number, facingRight: boolean, damage: number = 4): void {
+    this.energyBlasts.push(new EnergyBlast(x, y, facingRight, damage));
   }
 
   levelEditor: {
@@ -306,6 +321,13 @@ export class GameState {
     for (const poof of this.poofEffects) {
       if (poof.active) {
         poof.render(ctx);
+      }
+    }
+
+    // Draw energy blasts
+    for (const blast of this.energyBlasts) {
+      if (blast.active) {
+        blast.render(ctx);
       }
     }
 

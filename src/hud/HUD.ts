@@ -116,7 +116,7 @@ function drawManaBox(
 }
 
 function drawPowerBar(config: HUDPanelConfig): void {
-  const { ctx, panelX, panelY } = config;
+  const { ctx, panelX, panelY, player } = config;
   const contentPadding = 8;
   const hpBoxX = panelX + contentPadding;
   const hpBoxY = panelY + 48;
@@ -129,7 +129,25 @@ function drawPowerBar(config: HUDPanelConfig): void {
   const powerBarWidth = boxWidth * 2 + 8;
   const powerBarHeight = 12;
 
-  drawOrnatePowerBar(ctx, powerBarX, powerBarY, powerBarWidth, powerBarHeight, 0.75);
+  // Calculate power percentage
+  const powerPercent = player.power / player.maxPower;
+
+  // Add charging visual effects
+  let chargingEffect = 0;
+  if (player.isChargingAttack) {
+    const powerPercent = player.power / player.maxPower;
+    chargingEffect = powerPercent * (0.3 + 0.3 * Math.sin(Date.now() * 0.02)); // Faster and more intense
+  }
+
+  drawOrnatePowerBar(
+    ctx,
+    powerBarX,
+    powerBarY,
+    powerBarWidth,
+    powerBarHeight,
+    powerPercent,
+    chargingEffect,
+  );
 }
 
 function drawOrnateStatBox(
@@ -252,10 +270,11 @@ function drawOrnatePowerBar(
   width: number,
   height: number,
   percent: number,
+  chargingEffect: number = 0,
 ): void {
   drawEnergyBarBackground(ctx, x, y, width, height);
-  drawEnergyBarBorder(ctx, x, y, width, height);
-  drawEnergyBarFill(ctx, x, y, width, height, percent);
+  drawEnergyBarBorder(ctx, x, y, width, height, chargingEffect);
+  drawEnergyBarFill(ctx, x, y, width, height, percent, chargingEffect);
   drawEnergyBarParticles(ctx, x, y, width, height, percent);
   drawPowerBarLabel(ctx, x, y);
 }
@@ -283,14 +302,22 @@ function drawEnergyBarBorder(
   y: number,
   width: number,
   height: number,
+  chargingEffect: number = 0,
 ): void {
-  // Ornate border
-  ctx.strokeStyle = "#FFD700";
+  // Ornate border with charging glow
+  const glowIntensity = chargingEffect;
+
+  ctx.strokeStyle = glowIntensity > 0 ? "#FFFF00" : "#FFD700";
   ctx.lineWidth = 2;
+  if (glowIntensity > 0) {
+    ctx.shadowColor = "#FFFF00";
+    ctx.shadowBlur = 8 * glowIntensity;
+  }
   ctx.strokeRect(x, y, width, height);
 
   ctx.strokeStyle = "#CD7F32";
   ctx.lineWidth = 1;
+  ctx.shadowBlur = 0;
   ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
 }
 
@@ -301,17 +328,26 @@ function drawEnergyBarFill(
   width: number,
   height: number,
   percent: number,
+  chargingEffect: number = 0,
 ): void {
   // Energy fill with gradient and glow
   const fillWidth = (width - 6) * percent;
   const energyGradient = ctx.createLinearGradient(x + 3, y + 3, x + 3, y + height - 3);
-  energyGradient.addColorStop(0, "#00FF88");
-  energyGradient.addColorStop(0.5, "#00CC66");
-  energyGradient.addColorStop(1, "#00AA44");
+
+  // Change colors based on charging effect
+  if (chargingEffect > 0) {
+    energyGradient.addColorStop(0, "#FFFF00");
+    energyGradient.addColorStop(0.5, "#FFA500");
+    energyGradient.addColorStop(1, "#FF4500");
+  } else {
+    energyGradient.addColorStop(0, "#00FF88");
+    energyGradient.addColorStop(0.5, "#00CC66");
+    energyGradient.addColorStop(1, "#00AA44");
+  }
 
   ctx.fillStyle = energyGradient;
-  ctx.shadowColor = "#00FF88";
-  ctx.shadowBlur = 8;
+  ctx.shadowColor = chargingEffect > 0 ? "#FFFF00" : "#00FF88";
+  ctx.shadowBlur = 8 + chargingEffect * 8;
   ctx.fillRect(x + 3, y + 3, fillWidth, height - 6);
   ctx.shadowBlur = 0;
 }
@@ -326,10 +362,10 @@ function drawEnergyBarParticles(
 ): void {
   // Animated energy particles
   const fillWidth = (width - 6) * percent;
-  const time = Date.now() * 0.003;
+  const time = Date.now() * 0.006; // 2x faster particle movement
   for (let i = 0; i < 5; i++) {
     const particleX = x + 3 + fillWidth * ((i / 5 + time) % 1);
-    const particleY = y + height / 2 + Math.sin(time * 2 + i) * 2;
+    const particleY = y + height / 2 + Math.sin(time * 3 + i) * 3; // Faster and more pronounced movement
 
     ctx.fillStyle = "#FFFFFF";
     ctx.shadowColor = "#00FF88";
