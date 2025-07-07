@@ -347,5 +347,5 @@ function drawPowerBarLabel(ctx: CanvasRenderingContext2D, x: number, y: number):
   ctx.lineWidth = 1;
   ctx.textAlign = "left";
   ctx.strokeText("POWER", x, y - 3);
-  ctx.fillText("POWERx", x, y - 3);
+  ctx.fillText("POWER", x, y - 3);
 }
