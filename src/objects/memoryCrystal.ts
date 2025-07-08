@@ -90,7 +90,7 @@ export class MemoryCrystal {
     this.colorPhase += deltaTime * 0.5;
 
     // Update resonance based on player proximity
-    if (gameState && gameState.player) {
+    if (gameState?.player) {
       const distance = Vector2.distance(this.position, gameState.player.position);
       const maxResonanceDistance = 80;
       this.resonanceLevel = Math.max(0, 1 - distance / maxResonanceDistance);
@@ -121,6 +121,7 @@ export class MemoryCrystal {
     }
 
     // Breaking animation
+    const BREAK_DURATION = 0.8;
     if (this.isBreaking) {
       this.breakTimer += deltaTime;
 
@@ -130,7 +131,7 @@ export class MemoryCrystal {
         piece.position.y += piece.velocity.y * deltaTime;
         piece.velocity.y += 300 * deltaTime; // Gravity
         piece.rotation += piece.rotationSpeed * deltaTime;
-        piece.opacity = Math.max(0, 1 - this.breakTimer / 0.8);
+        piece.opacity = Math.max(0, 1 - this.breakTimer / BREAK_DURATION);
       });
 
       // Spawn break particles
@@ -140,7 +141,7 @@ export class MemoryCrystal {
         }
       }
 
-      if (this.breakTimer >= 0.8) {
+      if (this.breakTimer >= BREAK_DURATION) {
         this.isActive = false;
         this.active = false;
       }
