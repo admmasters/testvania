@@ -8,23 +8,19 @@ export class CollisionSystem implements ISystem {
   update(_deltaTime: number, gameState: GameState): void {
     // Check memory crystal collisions with player attacks
     this.checkMemoryCrystalCollisions(gameState);
-    
-    // Check heart collisions with player
-    this.checkHeartCollisions(gameState);
-    
+
     // Check experience collisions with player
     this.checkExperienceCollisions(gameState);
-    
+
     // Check enemy collisions with player
     this.checkEnemyPlayerCollisions(gameState);
-    
+
     // Check platform collisions for player
     this.checkPlayerPlatformCollisions(gameState);
-    
+
     // Check enemy platform collisions
     this.checkEnemyPlatformCollisions(gameState);
   }
-
 
   private checkMemoryCrystalCollisions(gameState: GameState): void {
     if (!gameState.player.attacking) return;
@@ -49,20 +45,15 @@ export class CollisionSystem implements ISystem {
 
         if (isColliding) {
           const drops = crystal.break();
-          
-          // Add dropped items to game state
-          drops.hearts.forEach(heart => {
-            gameState.hearts.push(heart);
-          });
-          
-          drops.experience.forEach(exp => {
+
+          drops.experience.forEach((exp) => {
             gameState.experiences.push(exp);
           });
-          
+
           this.createHitSpark(
             gameState,
             crystal.position.x + crystal.size.x / 2,
-            crystal.position.y
+            crystal.position.y,
           );
         }
       }
@@ -76,31 +67,20 @@ export class CollisionSystem implements ISystem {
       if (experience.isActive) {
         const expBounds = experience.getBounds();
 
-        if (CollisionUtils.checkCollision(
-          { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
-          { getBounds: () => expBounds, position: experience.position, size: experience.size }
-        )) {
+        if (
+          CollisionUtils.checkCollision(
+            {
+              getBounds: () => playerBounds,
+              position: gameState.player.position,
+              size: gameState.player.size,
+            },
+            { getBounds: () => expBounds, position: experience.position, size: experience.size },
+          )
+        ) {
           const expValue = experience.collect();
           if (expValue > 0) {
             gameState.player.gainExp(expValue);
           }
-        }
-      }
-    }
-  }
-
-  private checkHeartCollisions(gameState: GameState): void {
-    const playerBounds = gameState.player.getBounds();
-
-    for (const heart of gameState.hearts) {
-      if (heart.active && !heart.collected) {
-        const heartBounds = heart.getBounds();
-
-        if (CollisionUtils.checkCollision(
-          { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
-          { getBounds: () => heartBounds, position: heart.position, size: heart.size }
-        )) {
-          heart.collectHeart(gameState);
         }
       }
     }
@@ -116,10 +96,16 @@ export class CollisionSystem implements ISystem {
 
       const enemyBounds = enemy.getBounds();
 
-      if (CollisionUtils.checkCollision(
-        { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
-        { getBounds: () => enemyBounds, position: enemy.position, size: enemy.size }
-      )) {
+      if (
+        CollisionUtils.checkCollision(
+          {
+            getBounds: () => playerBounds,
+            position: gameState.player.position,
+            size: gameState.player.size,
+          },
+          { getBounds: () => enemyBounds, position: enemy.position, size: enemy.size },
+        )
+      ) {
         // Player takes damage
         this.damagePlayer(gameState, enemy);
       }
@@ -185,10 +171,12 @@ export class CollisionSystem implements ISystem {
     const playerBounds = player.getBounds();
     const platformBounds = platform.getBounds();
 
-    if (CollisionUtils.checkCollision(
-      { getBounds: () => playerBounds, position: player.position, size: player.size },
-      { getBounds: () => platformBounds, position: platform.position, size: platform.size }
-    )) {
+    if (
+      CollisionUtils.checkCollision(
+        { getBounds: () => playerBounds, position: player.position, size: player.size },
+        { getBounds: () => platformBounds, position: platform.position, size: platform.size },
+      )
+    ) {
       // Player is on top of platform
       if (player.velocity.y >= 0 && player.position.y < platformBounds.y) {
         player.position.y = platformBounds.y - player.size.y;
@@ -202,15 +190,18 @@ export class CollisionSystem implements ISystem {
     const playerBounds = player.getBounds();
     const solidBlockBounds = solidBlock.getBounds();
 
-    if (CollisionUtils.checkCollision(
-      { getBounds: () => playerBounds, position: player.position, size: player.size },
-      { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size }
-    )) {
+    if (
+      CollisionUtils.checkCollision(
+        { getBounds: () => playerBounds, position: player.position, size: player.size },
+        { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size },
+      )
+    ) {
       // Resolve collision by pushing player out
-      CollisionUtils.resolveCollision(
-        player,
-        { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size }
-      );
+      CollisionUtils.resolveCollision(player, {
+        getBounds: () => solidBlockBounds,
+        position: solidBlock.position,
+        size: solidBlock.size,
+      });
     }
   }
 
@@ -220,7 +211,7 @@ export class CollisionSystem implements ISystem {
       player.position.y,
       player.size.x,
       player.size.y,
-      diagonalPlatform
+      diagonalPlatform,
     );
 
     if (collision.colliding && collision.surfaceY !== undefined) {
@@ -242,7 +233,7 @@ export class CollisionSystem implements ISystem {
       enemy.position.y,
       enemy.size.x,
       enemy.size.y,
-      solidBlock
+      solidBlock,
     );
   }
 
@@ -251,12 +242,12 @@ export class CollisionSystem implements ISystem {
 
     const damage = source.damage || 1;
     gameState.player.takeDamage(damage);
-    
+
     // Create hit effect
     this.createHitSpark(
       gameState,
       gameState.player.position.x + gameState.player.size.x / 2,
-      gameState.player.position.y
+      gameState.player.position.y,
     );
 
     // Apply knockback
@@ -268,13 +259,9 @@ export class CollisionSystem implements ISystem {
 
     const damage = gameState.player.strength || 1;
     enemy.takeDamage(damage);
-    
+
     // Create hit effect
-    this.createHitSpark(
-      gameState,
-      enemy.position.x + enemy.size.x / 2,
-      enemy.position.y
-    );
+    this.createHitSpark(gameState, enemy.position.x + enemy.size.x / 2, enemy.position.y);
 
     // Apply hit pause effect
     gameState.hitPause(0.1, [enemy]);
@@ -284,7 +271,7 @@ export class CollisionSystem implements ISystem {
       gameState.awardExp(
         enemy.expValue || 10,
         enemy.position.x + enemy.size.x / 2,
-        enemy.position.y
+        enemy.position.y,
       );
     }
   }
@@ -292,7 +279,7 @@ export class CollisionSystem implements ISystem {
   private applyKnockback(target: any, source: any): void {
     const knockbackForce = 200;
     const direction = target.position.x < source.position.x ? -1 : 1;
-    
+
     if (target.velocity) {
       target.velocity.x = direction * knockbackForce;
     }

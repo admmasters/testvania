@@ -3,7 +3,6 @@ import { Vector2 } from "../engine/Vector2.js";
 const vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);
 
 import { Experience } from "./experience.js";
-import type { Heart } from "./heart.js";
 
 export class MemoryCrystal {
   position: Vector2;
@@ -49,11 +48,7 @@ export class MemoryCrystal {
   chainReactionDelay: number;
   triggeredByChain: boolean;
 
-  constructor(
-    x: number,
-    y: number,
-    type: "azure" | "amethyst" | "emerald" | "golden" = "azure"
-  ) {
+  constructor(x: number, y: number, type: "azure" | "amethyst" | "emerald" | "golden" = "azure") {
     this.position = vec2(x, y);
     this.size = vec2(20, 24);
     this.isActive = true;
@@ -96,10 +91,7 @@ export class MemoryCrystal {
 
     // Update resonance based on player proximity
     if (gameState && gameState.player) {
-      const distance = Vector2.distance(
-        this.position,
-        gameState.player.position
-      );
+      const distance = Vector2.distance(this.position, gameState.player.position);
       const maxResonanceDistance = 80;
       this.resonanceLevel = Math.max(0, 1 - distance / maxResonanceDistance);
     }
@@ -176,7 +168,7 @@ export class MemoryCrystal {
     this.particles.push({
       position: vec2(
         this.position.x + this.size.x / 2 + Math.cos(angle) * radius,
-        this.position.y + this.size.y / 2 + Math.sin(angle) * radius
+        this.position.y + this.size.y / 2 + Math.sin(angle) * radius,
       ),
       velocity: vec2(Math.cos(angle) * speed, Math.sin(angle) * speed - 30),
       life: 0,
@@ -190,10 +182,7 @@ export class MemoryCrystal {
     const speed = 80 + Math.random() * 40;
 
     this.particles.push({
-      position: vec2(
-        this.position.x + this.size.x / 2,
-        this.position.y + this.size.y / 2
-      ),
+      position: vec2(this.position.x + this.size.x / 2, this.position.y + this.size.y / 2),
       velocity: vec2(Math.cos(angle) * speed, Math.sin(angle) * speed - 50),
       life: 0,
       maxLife: 0.8 + Math.random() * 0.4,
@@ -226,9 +215,8 @@ export class MemoryCrystal {
     }
   }
 
-  break(): { hearts: Heart[]; experience: Experience[] } {
-    if (this.isBreaking || !this.isActive)
-      return { hearts: [], experience: [] };
+  break(): { experience: Experience[] } {
+    if (this.isBreaking || !this.isActive) return { experience: [] };
 
     this.isBreaking = true;
     this.breakTimer = 0;
@@ -240,10 +228,7 @@ export class MemoryCrystal {
       const speed = 60 + Math.random() * 40;
 
       this.pieces.push({
-        position: vec2(
-          this.position.x + this.size.x / 2,
-          this.position.y + this.size.y / 2
-        ),
+        position: vec2(this.position.x + this.size.x / 2, this.position.y + this.size.y / 2),
         velocity: vec2(Math.cos(angle) * speed, Math.sin(angle) * speed - 30),
         rotationSpeed: (Math.random() - 0.5) * 8,
         rotation: 0,
@@ -278,17 +263,14 @@ export class MemoryCrystal {
 
     this.memoryEcho.active = true;
     this.memoryEcho.timer = 0;
-    this.memoryEcho.text =
-      memories[Math.floor(Math.random() * memories.length)];
+    this.memoryEcho.text = memories[Math.floor(Math.random() * memories.length)];
     this.memoryEcho.opacity = 0;
   }
 
-  private generateDrops(): { hearts: Heart[]; experience: Experience[] } {
-    const hearts: Heart[] = [];
+  private generateDrops(): { experience: Experience[] } {
     const experience: Experience[] = [];
 
-    // Instead of dropping hearts, add a memory to the player
-    if (this._gameState && this._gameState.player) {
+    if (this._gameState?.player) {
       // Generate memory data based on crystal type
       const memoryData = {
         id: `memory_${Date.now()}`,
@@ -304,7 +286,7 @@ export class MemoryCrystal {
         this._gameState.player.memories.push(memoryData);
       } else {
         console.log(
-          "Player cannot store memories - need to implement memories array or addMemory method"
+          "Player cannot store memories - need to implement memories array or addMemory method",
         );
       }
     }
@@ -316,12 +298,12 @@ export class MemoryCrystal {
         new Experience(
           this.position.x + this.size.x / 2 - 4,
           this.position.y + this.size.y / 2 - 8,
-          expValue
-        )
+          expValue,
+        ),
       );
     }
 
-    return { hearts, experience };
+    return { experience };
   }
 
   private getExperienceValue(): number {
@@ -362,8 +344,7 @@ export class MemoryCrystal {
     if (!this.isActive) return;
 
     const colors = this.getCrystalColors();
-    const pulseIntensity =
-      0.3 + Math.sin(this.pulseTimer * 4 + this.pulsePhase) * 0.2;
+    const pulseIntensity = 0.3 + Math.sin(this.pulseTimer * 4 + this.pulsePhase) * 0.2;
     const resonanceGlow = this.resonanceLevel * 0.5;
 
     ctx.save();
@@ -383,7 +364,7 @@ export class MemoryCrystal {
         this.size.y / 2 + 4,
         0,
         0,
-        Math.PI * 2
+        Math.PI * 2,
       );
       ctx.fill();
     }
@@ -413,7 +394,7 @@ export class MemoryCrystal {
   private renderCrystalFacets(
     ctx: CanvasRenderingContext2D,
     colors: any,
-    pulseIntensity: number
+    pulseIntensity: number,
   ): void {
     const centerX = this.position.x + this.size.x / 2;
     const centerY = this.position.y + this.size.y / 2;
@@ -472,7 +453,7 @@ export class MemoryCrystal {
         particle.size * (1 - lifeRatio * 0.5),
         0,
         0,
-        Math.PI * 2
+        Math.PI * 2,
       );
       ctx.fill();
     });
@@ -480,10 +461,7 @@ export class MemoryCrystal {
     ctx.globalAlpha = 1;
   }
 
-  private renderBreakingPieces(
-    ctx: CanvasRenderingContext2D,
-    colors: any
-  ): void {
+  private renderBreakingPieces(ctx: CanvasRenderingContext2D, colors: any): void {
     ctx.fillStyle = colors.primary;
 
     this.pieces.forEach((piece) => {
@@ -512,11 +490,7 @@ export class MemoryCrystal {
     ctx.font = "10px serif";
     ctx.textAlign = "center";
 
-    ctx.fillText(
-      this.memoryEcho.text,
-      this.position.x + this.size.x / 2,
-      this.position.y - 20
-    );
+    ctx.fillText(this.memoryEcho.text, this.position.x + this.size.x / 2, this.position.y - 20);
 
     ctx.globalAlpha = 1;
     ctx.textAlign = "left";

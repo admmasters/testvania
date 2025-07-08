@@ -1,17 +1,16 @@
 import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
-import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Enemy } from "@/objects/enemy";
-import type { Heart, HeartSparkle } from "@/objects/heart";
 import type { Experience } from "@/objects/experience";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
+import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { Platform } from "@/objects/platform";
 import { Player } from "@/objects/player";
 import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
-import { GameObjectManager } from "@/systems/GameObjectManager";
 import { CollisionSystem } from "@/systems/CollisionSystem";
+import { GameObjectManager } from "@/systems/GameObjectManager";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -26,9 +25,7 @@ export class GameState {
   diagonalPlatforms: DiagonalPlatform[];
   hitSparks: HitSpark[];
   memoryCrystals: MemoryCrystal[];
-  hearts: Heart[];
   experiences: Experience[];
-  heartSparkles: HeartSparkle[];
   energyBlasts: EnergyBlast[];
   input: Input;
   camera: Camera;
@@ -53,10 +50,10 @@ export class GameState {
   constructor(levelId: string = "level1") {
     // Initialize the level manager
     this.levelManager = new LevelManager();
-    
+
     // Initialize the game object manager
     this.gameObjectManager = new GameObjectManager();
-    
+
     // Initialize the collision system
     this.collisionSystem = new CollisionSystem();
 
@@ -67,9 +64,7 @@ export class GameState {
     this.enemies = [];
     this.hitSparks = [];
     this.memoryCrystals = [];
-    this.hearts = [];
     this.experiences = [];
-    this.heartSparkles = [];
     this.energyBlasts = [];
 
     // Initialize common game state properties
@@ -89,7 +84,7 @@ export class GameState {
 
     // Load the level
     this.loadLevel(levelId);
-    
+
     // Initialize the game object manager with current state
     this.gameObjectManager.initialize(this);
   }
@@ -102,19 +97,11 @@ export class GameState {
     return result;
   }
 
-
   update(deltaTime: number): void {
-    // Update memory crystals  
+    // Update memory crystals
     for (const crystal of this.memoryCrystals) {
       if (crystal.active) {
         crystal.update(deltaTime, this);
-      }
-    }
-
-    // Update hearts
-    for (const heart of this.hearts) {
-      if (heart.active) {
-        heart.update(deltaTime, this);
       }
     }
 
@@ -127,13 +114,6 @@ export class GameState {
 
     // Check collisions
     this.collisionSystem.update(deltaTime, this);
-
-    // Update heart sparkles
-    for (const sparkle of this.heartSparkles) {
-      if (sparkle.active) {
-        sparkle.update(deltaTime, this);
-      }
-    }
 
     // Update hit sparks
     for (const spark of this.hitSparks) {
@@ -159,9 +139,7 @@ export class GameState {
     // Clean up inactive objects
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
     this.memoryCrystals = this.memoryCrystals.filter((crystal) => crystal.active);
-    this.hearts = this.hearts.filter((heart) => heart.active);
     this.experiences = this.experiences.filter((experience) => experience.active);
-    this.heartSparkles = this.heartSparkles.filter((sparkle) => sparkle.active);
     this.poofEffects = this.poofEffects.filter((poof) => poof.active);
     this.energyBlasts = this.energyBlasts.filter((blast) => blast.active);
 
@@ -283,24 +261,10 @@ export class GameState {
       }
     }
 
-    // Draw hearts
-    for (const heart of this.hearts) {
-      if (heart.active) {
-        heart.render(ctx);
-      }
-    }
-
     // Draw experiences
     for (const experience of this.experiences) {
       if (experience.active) {
         experience.render(ctx);
-      }
-    }
-
-    // Draw heart sparkles (subtle collection effects)
-    for (const sparkle of this.heartSparkles) {
-      if (sparkle.active) {
-        sparkle.render(ctx);
       }
     }
 
