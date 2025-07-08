@@ -135,7 +135,6 @@ export const GAME_EVENTS = {
   ITEM_SPAWN: "item:spawn",
   ITEM_COLLECT: "item:collect",
   CANDLE_BREAK: "candle:break",
-  HEART_COLLECT: "heart:collect",
 
   // Level events
   LEVEL_LOAD: "level:load",

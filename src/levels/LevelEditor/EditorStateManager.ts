@@ -1,6 +1,6 @@
 import type { GameState } from "@/engine/GameState";
 import type { Vector2 } from "@/engine/Vector2";
-import { Candle } from "@/objects/candle";
+import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import { Ghost } from "@/objects/Ghost";
 import { LandGhost } from "@/objects/LandGhost";
@@ -36,8 +36,9 @@ export class EditorStateManager {
         thickness: dp.thickness,
         color: dp.color,
       })),
-      candles: this.gameState.candles.map((c) => ({
+      memoryCrystals: this.gameState.memoryCrystals.map((c) => ({
         position: c.position.copy(),
+        type: c.crystalType,
       })),
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
@@ -95,8 +96,9 @@ export class EditorStateManager {
         thickness: dp.thickness,
         color: dp.color,
       })),
-      candles: this.gameState.candles.map((c) => ({
+      memoryCrystals: this.gameState.memoryCrystals.map((c) => ({
         position: c.position.copy(),
+        type: c.crystalType,
       })),
       enemies: this.gameState.enemies.map((e) => ({
         position: e.position.copy(),
@@ -144,8 +146,8 @@ export class EditorStateManager {
         }),
     );
 
-    // Restore candles
-    this.gameState.candles = state.candles.map((c) => new Candle(c.position.x, c.position.y));
+    // Restore memory crystals
+    this.gameState.memoryCrystals = state.memoryCrystals.map((c) => new MemoryCrystal(c.position.x, c.position.y, c.type as any));
 
     // Restore enemies
     this.gameState.enemies = state.enemies.map((e) => {

@@ -1,5 +1,5 @@
 import type { Vector2 } from "@/engine/Vector2";
-import type { Candle } from "@/objects/candle";
+import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Ghost } from "@/objects/Ghost";
 import type { LandGhost } from "@/objects/LandGhost";
@@ -23,7 +23,7 @@ export interface EditorState {
   platforms: { position: Vector2; size: Vector2; color: string }[];
   solidBlocks: { position: Vector2; size: Vector2; color: string }[];
   diagonalPlatforms: { startPoint: Vector2; endPoint: Vector2; thickness: number; color: string }[];
-  candles: { position: Vector2 }[];
+  memoryCrystals: { position: Vector2; type?: string }[];
   enemies: { position: Vector2; type: string; direction?: number }[];
   player: { position: Vector2 };
   scrollPosition: Vector2;
@@ -59,7 +59,7 @@ export type EditorObject =
   | Platform
   | SolidBlock
   | DiagonalPlatform
-  | Candle
+  | MemoryCrystal
   | LandGhost
   | Ghost
   | object

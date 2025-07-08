@@ -102,7 +102,7 @@ export class ParallaxBackground {
         ctx.fillStyle = "rgba(44, 24, 16, 0.1)";
         // Wispy mist shapes
         for (let i = 0; i < 5; i++) {
-          const x = (i * 200) - offsetX;
+          const x = i * 200 - offsetX;
           const y = 500 - offsetY + Math.sin(Date.now() * 0.001 + i) * 10;
           ctx.beginPath();
           ctx.ellipse(x, y, 80, 20, 0, 0, Math.PI * 2);
@@ -126,7 +126,9 @@ export class ParallaxBackground {
   // Method to customize the moon position and appearance
   setMoonPosition(x: number, y: number, radius: number = 32): void {
     // Find and update the moon layer
-    const moonLayerIndex = this.layers.findIndex(layer => layer.parallaxX === 0.1 && layer.parallaxY === 0.05);
+    const moonLayerIndex = this.layers.findIndex(
+      (layer) => layer.parallaxX === 0.1 && layer.parallaxY === 0.05,
+    );
     if (moonLayerIndex !== -1) {
       this.layers[moonLayerIndex] = {
         draw: (ctx, offsetX, offsetY) => {
@@ -174,7 +176,7 @@ export class ParallaxBackground {
     ctx: CanvasRenderingContext2D,
     layer: BackgroundLayer,
     offsetX: number,
-    offsetY: number
+    offsetY: number,
   ): void {
     const canvasWidth = 800;
     const canvasHeight = 600;
@@ -195,4 +197,4 @@ export class ParallaxBackground {
       layer.draw(ctx, offsetX, offsetY);
     }
   }
-} 
+}

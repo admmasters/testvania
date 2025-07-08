@@ -61,7 +61,7 @@ export class LevelManager {
       platforms: [],
       solidBlocks: [],
       diagonalPlatforms: [],
-      candles: [],
+      memoryCrystals: [],
       enemies: [],
       player: {
         position: new Vector2(gameState.player.position.x, gameState.player.position.y),
@@ -86,10 +86,11 @@ export class LevelManager {
       });
     }
 
-    // Convert candles
-    for (const candle of gameState.candles) {
-      levelData.candles.push({
-        position: new Vector2(candle.position.x, candle.position.y),
+    // Convert memory crystals
+    for (const crystal of gameState.memoryCrystals) {
+      levelData.memoryCrystals.push({
+        position: new Vector2(crystal.position.x, crystal.position.y),
+        type: crystal.crystalType,
       });
     }
 

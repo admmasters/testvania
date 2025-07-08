@@ -1,14 +1,17 @@
 import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
-import type { Candle } from "@/objects/candle";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Enemy } from "@/objects/enemy";
-import type { Heart, HeartSparkle } from "@/objects/heart";
+import type { Experience } from "@/objects/experience";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
+import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { Platform } from "@/objects/platform";
 import { Player } from "@/objects/player";
 import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
+import { CollisionSystem } from "@/systems/CollisionSystem";
+import { GameObjectManager } from "@/systems/GameObjectManager";
+import { TutorialSystem } from "@/systems/TutorialSystem";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -22,9 +25,8 @@ export class GameState {
   solidBlocks: SolidBlock[];
   diagonalPlatforms: DiagonalPlatform[];
   hitSparks: HitSpark[];
-  candles: Candle[];
-  hearts: Heart[];
-  heartSparkles: HeartSparkle[];
+  memoryCrystals: MemoryCrystal[];
+  experiences: Experience[];
   energyBlasts: EnergyBlast[];
   input: Input;
   camera: Camera;
@@ -34,7 +36,10 @@ export class GameState {
   spawnTimer: number;
   spawnInterval: number;
   poofEffects: PoofEffect[] = [];
+  gameObjectManager: GameObjectManager;
+  collisionSystem: CollisionSystem;
   hud: HUD;
+  tutorialSystem: TutorialSystem;
   floatingExpIndicators: Array<{
     amount: number;
     x: number;
@@ -44,9 +49,18 @@ export class GameState {
     time: number;
   }> = [];
 
-  constructor(levelId: string = "level1") {
+  constructor(levelId: string = "tutorial") {
     // Initialize the level manager
     this.levelManager = new LevelManager();
+
+    // Initialize the game object manager
+    this.gameObjectManager = new GameObjectManager();
+
+    // Initialize the collision system
+    this.collisionSystem = new CollisionSystem();
+
+    // Initialize the tutorial system
+    this.tutorialSystem = new TutorialSystem();
 
     // Initialize empty arrays
     this.platforms = [];
@@ -54,9 +68,8 @@ export class GameState {
     this.diagonalPlatforms = [];
     this.enemies = [];
     this.hitSparks = [];
-    this.candles = [];
-    this.hearts = [];
-    this.heartSparkles = [];
+    this.memoryCrystals = [];
+    this.experiences = [];
     this.energyBlasts = [];
 
     // Initialize common game state properties
@@ -76,6 +89,9 @@ export class GameState {
 
     // Load the level
     this.loadLevel(levelId);
+
+    // Initialize the game object manager with current state
+    this.gameObjectManager.initialize(this);
   }
 
   loadLevel(levelId: string): boolean {
@@ -86,63 +102,35 @@ export class GameState {
     return result;
   }
 
-  checkCandleCollisions(): void {
-    if (this.player.attacking) {
-      const attackBounds = this.player.getAttackBounds();
-
-      if (!attackBounds) return;
-
-      for (const candle of this.candles) {
-        if (candle.active && !candle.isBreaking) {
-          const candleBounds = candle.getBounds();
-
-          const candleLeft = candleBounds.x;
-          const candleRight = candleBounds.x + candleBounds.width;
-          const candleTop = candleBounds.y;
-          const candleBottom = candleBounds.y + candleBounds.height;
-
-          const isColliding =
-            attackBounds.left < candleRight &&
-            attackBounds.right > candleLeft &&
-            attackBounds.top < candleBottom &&
-            attackBounds.bottom > candleTop;
-
-          if (isColliding) {
-            candle.break(this);
-            this.createHitSpark(candle.position.x + candle.size.x / 2, candle.position.y);
-          }
-        }
-      }
-    }
-  }
-
   update(deltaTime: number): void {
-    // Update candles
-    for (const candle of this.candles) {
-      if (candle.active) {
-        candle.update(deltaTime);
+    // Update tutorial system first (only for tutorial level)
+    if (this.currentLevelId === "tutorial") {
+      this.tutorialSystem.update(deltaTime, this);
+
+      // Pause game updates when tutorial modal is showing
+      if (this.tutorialSystem.isGamePaused()) {
+        // Clear input at the end when paused so X key can be detected next frame
+        this.input.update();
+        return; // Don't update game objects when tutorial is paused
       }
     }
 
-    // Remove inactive candles
-    this.candles = this.candles.filter((candle) => candle.active);
-
-    // Check for candle collisions
-    this.checkCandleCollisions();
-
-    // Update hearts
-    for (const heart of this.hearts) {
-      if (heart.active) {
-        heart.update(deltaTime, this);
+    // Update memory crystals
+    for (const crystal of this.memoryCrystals) {
+      if (crystal.active) {
+        crystal.update(deltaTime, this);
       }
     }
 
-    // Update heart sparkles
-    for (const sparkle of this.heartSparkles) {
-      if (sparkle.active) {
-        sparkle.update(deltaTime, this);
+    // Update experiences
+    for (const experience of this.experiences) {
+      if (experience.active) {
+        experience.update(deltaTime, this);
       }
     }
+
+    // Check collisions
+    this.collisionSystem.update(deltaTime, this);
 
     // Update hit sparks
     for (const spark of this.hitSparks) {
@@ -167,8 +155,8 @@ export class GameState {
 
     // Clean up inactive objects
     this.hitSparks = this.hitSparks.filter((spark) => spark.active);
-    this.hearts = this.hearts.filter((heart) => heart.active);
-    this.heartSparkles = this.heartSparkles.filter((sparkle) => sparkle.active);
+    this.memoryCrystals = this.memoryCrystals.filter((crystal) => crystal.active);
+    this.experiences = this.experiences.filter((experience) => experience.active);
     this.poofEffects = this.poofEffects.filter((poof) => poof.active);
     this.energyBlasts = this.energyBlasts.filter((blast) => blast.active);
 
@@ -283,24 +271,17 @@ export class GameState {
     // Draw game objects
     this.player.render(ctx);
 
-    // Draw candles
-    for (const candle of this.candles) {
-      if (candle.active) {
-        candle.render(ctx);
+    // Draw memory crystals
+    for (const crystal of this.memoryCrystals) {
+      if (crystal.active) {
+        crystal.render(ctx);
       }
     }
 
-    // Draw hearts
-    for (const heart of this.hearts) {
-      if (heart.active) {
-        heart.render(ctx);
-      }
-    }
-
-    // Draw heart sparkles (subtle collection effects)
-    for (const sparkle of this.heartSparkles) {
-      if (sparkle.active) {
-        sparkle.render(ctx);
+    // Draw experiences
+    for (const experience of this.experiences) {
+      if (experience.active) {
+        experience.render(ctx);
       }
     }
 
@@ -357,6 +338,11 @@ export class GameState {
 
     // Draw UI
     this.drawUI(ctx);
+
+    // Render tutorial messages (only for tutorial level) - after camera reset so it's on top
+    if (this.currentLevelId === "tutorial") {
+      this.tutorialSystem.render(ctx);
+    }
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {

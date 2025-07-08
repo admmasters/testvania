@@ -98,9 +98,19 @@ function drawHealthBox(
   y: number,
   width: number,
   height: number,
-  player: Player,
+  player: Player
 ): void {
-  drawOrnateStatBox(ctx, x, y, width, height, "HP", String(player.health), "#8B0000", "#FF4444");
+  drawOrnateStatBox(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    "HP",
+    String(player.health),
+    "#8B0000",
+    "#FF4444"
+  );
 }
 
 function drawManaBox(
@@ -109,10 +119,20 @@ function drawManaBox(
   y: number,
   width: number,
   height: number,
-  player: Player,
+  player: Player
 ): void {
   const currentMP = player.level * 5;
-  drawOrnateStatBox(ctx, x, y, width, height, "MP", String(currentMP), "#000080", "#4444FF");
+  drawOrnateStatBox(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    "MP",
+    String(currentMP),
+    "#000080",
+    "#4444FF"
+  );
 }
 
 function drawPowerBar(config: HUDPanelConfig): void {
@@ -146,7 +166,7 @@ function drawPowerBar(config: HUDPanelConfig): void {
     powerBarWidth,
     powerBarHeight,
     powerPercent,
-    chargingEffect,
+    chargingEffect
   );
 }
 
@@ -159,7 +179,7 @@ function drawOrnateStatBox(
   label: string,
   value: string,
   bgColor: string,
-  accentColor: string,
+  accentColor: string
 ): void {
   drawStatBoxBackground(ctx, x, y, width, height, bgColor);
   drawStatBoxBorder(ctx, x, y, width, height, accentColor);
@@ -174,7 +194,7 @@ function drawStatBoxBackground(
   y: number,
   width: number,
   height: number,
-  bgColor: string,
+  bgColor: string
 ): void {
   // Multi-layered background with depth
   const boxGradient = ctx.createLinearGradient(x, y, x, y + height);
@@ -192,7 +212,7 @@ function drawStatBoxBorder(
   y: number,
   width: number,
   height: number,
-  accentColor: string,
+  accentColor: string
 ): void {
   // Ornate border system
   ctx.strokeStyle = "#FFD700";
@@ -214,7 +234,7 @@ function drawStatBoxLabel(
   x: number,
   y: number,
   width: number,
-  label: string,
+  label: string
 ): void {
   // Label with enhanced styling
   ctx.font = "bold 10px 'Orbitron', monospace";
@@ -232,7 +252,7 @@ function drawStatBoxValue(
   y: number,
   width: number,
   value: string,
-  accentColor: string,
+  accentColor: string
 ): void {
   // Value with glow effect
   ctx.font = "bold 16px 'Orbitron', monospace";
@@ -253,7 +273,7 @@ function drawStatBoxCornerAccents(
   y: number,
   width: number,
   height: number,
-  accentColor: string,
+  accentColor: string
 ): void {
   // Decorative corner accents
   ctx.fillStyle = accentColor;
@@ -270,7 +290,7 @@ function drawOrnatePowerBar(
   width: number,
   height: number,
   percent: number,
-  chargingEffect: number = 0,
+  chargingEffect: number = 0
 ): void {
   drawEnergyBarBackground(ctx, x, y, width, height);
   drawEnergyBarBorder(ctx, x, y, width, height, chargingEffect);
@@ -284,7 +304,7 @@ function drawEnergyBarBackground(
   x: number,
   y: number,
   width: number,
-  height: number,
+  height: number
 ): void {
   // Multi-layered background
   const bgGradient = ctx.createLinearGradient(x, y, x, y + height);
@@ -302,7 +322,7 @@ function drawEnergyBarBorder(
   y: number,
   width: number,
   height: number,
-  chargingEffect: number = 0,
+  chargingEffect: number = 0
 ): void {
   // Ornate border with charging glow
   const glowIntensity = chargingEffect;
@@ -328,11 +348,16 @@ function drawEnergyBarFill(
   width: number,
   height: number,
   percent: number,
-  chargingEffect: number = 0,
+  chargingEffect: number = 0
 ): void {
   // Energy fill with gradient and glow
   const fillWidth = (width - 6) * percent;
-  const energyGradient = ctx.createLinearGradient(x + 3, y + 3, x + 3, y + height - 3);
+  const energyGradient = ctx.createLinearGradient(
+    x + 3,
+    y + 3,
+    x + 3,
+    y + height - 3
+  );
 
   // Change colors based on charging effect
   if (chargingEffect > 0) {
@@ -358,7 +383,7 @@ function drawEnergyBarParticles(
   y: number,
   width: number,
   height: number,
-  percent: number,
+  percent: number
 ): void {
   // Animated energy particles
   const fillWidth = (width - 6) * percent;
@@ -375,7 +400,11 @@ function drawEnergyBarParticles(
   }
 }
 
-function drawPowerBarLabel(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+function drawPowerBarLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number
+): void {
   // Energy label with enhanced styling
   ctx.font = "bold 8px 'Orbitron', monospace";
   ctx.fillStyle = "#FFD700";

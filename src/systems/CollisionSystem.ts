@@ -1,72 +1,92 @@
+import {
+  checkCollision,
+  checkDiagonalPlatformCollision,
+  normalizeBounds,
+  resolveCollision,
+  wouldCollideHorizontally,
+} from "@/utils/CollisionUtils";
 import type { GameState } from "../engine/GameState";
 import type { ISystem } from "../interfaces/GameInterfaces";
-import { CollisionUtils } from "../utils/CollisionUtils";
 
 export class CollisionSystem implements ISystem {
   priority = 10;
 
   update(_deltaTime: number, gameState: GameState): void {
-    // Check candle collisions with player attacks
-    this.checkCandleCollisions(gameState);
-    
-    // Check heart collisions with player
-    this.checkHeartCollisions(gameState);
-    
+    // Check memory crystal collisions with player attacks
+    this.checkMemoryCrystalCollisions(gameState);
+
+    // Check experience collisions with player
+    this.checkExperienceCollisions(gameState);
+
     // Check enemy collisions with player
     this.checkEnemyPlayerCollisions(gameState);
-    
+
     // Check platform collisions for player
     this.checkPlayerPlatformCollisions(gameState);
-    
+
     // Check enemy platform collisions
     this.checkEnemyPlatformCollisions(gameState);
   }
 
-  private checkCandleCollisions(gameState: GameState): void {
+  private checkMemoryCrystalCollisions(gameState: GameState): void {
     if (!gameState.player.attacking) return;
 
     const attackBounds = gameState.player.getAttackBounds();
     if (!attackBounds) return;
 
-    for (const candle of gameState.candles) {
-      if (candle.active && !candle.isBreaking) {
-        const candleBounds = candle.getBounds();
+    for (const crystal of gameState.memoryCrystals) {
+      if (crystal.isActive && !crystal.isBreaking) {
+        const crystalBounds = crystal.getBounds();
 
-        const candleLeft = candleBounds.x;
-        const candleRight = candleBounds.x + candleBounds.width;
-        const candleTop = candleBounds.y;
-        const candleBottom = candleBounds.y + candleBounds.height;
+        const crystalLeft = crystalBounds.x;
+        const crystalRight = crystalBounds.x + crystalBounds.width;
+        const crystalTop = crystalBounds.y;
+        const crystalBottom = crystalBounds.y + crystalBounds.height;
 
         const isColliding =
-          attackBounds.left < candleRight &&
-          attackBounds.right > candleLeft &&
-          attackBounds.top < candleBottom &&
-          attackBounds.bottom > candleTop;
+          attackBounds.left < crystalRight &&
+          attackBounds.right > crystalLeft &&
+          attackBounds.top < crystalBottom &&
+          attackBounds.bottom > crystalTop;
 
         if (isColliding) {
-          candle.break(gameState);
+          const drops = crystal.break();
+
+          drops.experience.forEach((exp) => {
+            gameState.experiences.push(exp);
+          });
+
           this.createHitSpark(
             gameState,
-            candle.position.x + candle.size.x / 2,
-            candle.position.y
+            crystal.position.x + crystal.size.x / 2,
+            crystal.position.y,
           );
         }
       }
     }
   }
 
-  private checkHeartCollisions(gameState: GameState): void {
+  private checkExperienceCollisions(gameState: GameState): void {
     const playerBounds = gameState.player.getBounds();
 
-    for (const heart of gameState.hearts) {
-      if (heart.active && !heart.collected) {
-        const heartBounds = heart.getBounds();
+    for (const experience of gameState.experiences) {
+      if (experience.isActive) {
+        const expBounds = experience.getBounds();
 
-        if (CollisionUtils.checkCollision(
-          { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
-          { getBounds: () => heartBounds, position: heart.position, size: heart.size }
-        )) {
-          heart.collectHeart(gameState);
+        if (
+          checkCollision(
+            {
+              getBounds: () => playerBounds,
+              position: gameState.player.position,
+              size: gameState.player.size,
+            },
+            { getBounds: () => expBounds, position: experience.position, size: experience.size },
+          )
+        ) {
+          const expValue = experience.collect();
+          if (expValue > 0) {
+            gameState.player.gainExp(expValue);
+          }
         }
       }
     }
@@ -82,10 +102,16 @@ export class CollisionSystem implements ISystem {
 
       const enemyBounds = enemy.getBounds();
 
-      if (CollisionUtils.checkCollision(
-        { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
-        { getBounds: () => enemyBounds, position: enemy.position, size: enemy.size }
-      )) {
+      if (
+        checkCollision(
+          {
+            getBounds: () => playerBounds,
+            position: gameState.player.position,
+            size: gameState.player.size,
+          },
+          { getBounds: () => enemyBounds, position: enemy.position, size: enemy.size },
+        )
+      ) {
         // Player takes damage
         this.damagePlayer(gameState, enemy);
       }
@@ -94,7 +120,7 @@ export class CollisionSystem implements ISystem {
       if (gameState.player.attacking) {
         const attackBounds = gameState.player.getAttackBounds();
         if (attackBounds) {
-          const normalizedEnemyBounds = CollisionUtils.normalizeBounds(enemyBounds);
+          const normalizedEnemyBounds = normalizeBounds(enemyBounds);
           const isAttackColliding =
             attackBounds.left < normalizedEnemyBounds.right &&
             attackBounds.right > normalizedEnemyBounds.left &&
@@ -151,10 +177,12 @@ export class CollisionSystem implements ISystem {
     const playerBounds = player.getBounds();
     const platformBounds = platform.getBounds();
 
-    if (CollisionUtils.checkCollision(
-      { getBounds: () => playerBounds, position: player.position, size: player.size },
-      { getBounds: () => platformBounds, position: platform.position, size: platform.size }
-    )) {
+    if (
+      checkCollision(
+        { getBounds: () => playerBounds, position: player.position, size: player.size },
+        { getBounds: () => platformBounds, position: platform.position, size: platform.size },
+      )
+    ) {
       // Player is on top of platform
       if (player.velocity.y >= 0 && player.position.y < platformBounds.y) {
         player.position.y = platformBounds.y - player.size.y;
@@ -168,25 +196,28 @@ export class CollisionSystem implements ISystem {
     const playerBounds = player.getBounds();
     const solidBlockBounds = solidBlock.getBounds();
 
-    if (CollisionUtils.checkCollision(
-      { getBounds: () => playerBounds, position: player.position, size: player.size },
-      { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size }
-    )) {
+    if (
+      checkCollision(
+        { getBounds: () => playerBounds, position: player.position, size: player.size },
+        { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size },
+      )
+    ) {
       // Resolve collision by pushing player out
-      CollisionUtils.resolveCollision(
-        player,
-        { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size }
-      );
+      resolveCollision(player, {
+        getBounds: () => solidBlockBounds,
+        position: solidBlock.position,
+        size: solidBlock.size,
+      });
     }
   }
 
   private handlePlayerDiagonalPlatformCollision(player: any, diagonalPlatform: any): void {
-    const collision = CollisionUtils.checkDiagonalPlatformCollision(
+    const collision = checkDiagonalPlatformCollision(
       player.position.x,
       player.position.y,
       player.size.x,
       player.size.y,
-      diagonalPlatform
+      diagonalPlatform,
     );
 
     if (collision.colliding && collision.surfaceY !== undefined) {
@@ -203,12 +234,12 @@ export class CollisionSystem implements ISystem {
     if (!enemy.direction || !enemy.speed) return false;
 
     const nextX = enemy.position.x + enemy.direction * enemy.speed * 0.016; // Approximate deltaTime
-    return CollisionUtils.wouldCollideHorizontally(
+    return wouldCollideHorizontally(
       nextX,
       enemy.position.y,
       enemy.size.x,
       enemy.size.y,
-      solidBlock
+      solidBlock,
     );
   }
 
@@ -217,12 +248,12 @@ export class CollisionSystem implements ISystem {
 
     const damage = source.damage || 1;
     gameState.player.takeDamage(damage);
-    
+
     // Create hit effect
     this.createHitSpark(
       gameState,
       gameState.player.position.x + gameState.player.size.x / 2,
-      gameState.player.position.y
+      gameState.player.position.y,
     );
 
     // Apply knockback
@@ -234,13 +265,9 @@ export class CollisionSystem implements ISystem {
 
     const damage = gameState.player.strength || 1;
     enemy.takeDamage(damage);
-    
+
     // Create hit effect
-    this.createHitSpark(
-      gameState,
-      enemy.position.x + enemy.size.x / 2,
-      enemy.position.y
-    );
+    this.createHitSpark(gameState, enemy.position.x + enemy.size.x / 2, enemy.position.y);
 
     // Apply hit pause effect
     gameState.hitPause(0.1, [enemy]);
@@ -250,7 +277,7 @@ export class CollisionSystem implements ISystem {
       gameState.awardExp(
         enemy.expValue || 10,
         enemy.position.x + enemy.size.x / 2,
-        enemy.position.y
+        enemy.position.y,
       );
     }
   }
@@ -258,7 +285,7 @@ export class CollisionSystem implements ISystem {
   private applyKnockback(target: any, source: any): void {
     const knockbackForce = 200;
     const direction = target.position.x < source.position.x ? -1 : 1;
-    
+
     if (target.velocity) {
       target.velocity.x = direction * knockbackForce;
     }

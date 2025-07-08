@@ -1,12 +1,12 @@
-import type { IUpdateable, IRenderable, ICollidable } from "../interfaces/GameInterfaces";
 import type { GameState } from "../engine/GameState";
+import type { ICollidable, IRenderable, IUpdateable } from "../interfaces/GameInterfaces";
+import type { DiagonalPlatform } from "../objects/diagonalPlatform";
 import type { Enemy } from "../objects/enemy";
+import type { Experience } from "../objects/experience";
+import { HitSpark, PoofEffect } from "../objects/hitSpark";
+import type { MemoryCrystal } from "../objects/memoryCrystal";
 import type { Platform } from "../objects/platform";
 import type { SolidBlock } from "../objects/solidBlock";
-import type { DiagonalPlatform } from "../objects/diagonalPlatform";
-import type { Candle } from "../objects/candle";
-import type { Heart, HeartSparkle } from "../objects/heart";
-import { HitSpark, PoofEffect } from "../objects/hitSpark";
 
 export class GameObjectManager {
   // Game object collections
@@ -15,9 +15,8 @@ export class GameObjectManager {
   private solidBlocks: SolidBlock[] = [];
   private diagonalPlatforms: DiagonalPlatform[] = [];
   private hitSparks: HitSpark[] = [];
-  private candles: Candle[] = [];
-  private hearts: Heart[] = [];
-  private heartSparkles: HeartSparkle[] = [];
+  private memoryCrystals: MemoryCrystal[] = [];
+  private experiences: Experience[] = [];
   private poofEffects: PoofEffect[] = [];
 
   // Floating indicators
@@ -40,9 +39,8 @@ export class GameObjectManager {
     this.solidBlocks = gameState.solidBlocks || [];
     this.diagonalPlatforms = gameState.diagonalPlatforms || [];
     this.hitSparks = gameState.hitSparks || [];
-    this.candles = gameState.candles || [];
-    this.hearts = gameState.hearts || [];
-    this.heartSparkles = gameState.heartSparkles || [];
+    this.memoryCrystals = gameState.memoryCrystals || [];
+    this.experiences = gameState.experiences || [];
     this.poofEffects = gameState.poofEffects || [];
     this.floatingExpIndicators = gameState.floatingExpIndicators || [];
   }
@@ -51,15 +49,13 @@ export class GameObjectManager {
    * Update all game objects
    */
   update(deltaTime: number, gameState: GameState): void {
-    // Update candles
-    this.updateObjects(this.candles, deltaTime, gameState);
-    this.cleanupInactive(this.candles);
+    // Update memory crystals
+    this.updateMemoryCrystals(deltaTime, gameState);
+    this.cleanupInactive(this.memoryCrystals);
 
-    // Update hearts
-    this.updateObjects(this.hearts, deltaTime, gameState);
-
-    // Update heart sparkles
-    this.updateObjects(this.heartSparkles, deltaTime, gameState);
+    // Update experiences
+    this.updateObjects(this.experiences, deltaTime, gameState);
+    this.cleanupInactive(this.experiences);
 
     // Update hit sparks
     this.updateObjects(this.hitSparks, deltaTime, gameState);
@@ -72,11 +68,8 @@ export class GameObjectManager {
 
     // Clean up inactive objects
     this.cleanupInactive(this.hitSparks);
-    this.cleanupInactive(this.hearts);
-    this.cleanupInactive(this.heartSparkles);
     this.cleanupInactive(this.poofEffects);
     this.cleanupInactive(this.enemies);
-    this.cleanupInactive(this.candles);
 
     // Update floating exp indicators
     this.updateFloatingExpIndicators(deltaTime);
@@ -92,9 +85,8 @@ export class GameObjectManager {
     this.renderObjects(this.diagonalPlatforms, ctx);
 
     // Render interactive objects
-    this.renderObjects(this.candles, ctx);
-    this.renderObjects(this.hearts, ctx);
-    this.renderObjects(this.heartSparkles, ctx);
+    this.renderObjects(this.memoryCrystals, ctx);
+    this.renderObjects(this.experiences, ctx);
     this.renderObjects(this.enemies, ctx);
 
     // Render effects on top
@@ -124,16 +116,12 @@ export class GameObjectManager {
     this.diagonalPlatforms.push(diagonalPlatform);
   }
 
-  addCandle(candle: Candle): void {
-    this.candles.push(candle);
+  addMemoryCrystal(crystal: MemoryCrystal): void {
+    this.memoryCrystals.push(crystal);
   }
 
-  addHeart(heart: Heart): void {
-    this.hearts.push(heart);
-  }
-
-  addHeartSparkle(sparkle: HeartSparkle): void {
-    this.heartSparkles.push(sparkle);
+  addExperience(experience: Experience): void {
+    this.experiences.push(experience);
   }
 
   addHitSpark(x: number, y: number): void {
@@ -174,9 +162,6 @@ export class GameObjectManager {
     this.solidBlocks.length = 0;
     this.diagonalPlatforms.length = 0;
     this.hitSparks.length = 0;
-    this.candles.length = 0;
-    this.hearts.length = 0;
-    this.heartSparkles.length = 0;
     this.poofEffects.length = 0;
     this.floatingExpIndicators.length = 0;
   }
@@ -200,18 +185,17 @@ export class GameObjectManager {
     this.diagonalPlatforms.length = 0;
   }
 
-  clearCandles(): void {
-    this.candles.length = 0;
+  clearMemoryCrystals(): void {
+    this.memoryCrystals.length = 0;
   }
 
-  clearHearts(): void {
-    this.hearts.length = 0;
+  clearExperiences(): void {
+    this.experiences.length = 0;
   }
 
   clearEffects(): void {
     this.hitSparks.length = 0;
     this.poofEffects.length = 0;
-    this.heartSparkles.length = 0;
     this.floatingExpIndicators.length = 0;
   }
 
@@ -234,16 +218,12 @@ export class GameObjectManager {
     return this.diagonalPlatforms;
   }
 
-  getCandles(): readonly Candle[] {
-    return this.candles;
+  getMemoryCrystals(): readonly MemoryCrystal[] {
+    return this.memoryCrystals;
   }
 
-  getHearts(): readonly Heart[] {
-    return this.hearts;
-  }
-
-  getHeartSparkles(): readonly HeartSparkle[] {
-    return this.heartSparkles;
+  getExperiences(): readonly Experience[] {
+    return this.experiences;
   }
 
   getHitSparks(): readonly HitSpark[] {
@@ -274,8 +254,8 @@ export class GameObjectManager {
       ...this.solidBlocks,
       ...this.diagonalPlatforms,
       ...this.enemies,
-      ...this.candles,
-      ...this.hearts,
+      ...this.memoryCrystals,
+      ...this.experiences,
     ];
   }
 
@@ -285,9 +265,8 @@ export class GameObjectManager {
   getUpdateableObjects(): IUpdateable[] {
     return [
       ...this.enemies,
-      ...this.candles,
-      ...this.hearts,
-      ...this.heartSparkles,
+      ...this.memoryCrystals,
+      ...this.experiences,
       ...this.hitSparks,
       ...this.poofEffects,
     ];
@@ -302,9 +281,8 @@ export class GameObjectManager {
       ...this.solidBlocks,
       ...this.diagonalPlatforms,
       ...this.enemies,
-      ...this.candles,
-      ...this.hearts,
-      ...this.heartSparkles,
+      ...this.memoryCrystals,
+      ...this.experiences,
       ...this.hitSparks,
       ...this.poofEffects,
     ];
@@ -316,7 +294,7 @@ export class GameObjectManager {
   private updateObjects<T extends IUpdateable>(
     objects: T[],
     deltaTime: number,
-    gameState: GameState
+    gameState: GameState,
   ): void {
     for (const obj of objects) {
       if (obj.active !== false) {
@@ -329,6 +307,27 @@ export class GameObjectManager {
     for (const obj of objects) {
       if (obj.isVisible !== false) {
         obj.render(ctx);
+      }
+    }
+  }
+
+  private updateMemoryCrystals(deltaTime: number, gameState: GameState): void {
+    for (const crystal of this.memoryCrystals) {
+      if (crystal.isActive) {
+        crystal.update(deltaTime, gameState);
+
+        // Check for chain reactions
+        if (crystal.isBreaking) {
+          this.checkChainReactions(crystal);
+        }
+      }
+    }
+  }
+
+  private checkChainReactions(triggeringCrystal: MemoryCrystal): void {
+    for (const crystal of this.memoryCrystals) {
+      if (triggeringCrystal.canTriggerChainReaction(crystal)) {
+        crystal.triggerChainReaction(triggeringCrystal.chainReactionDelay);
       }
     }
   }
@@ -347,7 +346,7 @@ export class GameObjectManager {
       exp.alpha -= deltaTime * 1.2;
       exp.time += deltaTime;
     }
-    
+
     // Remove expired indicators
     for (let i = this.floatingExpIndicators.length - 1; i >= 0; i--) {
       if (this.floatingExpIndicators[i].alpha <= 0) {

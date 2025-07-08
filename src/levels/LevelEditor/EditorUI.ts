@@ -9,6 +9,7 @@ export class EditorUI {
   private onSave: () => void;
   private onClose: () => void;
   private onColorChange: (color: string) => void;
+  private onCrystalTypeChange: (type: string) => void;
   private onLevelSizeChange: (width: number, height: number) => void;
   private onDirectionChange: (direction: number) => void;
 
@@ -19,6 +20,7 @@ export class EditorUI {
     onSave: () => void;
     onClose: () => void;
     onColorChange: (color: string) => void;
+    onCrystalTypeChange: (type: string) => void;
     onLevelSizeChange: (width: number, height: number) => void;
     onDirectionChange: (direction: number) => void;
   }) {
@@ -28,6 +30,7 @@ export class EditorUI {
     this.onSave = callbacks.onSave;
     this.onClose = callbacks.onClose;
     this.onColorChange = callbacks.onColorChange;
+    this.onCrystalTypeChange = callbacks.onCrystalTypeChange;
     this.onLevelSizeChange = callbacks.onLevelSizeChange;
     this.onDirectionChange = callbacks.onDirectionChange;
   }
@@ -35,6 +38,7 @@ export class EditorUI {
   createEditorUI(
     currentMode: EditorMode,
     platformColor: string,
+    crystalType: string,
     levelWidth: number,
     levelHeight: number,
     onUndoRedoKeys: (e: KeyboardEvent) => void,
@@ -72,6 +76,9 @@ export class EditorUI {
 
     // Color picker for platforms
     this.createColorPicker(container, currentMode, platformColor);
+
+    // Crystal type selector for memory crystals
+    this.createCrystalTypeSelector(container, currentMode, crystalType);
 
     // Action buttons (Save/Load/Undo/Redo)
     this.createActionButtons(container);
@@ -175,7 +182,7 @@ export class EditorUI {
     createModeButton(EditorMode.PLATFORM, "Platform");
     createModeButton(EditorMode.SOLID_BLOCK, "Solid Block");
     createModeButton(EditorMode.DIAGONAL_PLATFORM, "Diagonal Platform");
-    createModeButton(EditorMode.CANDLE, "Candle");
+    createModeButton(EditorMode.MEMORY_CRYSTAL, "Memory Crystal");
     createModeButton(EditorMode.GHOST, "Ghost");
     createModeButton(EditorMode.LANDGHOST, "Land Ghost");
     createModeButton(EditorMode.PLAYER, "Player");
@@ -206,6 +213,51 @@ export class EditorUI {
       colorContainer.appendChild(colorPicker);
 
       container.appendChild(colorContainer);
+    }
+  }
+
+  private createCrystalTypeSelector(
+    container: HTMLDivElement,
+    currentMode: EditorMode,
+    crystalType: string,
+  ): void {
+    if (currentMode === EditorMode.MEMORY_CRYSTAL) {
+      const crystalContainer = document.createElement("div");
+      crystalContainer.style.marginBottom = "10px";
+
+      const crystalLabel = document.createElement("label");
+      crystalLabel.textContent = "Crystal Type: ";
+      crystalContainer.appendChild(crystalLabel);
+
+      const crystalSelect = document.createElement("select");
+      crystalSelect.style.marginLeft = "5px";
+      crystalSelect.style.padding = "2px";
+      
+      const crystalTypes = [
+        { value: 'azure', label: 'Azure (5 EXP)', color: '#4169E1' },
+        { value: 'amethyst', label: 'Amethyst (10 EXP)', color: '#9966CC' },
+        { value: 'emerald', label: 'Emerald (15 EXP)', color: '#50C878' },
+        { value: 'golden', label: 'Golden (25 EXP)', color: '#FFD700' }
+      ];
+
+      crystalTypes.forEach(type => {
+        const option = document.createElement("option");
+        option.value = type.value;
+        option.textContent = type.label;
+        option.style.backgroundColor = type.color;
+        option.style.color = '#000';
+        if (type.value === crystalType) {
+          option.selected = true;
+        }
+        crystalSelect.appendChild(option);
+      });
+
+      crystalSelect.addEventListener("change", (e) => {
+        this.onCrystalTypeChange((e.target as HTMLSelectElement).value);
+      });
+      
+      crystalContainer.appendChild(crystalSelect);
+      container.appendChild(crystalContainer);
     }
   }
 

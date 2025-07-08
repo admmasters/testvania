@@ -1,8 +1,8 @@
 import { LandGhost } from "@/objects/LandGhost";
 import type { GameState } from "../engine/GameState";
-import { Candle } from "../objects/candle";
 import { DiagonalPlatform } from "../objects/diagonalPlatform";
 import { Ghost } from "../objects/Ghost";
+import { MemoryCrystal } from "../objects/memoryCrystal";
 import { Platform } from "../objects/platform";
 import { Player } from "../objects/player";
 import { SolidBlock } from "../objects/solidBlock";
@@ -22,7 +22,7 @@ export class Level {
     gameState.solidBlocks = [];
     gameState.diagonalPlatforms = [];
     gameState.enemies = [];
-    gameState.candles = [];
+    gameState.memoryCrystals = [];
     gameState.hitSparks = [];
 
     // Create platforms
@@ -63,9 +63,15 @@ export class Level {
       );
     }
 
-    // Create candles
-    for (const candleData of this.data.candles) {
-      gameState.candles.push(new Candle(candleData.position.x, candleData.position.y));
+    // Create memory crystals
+    for (const crystalData of this.data.memoryCrystals) {
+      gameState.memoryCrystals.push(
+        new MemoryCrystal(
+          crystalData.position.x,
+          crystalData.position.y,
+          crystalData.type || "azure",
+        ),
+      );
     }
 
     // Create enemies
