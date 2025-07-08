@@ -1,6 +1,12 @@
+import {
+  checkCollision,
+  checkDiagonalPlatformCollision,
+  normalizeBounds,
+  resolveCollision,
+  wouldCollideHorizontally,
+} from "@/utils/CollisionUtils";
 import type { GameState } from "../engine/GameState";
 import type { ISystem } from "../interfaces/GameInterfaces";
-import { CollisionUtils } from "../utils/CollisionUtils";
 
 export class CollisionSystem implements ISystem {
   priority = 10;
@@ -68,7 +74,7 @@ export class CollisionSystem implements ISystem {
         const expBounds = experience.getBounds();
 
         if (
-          CollisionUtils.checkCollision(
+          checkCollision(
             {
               getBounds: () => playerBounds,
               position: gameState.player.position,
@@ -97,7 +103,7 @@ export class CollisionSystem implements ISystem {
       const enemyBounds = enemy.getBounds();
 
       if (
-        CollisionUtils.checkCollision(
+        checkCollision(
           {
             getBounds: () => playerBounds,
             position: gameState.player.position,
@@ -114,7 +120,7 @@ export class CollisionSystem implements ISystem {
       if (gameState.player.attacking) {
         const attackBounds = gameState.player.getAttackBounds();
         if (attackBounds) {
-          const normalizedEnemyBounds = CollisionUtils.normalizeBounds(enemyBounds);
+          const normalizedEnemyBounds = normalizeBounds(enemyBounds);
           const isAttackColliding =
             attackBounds.left < normalizedEnemyBounds.right &&
             attackBounds.right > normalizedEnemyBounds.left &&
@@ -172,7 +178,7 @@ export class CollisionSystem implements ISystem {
     const platformBounds = platform.getBounds();
 
     if (
-      CollisionUtils.checkCollision(
+      checkCollision(
         { getBounds: () => playerBounds, position: player.position, size: player.size },
         { getBounds: () => platformBounds, position: platform.position, size: platform.size },
       )
@@ -191,13 +197,13 @@ export class CollisionSystem implements ISystem {
     const solidBlockBounds = solidBlock.getBounds();
 
     if (
-      CollisionUtils.checkCollision(
+      checkCollision(
         { getBounds: () => playerBounds, position: player.position, size: player.size },
         { getBounds: () => solidBlockBounds, position: solidBlock.position, size: solidBlock.size },
       )
     ) {
       // Resolve collision by pushing player out
-      CollisionUtils.resolveCollision(player, {
+      resolveCollision(player, {
         getBounds: () => solidBlockBounds,
         position: solidBlock.position,
         size: solidBlock.size,
@@ -206,7 +212,7 @@ export class CollisionSystem implements ISystem {
   }
 
   private handlePlayerDiagonalPlatformCollision(player: any, diagonalPlatform: any): void {
-    const collision = CollisionUtils.checkDiagonalPlatformCollision(
+    const collision = checkDiagonalPlatformCollision(
       player.position.x,
       player.position.y,
       player.size.x,
@@ -228,7 +234,7 @@ export class CollisionSystem implements ISystem {
     if (!enemy.direction || !enemy.speed) return false;
 
     const nextX = enemy.position.x + enemy.direction * enemy.speed * 0.016; // Approximate deltaTime
-    return CollisionUtils.wouldCollideHorizontally(
+    return wouldCollideHorizontally(
       nextX,
       enemy.position.y,
       enemy.size.x,
