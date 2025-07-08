@@ -13,6 +13,11 @@ export class EditorUtils {
     return new Vector2(this.snap16(v.x), this.snap16(v.y));
   }
 
+  // Snap to center of 16x16 grid cells (8px offset)
+  snapToCenter(v: Vector2): Vector2 {
+    return new Vector2(Math.floor(v.x / 16) * 16 + 8, Math.floor(v.y / 16) * 16 + 8);
+  }
+
   // Returns an array of handle positions for a given rect
   getResizeHandles(rect: { x: number; y: number; w: number; h: number }): ResizeHandle[] {
     const hs = EditorUtils.HANDLE_SIZE / 2;

@@ -1,8 +1,8 @@
 import { LandGhost } from "@/objects/LandGhost";
 import type { GameState } from "../engine/GameState";
-import { MemoryCrystal } from "../objects/memoryCrystal";
 import { DiagonalPlatform } from "../objects/diagonalPlatform";
 import { Ghost } from "../objects/Ghost";
+import { MemoryCrystal } from "../objects/memoryCrystal";
 import { Platform } from "../objects/platform";
 import { Player } from "../objects/player";
 import { SolidBlock } from "../objects/solidBlock";
@@ -66,7 +66,11 @@ export class Level {
     // Create memory crystals
     for (const crystalData of this.data.memoryCrystals) {
       gameState.memoryCrystals.push(
-        new MemoryCrystal(crystalData.position.x, crystalData.position.y, crystalData.type || 'azure')
+        new MemoryCrystal(
+          crystalData.position.x,
+          crystalData.position.y,
+          crystalData.type || "azure",
+        ),
       );
     }
 

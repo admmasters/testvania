@@ -36,12 +36,6 @@ export class MemoryCrystal {
 
   // Crystal type and effects
   crystalType: "azure" | "amethyst" | "emerald" | "golden";
-  memoryEcho: {
-    active: boolean;
-    timer: number;
-    text: string;
-    opacity: number;
-  };
 
   // Chain reaction mechanics
   chainReactionRadius: number;
@@ -67,12 +61,6 @@ export class MemoryCrystal {
 
     // Crystal properties
     this.crystalType = type;
-    this.memoryEcho = {
-      active: false,
-      timer: 0,
-      text: "",
-      opacity: 0,
-    };
 
     // Chain reaction properties
     this.chainReactionRadius = 60;
@@ -104,20 +92,6 @@ export class MemoryCrystal {
     if (this.particleTimer > 0.3) {
       this.spawnAmbientParticle();
       this.particleTimer = 0;
-    }
-
-    // Update memory echo
-    if (this.memoryEcho.active) {
-      this.memoryEcho.timer += deltaTime;
-      if (this.memoryEcho.timer < 0.5) {
-        this.memoryEcho.opacity = this.memoryEcho.timer / 0.5;
-      } else if (this.memoryEcho.timer < 2.5) {
-        this.memoryEcho.opacity = 1;
-      } else if (this.memoryEcho.timer < 3) {
-        this.memoryEcho.opacity = 1 - (this.memoryEcho.timer - 2.5) / 0.5;
-      } else {
-        this.memoryEcho.active = false;
-      }
     }
 
     // Breaking animation
@@ -238,9 +212,6 @@ export class MemoryCrystal {
       });
     }
 
-    // Trigger memory echo
-    this.triggerMemoryEcho();
-
     // Drop items based on crystal type
     const drops = this.generateDrops();
 
@@ -250,24 +221,6 @@ export class MemoryCrystal {
   // Store the gameState reference for memory addition
   private _gameState: any;
 
-  private triggerMemoryEcho(): void {
-    const memories = [
-      "A distant melody echoes...",
-      "Whispers of ancient wisdom...",
-      "Fragments of forgotten dreams...",
-      "Echoes of a warrior's courage...",
-      "Memories of lost love...",
-      "The crystal remembers all...",
-      "Time flows like water...",
-      "Knowledge seeks its keeper...",
-    ];
-
-    this.memoryEcho.active = true;
-    this.memoryEcho.timer = 0;
-    this.memoryEcho.text = memories[Math.floor(Math.random() * memories.length)];
-    this.memoryEcho.opacity = 0;
-  }
-
   private generateDrops(): { experience: Experience[] } {
     const experience: Experience[] = [];
 
@@ -276,7 +229,6 @@ export class MemoryCrystal {
       const memoryData = {
         id: `memory_${Date.now()}`,
         type: this.crystalType,
-        text: this.memoryEcho.text,
         discovered: new Date().toISOString(),
       };
 
@@ -388,11 +340,6 @@ export class MemoryCrystal {
       this.renderBreakingPieces(ctx, colors);
     }
 
-    // Render memory echo
-    if (this.memoryEcho.active) {
-      this.renderMemoryEcho(ctx);
-    }
-
     ctx.restore();
   }
 
@@ -487,18 +434,6 @@ export class MemoryCrystal {
     });
 
     ctx.globalAlpha = 1;
-  }
-
-  private renderMemoryEcho(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = "#E6E6FA";
-    ctx.globalAlpha = this.memoryEcho.opacity * 0.8;
-    ctx.font = "10px serif";
-    ctx.textAlign = "center";
-
-    ctx.fillText(this.memoryEcho.text, this.position.x + this.size.x / 2, this.position.y - 20);
-
-    ctx.globalAlpha = 1;
-    ctx.textAlign = "left";
   }
 
   getBounds(): { x: number; y: number; width: number; height: number } {

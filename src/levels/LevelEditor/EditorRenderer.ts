@@ -245,7 +245,7 @@ export class EditorRenderer {
       }
       case EditorMode.MEMORY_CRYSTAL: {
         // Show placement preview for memory crystal
-        const crystalPos = this.utils.snapVec2(mousePosition);
+        const crystalPos = this.utils.snapToCenter(mousePosition);
         ctx.strokeRect(crystalPos.x, crystalPos.y, 20, 24);
         break;
       }

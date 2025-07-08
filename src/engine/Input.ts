@@ -10,6 +10,7 @@ export class Input {
 
   setupEventListeners(): void {
     document.addEventListener("keydown", (e) => {
+      console.log("Key pressed:", e.code);
       if (!this.keys[e.code]) {
         this.keysPressed[e.code] = true;
       }
@@ -28,6 +29,10 @@ export class Input {
 
   isKeyPressed(key: string): boolean {
     return !!this.keysPressed[key];
+  }
+
+  isAnyKeyPressed(): boolean {
+    return Object.keys(this.keysPressed).some((key) => this.keysPressed[key]);
   }
 
   update(): void {

@@ -11,6 +11,7 @@ import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
 import { GameObjectManager } from "@/systems/GameObjectManager";
+import { TutorialSystem } from "@/systems/TutorialSystem";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
@@ -38,6 +39,7 @@ export class GameState {
   gameObjectManager: GameObjectManager;
   collisionSystem: CollisionSystem;
   hud: HUD;
+  tutorialSystem: TutorialSystem;
   floatingExpIndicators: Array<{
     amount: number;
     x: number;
@@ -47,7 +49,7 @@ export class GameState {
     time: number;
   }> = [];
 
-  constructor(levelId: string = "level1") {
+  constructor(levelId: string = "tutorial") {
     // Initialize the level manager
     this.levelManager = new LevelManager();
 
@@ -56,6 +58,9 @@ export class GameState {
 
     // Initialize the collision system
     this.collisionSystem = new CollisionSystem();
+
+    // Initialize the tutorial system
+    this.tutorialSystem = new TutorialSystem();
 
     // Initialize empty arrays
     this.platforms = [];
@@ -98,6 +103,18 @@ export class GameState {
   }
 
   update(deltaTime: number): void {
+    // Update tutorial system first (only for tutorial level)
+    if (this.currentLevelId === "tutorial") {
+      this.tutorialSystem.update(deltaTime, this);
+
+      // Pause game updates when tutorial modal is showing
+      if (this.tutorialSystem.isGamePaused()) {
+        // Clear input at the end when paused so X key can be detected next frame
+        this.input.update();
+        return; // Don't update game objects when tutorial is paused
+      }
+    }
+
     // Update memory crystals
     for (const crystal of this.memoryCrystals) {
       if (crystal.active) {
@@ -321,6 +338,11 @@ export class GameState {
 
     // Draw UI
     this.drawUI(ctx);
+
+    // Render tutorial messages (only for tutorial level) - after camera reset so it's on top
+    if (this.currentLevelId === "tutorial") {
+      this.tutorialSystem.render(ctx);
+    }
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {

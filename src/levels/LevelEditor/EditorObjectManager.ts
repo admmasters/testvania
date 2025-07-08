@@ -1,9 +1,9 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
-import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import { Ghost } from "@/objects/Ghost";
 import { LandGhost } from "@/objects/LandGhost";
+import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { Platform } from "@/objects/platform";
 import { SolidBlock } from "@/objects/solidBlock";
 import type { EditorDiagonalPlatform, EditorObject, EditorPlatform } from "./EditorTypes";
@@ -190,10 +190,10 @@ export class EditorObjectManager {
     }
   }
 
-  placeMemoryCrystal(pos: Vector2, type: string = 'azure'): void {
-    const snapped = this.utils.snapVec2(pos);
-    // Create new memory crystal at position (bottom center at snapped position)
-    this.gameState.memoryCrystals.push(new MemoryCrystal(snapped.x - 10, snapped.y - 24, type as any));
+  placeMemoryCrystal(pos: Vector2, type: string = "azure"): void {
+    const snapped = this.utils.snapToCenter(pos);
+    // Create new memory crystal at position (position is the actual position, not adjusted)
+    this.gameState.memoryCrystals.push(new MemoryCrystal(snapped.x, snapped.y, type as any));
   }
 
   placeGhost(pos: Vector2): void {

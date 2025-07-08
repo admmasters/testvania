@@ -17,7 +17,7 @@ export class Game {
   running: boolean;
   scanlines: Scanlines;
 
-  constructor(initialLevelId: string = "level1") {
+  constructor(initialLevelId: string = "tutorial") {
     this.canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
     this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -27,7 +27,7 @@ export class Game {
     this.gameState = new GameState(initialLevelId);
     this.lastTime = 0;
     this.running = true;
-    this.scanlines = new Scanlines(0.6, 2, 0.5); // More pronounced scanlines for authentic retro look
+    this.scanlines = new Scanlines(0.6, 2, 0.5);
 
     // Set up UI for level switching
     this.setupLevelSwitchUI();
@@ -112,7 +112,6 @@ export class Game {
     uiContainer.style.boxShadow = "0 0 20px rgba(212, 175, 55, 0.3)";
     uiContainer.style.fontFamily = "'Orbitron', monospace";
 
-    // Create level buttons
     levelIds.forEach((levelId) => {
       const button = document.createElement("button");
       button.textContent = `Level ${levelId.replace("level", "")}`;
@@ -126,13 +125,11 @@ export class Game {
       uiContainer.appendChild(button);
     });
 
-    // Add level editor button
     const editorButton = document.createElement("button");
     editorButton.textContent = "Level Editor";
     editorButton.className = "arcade-button";
     editorButton.style.margin = "0 5px";
 
-    // Create level editor instance if not exists
     if (!this.gameState.levelEditor) {
       this.gameState.levelEditor = new LevelEditor(this.gameState, this.canvas);
     }
