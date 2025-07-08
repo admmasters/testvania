@@ -6,11 +6,14 @@ export class CollisionSystem implements ISystem {
   priority = 10;
 
   update(_deltaTime: number, gameState: GameState): void {
-    // Check candle collisions with player attacks
-    this.checkCandleCollisions(gameState);
+    // Check memory crystal collisions with player attacks
+    this.checkMemoryCrystalCollisions(gameState);
     
     // Check heart collisions with player
     this.checkHeartCollisions(gameState);
+    
+    // Check experience collisions with player
+    this.checkExperienceCollisions(gameState);
     
     // Check enemy collisions with player
     this.checkEnemyPlayerCollisions(gameState);
@@ -22,34 +25,65 @@ export class CollisionSystem implements ISystem {
     this.checkEnemyPlatformCollisions(gameState);
   }
 
-  private checkCandleCollisions(gameState: GameState): void {
+
+  private checkMemoryCrystalCollisions(gameState: GameState): void {
     if (!gameState.player.attacking) return;
 
     const attackBounds = gameState.player.getAttackBounds();
     if (!attackBounds) return;
 
-    for (const candle of gameState.candles) {
-      if (candle.active && !candle.isBreaking) {
-        const candleBounds = candle.getBounds();
+    for (const crystal of gameState.memoryCrystals) {
+      if (crystal.isActive && !crystal.isBreaking) {
+        const crystalBounds = crystal.getBounds();
 
-        const candleLeft = candleBounds.x;
-        const candleRight = candleBounds.x + candleBounds.width;
-        const candleTop = candleBounds.y;
-        const candleBottom = candleBounds.y + candleBounds.height;
+        const crystalLeft = crystalBounds.x;
+        const crystalRight = crystalBounds.x + crystalBounds.width;
+        const crystalTop = crystalBounds.y;
+        const crystalBottom = crystalBounds.y + crystalBounds.height;
 
         const isColliding =
-          attackBounds.left < candleRight &&
-          attackBounds.right > candleLeft &&
-          attackBounds.top < candleBottom &&
-          attackBounds.bottom > candleTop;
+          attackBounds.left < crystalRight &&
+          attackBounds.right > crystalLeft &&
+          attackBounds.top < crystalBottom &&
+          attackBounds.bottom > crystalTop;
 
         if (isColliding) {
-          candle.break(gameState);
+          const drops = crystal.break();
+          
+          // Add dropped items to game state
+          drops.hearts.forEach(heart => {
+            gameState.hearts.push(heart);
+          });
+          
+          drops.experience.forEach(exp => {
+            gameState.experiences.push(exp);
+          });
+          
           this.createHitSpark(
             gameState,
-            candle.position.x + candle.size.x / 2,
-            candle.position.y
+            crystal.position.x + crystal.size.x / 2,
+            crystal.position.y
           );
+        }
+      }
+    }
+  }
+
+  private checkExperienceCollisions(gameState: GameState): void {
+    const playerBounds = gameState.player.getBounds();
+
+    for (const experience of gameState.experiences) {
+      if (experience.isActive) {
+        const expBounds = experience.getBounds();
+
+        if (CollisionUtils.checkCollision(
+          { getBounds: () => playerBounds, position: gameState.player.position, size: gameState.player.size },
+          { getBounds: () => expBounds, position: experience.position, size: experience.size }
+        )) {
+          const expValue = experience.collect();
+          if (expValue > 0) {
+            gameState.player.gainExp(expValue);
+          }
         }
       }
     }

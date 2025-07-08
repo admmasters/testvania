@@ -63,6 +63,7 @@ export class EditorMouseHandler {
   private canvas: HTMLCanvasElement;
   private objectManager: EditorObjectManager;
   private utils: EditorUtils;
+  private currentCrystalType: string = 'azure';
 
   private isScrolling: boolean = false;
   private scrollStart: Vector2 | null = null;
@@ -76,6 +77,10 @@ export class EditorMouseHandler {
     this.canvas = args.canvas;
     this.objectManager = args.objectManager;
     this.utils = args.utils;
+  }
+
+  setCrystalType(type: string): void {
+    this.currentCrystalType = type;
   }
 
   handleMouseDown = (args: HandleMouseDownArgs) => {
@@ -352,9 +357,9 @@ export class EditorMouseHandler {
         );
         onStartPosition(worldPos);
         break;
-      case EditorMode.CANDLE:
+      case EditorMode.MEMORY_CRYSTAL:
         onPushUndoState();
-        this.objectManager.placeCandle(worldPos);
+        this.objectManager.placeMemoryCrystal(worldPos, this.currentCrystalType);
         break;
       case EditorMode.GHOST:
         onPushUndoState();

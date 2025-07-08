@@ -1,6 +1,6 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
-import { Candle } from "@/objects/candle";
+import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import { Ghost } from "@/objects/Ghost";
 import { LandGhost } from "@/objects/LandGhost";
@@ -19,7 +19,7 @@ export class EditorObjectManager {
   }
 
   selectObjectAt(pos: Vector2): EditorObject {
-    // Prioritize: enemy > candle > platform > solid block > player
+    // Prioritize: enemy > memory crystal > platform > solid block > player
 
     // Check enemies first
     for (const enemy of this.gameState.enemies) {
@@ -28,10 +28,10 @@ export class EditorObjectManager {
       }
     }
 
-    // Check candles
-    for (const candle of this.gameState.candles) {
-      if (this.isPointInObject(pos, candle)) {
-        return candle;
+    // Check memory crystals
+    for (const crystal of this.gameState.memoryCrystals) {
+      if (this.isPointInObject(pos, crystal)) {
+        return crystal;
       }
     }
 
@@ -190,10 +190,10 @@ export class EditorObjectManager {
     }
   }
 
-  placeCandle(pos: Vector2): void {
+  placeMemoryCrystal(pos: Vector2, type: string = 'azure'): void {
     const snapped = this.utils.snapVec2(pos);
-    // Create new candle at position (bottom center at snapped position)
-    this.gameState.candles.push(new Candle(snapped.x - 8, snapped.y - 32));
+    // Create new memory crystal at position (bottom center at snapped position)
+    this.gameState.memoryCrystals.push(new MemoryCrystal(snapped.x - 10, snapped.y - 24, type as any));
   }
 
   placeGhost(pos: Vector2): void {
@@ -260,11 +260,11 @@ export class EditorObjectManager {
       }
     }
 
-    // Check candles
-    for (let i = 0; i < this.gameState.candles.length; i++) {
-      const candle = this.gameState.candles[i];
-      if (this.isPointInObject(pos, candle)) {
-        this.gameState.candles.splice(i, 1);
+    // Check memory crystals
+    for (let i = 0; i < this.gameState.memoryCrystals.length; i++) {
+      const crystal = this.gameState.memoryCrystals[i];
+      if (this.isPointInObject(pos, crystal)) {
+        this.gameState.memoryCrystals.splice(i, 1);
         return;
       }
     }

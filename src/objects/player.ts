@@ -4,6 +4,13 @@ import type { DiagonalPlatform } from "./diagonalPlatform";
 import type { Platform } from "./platform";
 import type { SolidBlock } from "./solidBlock";
 
+interface Memory {
+  id: string;
+  type: string;
+  text: string;
+  discovered: string;
+}
+
 interface PlayerInput {
   isKeyDown(key: string): boolean;
   isKeyPressed(key: string): boolean;
@@ -31,6 +38,9 @@ export class Player extends GameObject {
   strength: number;
   defense: number;
   speedStat: number;
+
+  // Memories collection for crystal memories
+  memories: Memory[] = [];
 
   // Power bar system for charged attacks
   power: number;
@@ -75,6 +85,7 @@ export class Player extends GameObject {
     this.invulnerabilityDuration = 1.0;
     this.coyoteTime = 0.1;
     this.coyoteTimer = 0;
+    this.memories = []; // Initialize empty memories array
 
     // Initialize power bar system
     this.power = 0; // Start at zero
@@ -94,7 +105,26 @@ export class Player extends GameObject {
     this.handleCollisions(gameState);
   }
 
-  handleInput(input: PlayerInput, _deltaTime: number, gameState?: GameState): void {
+  // Method to add a memory to the player's collection
+  addMemory(memoryData: Memory | null): void {
+    if (!memoryData) return;
+
+    // Prevent duplicate memories by checking ID
+    const exists = this.memories.some((mem) => mem.id === memoryData.id);
+    if (!exists) {
+      this.memories.push(memoryData);
+      console.log("Memory added:", memoryData.text);
+
+      // Could trigger effects or play sound here
+      // e.g., temporary buff, visual effect, etc.
+    }
+  }
+
+  handleInput(
+    input: PlayerInput,
+    _deltaTime: number,
+    gameState?: GameState
+  ): void {
     // Movement
     if (input.isKeyDown("ArrowLeft")) {
       this.velocity.x = -this.speed;
@@ -107,7 +137,10 @@ export class Player extends GameObject {
     }
 
     // Jump with improved feel - variable height based on how long the jump button is pressed
-    if (input.isKeyPressed("Space") && (this.grounded || this.coyoteTimer > 0)) {
+    if (
+      input.isKeyPressed("Space") &&
+      (this.grounded || this.coyoteTimer > 0)
+    ) {
       this.velocity.y = -this.jumpPower;
       this.grounded = false;
       this.coyoteTimer = 0; // Used up coyote time
@@ -121,10 +154,18 @@ export class Player extends GameObject {
     }
 
     // Attack system - X key handling
-    if (input.isKeyPressed("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+    if (
+      input.isKeyPressed("KeyX") &&
+      !this.attacking &&
+      this.attackCooldownTimer <= 0
+    ) {
       // Key just pressed - always do regular sword attack first
       this.performAttack(gameState);
-    } else if (input.isKeyDown("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+    } else if (
+      input.isKeyDown("KeyX") &&
+      !this.attacking &&
+      this.attackCooldownTimer <= 0
+    ) {
       // Key is being held - start charging power and attack
       if (!this.isChargingAttack) {
         this.isChargingAttack = true;
@@ -175,9 +216,18 @@ export class Player extends GameObject {
           const playerBottom = this.position.y + this.size.y;
 
           // Check if player is currently on this diagonal platform
-          if (diagonalPlatform.isPlayerOnSurface(playerLeft, playerRight, playerBottom)) {
+          if (
+            diagonalPlatform.isPlayerOnSurface(
+              playerLeft,
+              playerRight,
+              playerBottom
+            )
+          ) {
             // Adjust player Y position to stay on the diagonal surface
-            const surfaceY = diagonalPlatform.getPlayerSurfaceY(playerLeft, playerRight);
+            const surfaceY = diagonalPlatform.getPlayerSurfaceY(
+              playerLeft,
+              playerRight
+            );
             if (surfaceY !== null) {
               // Position player exactly on the platform surface
               this.position.y = surfaceY - this.size.y;
@@ -207,7 +257,10 @@ export class Player extends GameObject {
         const playerBottom = this.position.y + this.size.y;
         const nextPlayerBottom = nextY + this.size.y;
 
-        if (playerBottom <= platform.position.y && nextPlayerBottom >= platform.position.y) {
+        if (
+          playerBottom <= platform.position.y &&
+          nextPlayerBottom >= platform.position.y
+        ) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > platform.position.x &&
@@ -239,7 +292,7 @@ export class Player extends GameObject {
           playerLeft,
           playerRight,
           playerBottom,
-          nextPlayerBottom,
+          nextPlayerBottom
         );
         if (landingCheck.canLand) {
           // Check if this is the highest platform the player would land on
@@ -261,7 +314,10 @@ export class Player extends GameObject {
         const playerBottom = this.position.y + this.size.y;
         const nextPlayerBottom = nextY + this.size.y;
 
-        if (playerBottom <= solidBlock.position.y && nextPlayerBottom >= solidBlock.position.y) {
+        if (
+          playerBottom <= solidBlock.position.y &&
+          nextPlayerBottom >= solidBlock.position.y
+        ) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > solidBlock.position.x &&
@@ -281,7 +337,10 @@ export class Player extends GameObject {
         const nextPlayerTop = nextY;
         const solidBlockBottom = solidBlock.position.y + solidBlock.size.y;
 
-        if (playerTop >= solidBlockBottom && nextPlayerTop <= solidBlockBottom) {
+        if (
+          playerTop >= solidBlockBottom &&
+          nextPlayerTop <= solidBlockBottom
+        ) {
           // Check horizontal overlap
           if (
             this.position.x + this.size.x > solidBlock.position.x &&
@@ -307,7 +366,10 @@ export class Player extends GameObject {
       this.grounded = true;
     } else if (hitCeiling) {
       // Hit ceiling
-      this.position.y = this.findCeilingPosition(gameState.platforms, gameState.solidBlocks);
+      this.position.y = this.findCeilingPosition(
+        gameState.platforms,
+        gameState.solidBlocks
+      );
       this.velocity.y = 0;
     } else {
       // No collision, apply normal movement
@@ -315,13 +377,16 @@ export class Player extends GameObject {
     }
 
     // Level boundaries
-    const levelData = gameState.levelManager.getLevelData(gameState.currentLevelId ?? "");
+    const levelData = gameState.levelManager.getLevelData(
+      gameState.currentLevelId ?? ""
+    );
     const levelWidth = levelData?.width || 800;
     const levelHeight = levelData?.height || 600;
 
     // Apply horizontal boundaries
     if (this.position.x < 0) this.position.x = 0;
-    if (this.position.x + this.size.x > levelWidth) this.position.x = levelWidth - this.size.x;
+    if (this.position.x + this.size.x > levelWidth)
+      this.position.x = levelWidth - this.size.x;
 
     // Apply vertical boundary at the bottom of the level
     if (this.position.y + this.size.y > levelHeight) {
@@ -334,7 +399,7 @@ export class Player extends GameObject {
   private wouldCollideHorizontally(
     nextX: number,
     currentY: number,
-    obstacle: Platform | SolidBlock,
+    obstacle: Platform | SolidBlock
   ): boolean {
     // Check if the player would overlap with the obstacle horizontally
     const playerLeft = nextX;
@@ -348,13 +413,18 @@ export class Player extends GameObject {
     const obstacleBottom = obstacle.position.y + obstacle.size.y;
 
     // Check if there's overlap in both axes
-    const horizontalOverlap = playerRight > obstacleLeft && playerLeft < obstacleRight;
-    const verticalOverlap = playerBottom > obstacleTop && playerTop < obstacleBottom;
+    const horizontalOverlap =
+      playerRight > obstacleLeft && playerLeft < obstacleRight;
+    const verticalOverlap =
+      playerBottom > obstacleTop && playerTop < obstacleBottom;
 
     return horizontalOverlap && verticalOverlap;
   }
 
-  private findCeilingPosition(_platforms: Platform[], solidBlocks: SolidBlock[]): number {
+  private findCeilingPosition(
+    _platforms: Platform[],
+    solidBlocks: SolidBlock[]
+  ): number {
     let lowestCeiling = 0;
 
     // Do NOT check platforms for ceiling (allow jumping through them)
@@ -369,7 +439,10 @@ export class Player extends GameObject {
         this.position.x < solidBlock.position.x + solidBlock.size.x
       ) {
         // Check if this solid block is above the player and lower than current ceiling
-        if (solidBlockBottom > lowestCeiling && solidBlockBottom < this.position.y) {
+        if (
+          solidBlockBottom > lowestCeiling &&
+          solidBlockBottom < this.position.y
+        ) {
           lowestCeiling = solidBlockBottom;
         }
       }
@@ -402,7 +475,10 @@ export class Player extends GameObject {
 
       // Fill power bar while charging
       if (this.power < this.maxPower) {
-        this.power = Math.min(this.maxPower, this.power + this.powerRechargeRate * deltaTime);
+        this.power = Math.min(
+          this.maxPower,
+          this.power + this.powerRechargeRate * deltaTime
+        );
       }
 
       // Update charge level based on time (only matters when power is full)
@@ -421,7 +497,10 @@ export class Player extends GameObject {
 
     // Power drains when not charging
     if (!this.isChargingAttack && this.power > 0) {
-      this.power = Math.max(0, this.power - this.powerRechargeRate * 2 * deltaTime); // Drain faster than it fills
+      this.power = Math.max(
+        0,
+        this.power - this.powerRechargeRate * 2 * deltaTime
+      ); // Drain faster than it fills
     }
 
     if (this.invulnerable) {
@@ -485,7 +564,12 @@ export class Player extends GameObject {
       const centerY = this.position.y + this.size.y / 2;
       const blastDamage = 8; // Full power blast
 
-      gameState.createEnergyBlast(centerX, centerY, this.facingRight, blastDamage);
+      gameState.createEnergyBlast(
+        centerX,
+        centerY,
+        this.facingRight,
+        blastDamage
+      );
 
       // Set attack cooldown
       this.attackCooldownTimer = this.attackCooldown;
@@ -537,7 +621,12 @@ export class Player extends GameObject {
     if (this.power >= this.maxPower && this.isChargingAttack) {
       const flashIntensity = 0.3 + 0.4 * Math.sin(Date.now() * 0.08); // 4x faster flashing
       ctx.fillStyle = `rgba(255, 255, 255, ${flashIntensity})`;
-      ctx.fillRect(renderPos.x - 2, renderPos.y - 2, this.size.x + 4, this.size.y + 4);
+      ctx.fillRect(
+        renderPos.x - 2,
+        renderPos.y - 2,
+        this.size.x + 4,
+        this.size.y + 4
+      );
     }
 
     ctx.fillStyle = "#8B4513";
@@ -562,7 +651,11 @@ export class Player extends GameObject {
       const powerPercent = this.power / this.maxPower;
       const auraIntensity = powerPercent * (this.chargeLevel === 2 ? 1.0 : 0.6);
       const auraColor =
-        this.chargeLevel === 2 ? "#FF4500" : powerPercent >= 1.0 ? "#FFFF00" : "#88FF88";
+        this.chargeLevel === 2
+          ? "#FF4500"
+          : powerPercent >= 1.0
+          ? "#FFFF00"
+          : "#88FF88";
 
       ctx.save();
       ctx.globalAlpha = auraIntensity * (0.5 + 0.4 * Math.sin(time * 2)); // Faster pulsing
@@ -609,7 +702,8 @@ export class Player extends GameObject {
       const swordAngle = direction * (progress * 0.5 - 0.25) * Math.PI; // Smooth arc motion
       const swordStartX = centerX + direction * 8; // Start near player
       const swordStartY = centerY;
-      const swordEndX = swordStartX + Math.cos(swordAngle) * bladeLength * direction;
+      const swordEndX =
+        swordStartX + Math.cos(swordAngle) * bladeLength * direction;
       const swordEndY = swordStartY + Math.sin(swordAngle) * bladeLength * 0.3; // Slight vertical arc
 
       // Draw sword hilt (dark brown/black)
@@ -621,7 +715,7 @@ export class Player extends GameObject {
       ctx.moveTo(swordStartX, swordStartY);
       ctx.lineTo(
         swordStartX + Math.cos(swordAngle) * hiltLength * direction,
-        swordStartY + Math.sin(swordAngle) * hiltLength * 0.3,
+        swordStartY + Math.sin(swordAngle) * hiltLength * 0.3
       );
       ctx.stroke();
 
@@ -629,7 +723,8 @@ export class Player extends GameObject {
       ctx.strokeStyle = "#D4AF37";
       ctx.lineWidth = 4;
       ctx.lineCap = "round";
-      const guardX = swordStartX + Math.cos(swordAngle) * hiltLength * direction;
+      const guardX =
+        swordStartX + Math.cos(swordAngle) * hiltLength * direction;
       const guardY = swordStartY + Math.sin(swordAngle) * hiltLength * 0.3;
       ctx.beginPath();
       ctx.moveTo(guardX - 8, guardY - 4);
@@ -671,8 +766,10 @@ export class Player extends GameObject {
         for (let i = 1; i <= 3; i++) {
           const blurProgress = Math.max(0, progress - i * 0.05);
           const blurAngle = direction * (blurProgress * 0.5 - 0.25) * Math.PI;
-          const blurEndX = swordStartX + Math.cos(blurAngle) * bladeLength * direction;
-          const blurEndY = swordStartY + Math.sin(blurAngle) * bladeLength * 0.3;
+          const blurEndX =
+            swordStartX + Math.cos(blurAngle) * bladeLength * direction;
+          const blurEndY =
+            swordStartY + Math.sin(blurAngle) * bladeLength * 0.3;
 
           ctx.strokeStyle = "#E0E0E0";
           ctx.lineWidth = bladeWidth * 0.8;

@@ -44,8 +44,8 @@ export class EditorLevelSaver {
         )
         .join("\n");
 
-      const candles = (levelData.candles || [])
-        .map((c) => `  { position: vec2(${c.position.x}, ${c.position.y}) },`)
+      const memoryCrystals = (levelData.memoryCrystals || [])
+        .map((c) => `  { position: vec2(${c.position.x}, ${c.position.y}), type: '${c.type || 'azure'}' },`)
         .join("\n");
 
       const enemies = this.gameState.enemies
@@ -59,7 +59,7 @@ export class EditorLevelSaver {
       const player = `  position: vec2(${levelData.player.position.x}, ${levelData.player.position.y})`;
 
       // Generate TS module content for new level file
-      const fileContent = `import type { LevelData } from "../LevelData";\nimport { Vector2 } from "@/engine/Vector2";\n\nconst vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);\n\nexport const ${levelId}: LevelData = {\n  id: "${levelId}",\n  name: "${levelName}",\n  width: ${levelWidth},\n  height: ${levelHeight},\n  background: {\n    color: "${levelData.background.color}",\n  },\n  platforms: [\n${platforms}\n  ],\n  solidBlocks: [\n${solidBlocks}\n  ],\n  candles: [\n${candles}\n  ],\n  enemies: [\n${enemies}\n  ],\n  player: {\n${player}\n  },\n};\n\nexport default ${levelId};\n`;
+      const fileContent = `import type { LevelData } from "../LevelData";\nimport { Vector2 } from "@/engine/Vector2";\n\nconst vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);\n\nexport const ${levelId}: LevelData = {\n  id: "${levelId}",\n  name: "${levelName}",\n  width: ${levelWidth},\n  height: ${levelHeight},\n  background: {\n    color: "${levelData.background.color}",\n  },\n  platforms: [\n${platforms}\n  ],\n  solidBlocks: [\n${solidBlocks}\n  ],\n  diagonalPlatforms: [],\n  memoryCrystals: [\n${memoryCrystals}\n  ],\n  enemies: [\n${enemies}\n  ],\n  player: {\n${player}\n  },\n};\n\nexport default ${levelId};\n`;
 
       this.downloadLevelFile(`${levelId}.ts`, fileContent);
     });

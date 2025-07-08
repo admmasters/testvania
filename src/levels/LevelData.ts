@@ -22,9 +22,10 @@ export interface DiagonalPlatformData {
   color: string;
 }
 
-// Define candle positions
-export interface CandleData {
+// Define memory crystal positions
+export interface MemoryCrystalData {
   position: Vector2;
+  type?: 'azure' | 'amethyst' | 'emerald' | 'golden';
 }
 
 // Define initial enemy positions
@@ -57,7 +58,7 @@ export interface LevelData {
   platforms: PlatformData[];
   solidBlocks: SolidBlockData[];
   diagonalPlatforms: DiagonalPlatformData[];
-  candles: CandleData[];
+  memoryCrystals: MemoryCrystalData[];
   enemies: EnemyData[];
   player: PlayerStartData;
 }

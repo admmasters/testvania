@@ -1,6 +1,6 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
-import type { Candle } from "@/objects/candle";
+import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Ghost } from "@/objects/Ghost";
 import type { LandGhost } from "@/objects/LandGhost";
@@ -36,6 +36,7 @@ export class LevelEditor {
   private selectedObject: EditorObject = null;
   private resizing: ResizeState | null = null;
   private platformColor: string = "#654321";
+  private crystalType: string = "azure";
   private scrollPosition: Vector2 = new Vector2(0, 0);
   private levelWidth: number = 800;
   private levelHeight: number = 600;
@@ -70,6 +71,9 @@ export class LevelEditor {
       objectManager: this.objectManager,
       utils: this.utils,
     });
+    
+    // Set initial crystal type
+    this.mouseHandler.setCrystalType(this.crystalType);
 
     // Initialize UI with callbacks
     this.ui = new EditorUI({
@@ -82,6 +86,10 @@ export class LevelEditor {
       onClose: () => this.deactivate(),
       onColorChange: (color) => {
         this.platformColor = color;
+      },
+      onCrystalTypeChange: (type) => {
+        this.crystalType = type;
+        this.mouseHandler.setCrystalType(type);
       },
       onLevelSizeChange: (width, height) => {
         this.levelWidth = width;
@@ -114,6 +122,7 @@ export class LevelEditor {
     this.ui.createEditorUI(
       this.mode,
       this.platformColor,
+      this.crystalType,
       this.levelWidth,
       this.levelHeight,
       this.handleUndoRedoKeys,
@@ -441,10 +450,10 @@ export class LevelEditor {
       }
     }
 
-    // Check candles
-    for (const candle of this.gameState.candles) {
-      if (this.isObjectInArea(candle, minX, minY, maxX, maxY)) {
-        this.selectedObjects.push(candle);
+    // Check memory crystals
+    for (const crystal of this.gameState.memoryCrystals) {
+      if (this.isObjectInArea(crystal, minX, minY, maxX, maxY)) {
+        this.selectedObjects.push(crystal);
       }
     }
 
@@ -505,10 +514,10 @@ export class LevelEditor {
         continue;
       }
 
-      // Remove candles
-      const candleIndex = this.gameState.candles.indexOf(obj as Candle);
-      if (candleIndex !== -1) {
-        this.gameState.candles.splice(candleIndex, 1);
+      // Remove memory crystals
+      const crystalIndex = this.gameState.memoryCrystals.indexOf(obj as MemoryCrystal);
+      if (crystalIndex !== -1) {
+        this.gameState.memoryCrystals.splice(crystalIndex, 1);
         continue;
       }
 

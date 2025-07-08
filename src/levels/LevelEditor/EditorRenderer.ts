@@ -243,10 +243,10 @@ export class EditorRenderer {
         ctx.lineWidth = 1;
         break;
       }
-      case EditorMode.CANDLE: {
-        // Show placement preview for candle
-        const candlePos = this.utils.snapVec2(mousePosition);
-        ctx.strokeRect(candlePos.x, candlePos.y, 16, 32);
+      case EditorMode.MEMORY_CRYSTAL: {
+        // Show placement preview for memory crystal
+        const crystalPos = this.utils.snapVec2(mousePosition);
+        ctx.strokeRect(crystalPos.x, crystalPos.y, 20, 24);
         break;
       }
       case EditorMode.GHOST: {
