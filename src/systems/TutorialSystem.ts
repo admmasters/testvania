@@ -12,6 +12,7 @@ export interface TutorialMessage {
     borderColor: string;
     fontSize: number;
   };
+  requiredKey: string; // The key code required to advance this step
 }
 
 export class TutorialSystem {
@@ -41,11 +42,12 @@ export class TutorialSystem {
           borderColor: "#D4AF37",
           fontSize: 20,
         },
+        requiredKey: "KeyX",
       },
       // Movement message
       {
         id: "movement",
-        text: "🏃 Movement\n\nJump on platforms to practice!\nHold SPACE longer for higher jumps\n\nPress X to continue...",
+        text: "🏃 Movement\n\nJump on platforms to practice!\nHold SPACE longer for higher jumps\n\nPress SPACE to continue...",
         triggerPosition: 250,
         shown: false,
         priority: 9,
@@ -55,6 +57,7 @@ export class TutorialSystem {
           borderColor: "#D4AF37",
           fontSize: 20,
         },
+        requiredKey: "Space",
       },
       // Crystal message
       {
@@ -69,6 +72,7 @@ export class TutorialSystem {
           borderColor: "#D4AF37",
           fontSize: 20,
         },
+        requiredKey: "KeyX",
       },
       // Combat section
       {
@@ -83,6 +87,7 @@ export class TutorialSystem {
           borderColor: "#D4AF37",
           fontSize: 20,
         },
+        requiredKey: "KeyX",
       },
       // Victory message
       {
@@ -97,6 +102,7 @@ export class TutorialSystem {
           borderColor: "#D4AF37",
           fontSize: 20,
         },
+        requiredKey: "KeyX",
       },
     ];
   }
@@ -120,8 +126,12 @@ export class TutorialSystem {
 
     // Don't check for new messages if we're currently showing one
     if (this.isShowingModal) {
-      // Check for X key press to dismiss current message
-      if (gameState.input.isKeyPressed("KeyX") || gameState.input.isKeyDown("KeyX")) {
+      // Check for the required key press to dismiss current message
+      if (
+        this.currentMessage &&
+        (gameState.input.isKeyPressed(this.currentMessage.requiredKey) ||
+          gameState.input.isKeyDown(this.currentMessage.requiredKey))
+      ) {
         this.dismissCurrentMessage();
       }
       return;
