@@ -350,31 +350,35 @@ export class MemoryCrystal {
 
     ctx.save();
 
-    // Render glow effect
-    if (pulseIntensity > 0.2 || resonanceGlow > 0.1) {
-      ctx.globalAlpha = (pulseIntensity + resonanceGlow) * 0.6;
-      ctx.fillStyle = colors.glow;
-      ctx.shadowColor = colors.glow;
-      ctx.shadowBlur = 15 + resonanceGlow * 10;
+    // Only render glow effect if not breaking or if breakTimer < 0.3s
+    if (!this.isBreaking || this.breakTimer < 0.3) {
+      if (pulseIntensity > 0.2 || resonanceGlow > 0.1) {
+        ctx.globalAlpha = (pulseIntensity + resonanceGlow) * 0.6;
+        ctx.fillStyle = colors.glow;
+        ctx.shadowColor = colors.glow;
+        ctx.shadowBlur = 15 + resonanceGlow * 10;
 
-      ctx.beginPath();
-      ctx.ellipse(
-        this.position.x + this.size.x / 2,
-        this.position.y + this.size.y / 2,
-        this.size.x / 2 + 4,
-        this.size.y / 2 + 4,
-        0,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(
+          this.position.x + this.size.x / 2,
+          this.position.y + this.size.y / 2,
+          this.size.x / 2 + 4,
+          this.size.y / 2 + 4,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
     }
 
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
-    // Render crystal facets
-    this.renderCrystalFacets(ctx, colors, pulseIntensity);
+    // Only render crystal facets if not breaking or if breakTimer < 0.3s
+    if (!this.isBreaking || this.breakTimer < 0.3) {
+      this.renderCrystalFacets(ctx, colors, pulseIntensity);
+    }
 
     // Render particles
     this.renderParticles(ctx, colors);
