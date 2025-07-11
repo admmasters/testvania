@@ -15,6 +15,9 @@ import { TutorialSystem } from "@/systems/TutorialSystem";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
+import { RainSystem } from "../effects/RainSystem";
+import { LightningSystem } from "../effects/LightningSystem";
+import { WeatherSystem } from "../effects/WeatherSystem";
 
 export class GameState {
   levelManager: LevelManager;
@@ -48,6 +51,9 @@ export class GameState {
     vy: number;
     time: number;
   }> = [];
+  rainSystem: RainSystem;
+  lightningSystem: LightningSystem;
+  weatherSystem: WeatherSystem;
 
   constructor(levelId: string = "tutorial") {
     // Initialize the level manager
@@ -83,6 +89,15 @@ export class GameState {
 
     // Initialize HUD
     this.hud = new HUD();
+
+    // Initialize rain system
+    this.rainSystem = new RainSystem();
+
+    // Initialize lightning system
+    this.lightningSystem = new LightningSystem();
+
+    // Initialize weather system to coordinate rain and lightning
+    this.weatherSystem = new WeatherSystem(this.rainSystem, this.lightningSystem);
 
     // Initialize default player (will be overwritten by level)
     this.player = new Player(100, 330);
@@ -199,6 +214,15 @@ export class GameState {
       exp.time += deltaTime;
     }
     this.floatingExpIndicators = this.floatingExpIndicators.filter((e) => e.alpha > 0);
+
+    // Update rain system
+    this.rainSystem.update(deltaTime, this);
+
+    // Update lightning system
+    this.lightningSystem.update(deltaTime, this);
+
+    // Update weather system for coordination
+    this.weatherSystem.update(deltaTime);
   }
 
   /**
@@ -253,23 +277,30 @@ export class GameState {
     // Apply camera effects
     this.camera.apply(ctx);
 
-    // Draw platforms
+    // Draw lightning effects (background layer)
+    this.lightningSystem.render(ctx);
+
+    // Draw platforms with lightning effects
     for (const platform of this.platforms) {
       platform.render(ctx);
+      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, platform.position, platform.size);
     }
 
-    // Draw solid blocks
+    // Draw solid blocks with lightning effects
     for (const solidBlock of this.solidBlocks) {
       solidBlock.render(ctx);
+      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, solidBlock.position, solidBlock.size);
     }
 
-    // Draw diagonal platforms
+    // Draw diagonal platforms with lightning effects
     for (const diagonalPlatform of this.diagonalPlatforms) {
       diagonalPlatform.render(ctx);
+      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, diagonalPlatform.position, diagonalPlatform.size);
     }
 
-    // Draw game objects
+    // Draw game objects with lightning effects
     this.player.render(ctx);
+    this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, this.player.position, this.player.size);
 
     // Draw memory crystals
     for (const crystal of this.memoryCrystals) {
@@ -311,6 +342,9 @@ export class GameState {
         blast.render(ctx);
       }
     }
+
+    // Draw rain effect (behind floating indicators)
+    this.rainSystem.render(ctx);
 
     // Draw floating exp indicators (on top of everything else)
     for (const exp of this.floatingExpIndicators) {
