@@ -1,7 +1,7 @@
 import type { GameState } from "@/engine/GameState";
+import type { Platform } from "../platform";
+import type { SolidBlock } from "../solidBlock";
 import { Enemy } from "./enemy";
-import type { Platform } from "./platform";
-import type { SolidBlock } from "./solidBlock";
 
 export class LandGhost extends Enemy {
   constructor(x: number, y: number, direction?: number) {

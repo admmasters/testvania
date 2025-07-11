@@ -1,5 +1,5 @@
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import type { Enemy } from "@/objects/enemy";
+import type { Enemy } from "@/objects/enemies/enemy";
 import type { Platform } from "@/objects/platform";
 import type { Player } from "@/objects/player";
 import type { SolidBlock } from "@/objects/solidBlock";

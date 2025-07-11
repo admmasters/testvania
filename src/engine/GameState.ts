@@ -1,7 +1,7 @@
 import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import type { Enemy } from "@/objects/enemy";
+import type { Enemy } from "@/objects/enemies/enemy";
 import type { Experience } from "@/objects/experience";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
 import type { MemoryCrystal } from "@/objects/memoryCrystal";

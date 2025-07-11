@@ -1,8 +1,8 @@
 import type { GameState } from "@/engine/GameState";
 import { Vector2 } from "@/engine/Vector2";
 import { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import { Ghost } from "@/objects/Ghost";
-import { LandGhost } from "@/objects/LandGhost";
+import { Ghost } from "@/objects/enemies/Ghost";
+import { LandGhost } from "@/objects/enemies/LandGhost";
 import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { Platform } from "@/objects/platform";
 import { SolidBlock } from "@/objects/solidBlock";

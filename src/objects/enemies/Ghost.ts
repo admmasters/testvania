@@ -1,6 +1,6 @@
-import type { GameState } from "../engine/GameState";
+import type { GameState } from "@/engine/GameState";
+import type { SolidBlock } from "../solidBlock";
 import { Enemy } from "./enemy";
-import type { SolidBlock } from "./solidBlock";
 
 export class Ghost extends Enemy {
   floatTimer: number;
