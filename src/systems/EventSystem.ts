@@ -1,6 +1,6 @@
 import type { Enemy } from "@/objects/enemies/enemy";
 import type { ICollidable, IEventEmitter } from "../interfaces/GameInterfaces";
-import type { Player } from "../objects/player";
+import type { Player } from "../objects/players/player";
 
 export type EventCallback = (...args: unknown[]) => void;
 

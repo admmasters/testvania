@@ -9,7 +9,7 @@ import { CrystalTypeConfig } from "./crystal/CrystalTypeConfig.js";
 import { CrystalVisualEffects } from "./crystal/CrystalVisualEffects.js";
 import { ParticleSystem } from "./crystal/ParticleSystem.js";
 import { Experience } from "./experience.js";
-import type { Player } from "./player";
+import type { Player } from "./players/player.js";
 
 const vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);
 

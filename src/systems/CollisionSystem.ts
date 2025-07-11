@@ -1,7 +1,7 @@
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
 import type { Enemy } from "@/objects/enemies/enemy";
 import type { Platform } from "@/objects/platform";
-import type { Player } from "@/objects/player";
+import type { Player } from "@/objects/players/player";
 import type { SolidBlock } from "@/objects/solidBlock";
 import {
   checkCollision,
@@ -17,19 +17,10 @@ export class CollisionSystem implements ISystem {
   priority = 10;
 
   update(_deltaTime: number, gameState: GameState): void {
-    // Check memory crystal collisions with player attacks
     this.checkMemoryCrystalCollisions(gameState);
-
-    // Check experience collisions with player
     this.checkExperienceCollisions(gameState);
-
-    // Check enemy collisions with player
     this.checkEnemyPlayerCollisions(gameState);
-
-    // Check platform collisions for player
     this.checkPlayerPlatformCollisions(gameState);
-
-    // Check enemy platform collisions
     this.checkEnemyPlatformCollisions(gameState);
   }
 

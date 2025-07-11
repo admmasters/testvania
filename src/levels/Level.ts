@@ -4,7 +4,7 @@ import type { GameState } from "../engine/GameState";
 import { DiagonalPlatform } from "../objects/diagonalPlatform";
 import { MemoryCrystal } from "../objects/memoryCrystal";
 import { Platform } from "../objects/platform";
-import { Player } from "../objects/player";
+import { Player } from "../objects/players/player";
 import { SolidBlock } from "../objects/solidBlock";
 import type { LevelData } from "./LevelData";
 

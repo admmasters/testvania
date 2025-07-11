@@ -6,7 +6,7 @@ import type { Experience } from "@/objects/experience";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
 import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { Platform } from "@/objects/platform";
-import { Player } from "@/objects/player";
+import { Player } from "@/objects/players/player";
 import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
