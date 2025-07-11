@@ -327,7 +327,7 @@ export class GameObjectManager {
   private checkChainReactions(triggeringCrystal: MemoryCrystal): void {
     for (const crystal of this.memoryCrystals) {
       if (triggeringCrystal.canTriggerChainReaction(crystal)) {
-        crystal.triggerChainReaction(triggeringCrystal.chainReactionDelay);
+        crystal.triggerChainReaction(triggeringCrystal.getChainReactionDelay());
       }
     }
   }
