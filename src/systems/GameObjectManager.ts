@@ -1,7 +1,7 @@
+import type { Enemy } from "@/objects/enemies/enemy";
 import type { GameState } from "../engine/GameState";
 import type { ICollidable, IRenderable, IUpdateable } from "../interfaces/GameInterfaces";
 import type { DiagonalPlatform } from "../objects/diagonalPlatform";
-import type { Enemy } from "../objects/enemy";
 import type { Experience } from "../objects/experience";
 import { HitSpark, PoofEffect } from "../objects/hitSpark";
 import type { MemoryCrystal } from "../objects/memoryCrystal";
@@ -327,7 +327,7 @@ export class GameObjectManager {
   private checkChainReactions(triggeringCrystal: MemoryCrystal): void {
     for (const crystal of this.memoryCrystals) {
       if (triggeringCrystal.canTriggerChainReaction(crystal)) {
-        crystal.triggerChainReaction(triggeringCrystal.chainReactionDelay);
+        crystal.triggerChainReaction(triggeringCrystal.getChainReactionDelay());
       }
     }
   }

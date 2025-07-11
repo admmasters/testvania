@@ -21,7 +21,7 @@ export interface IUpdateable {
  * Interface for objects that can participate in collision detection
  */
 export interface ICollidable {
-  getBounds(): { left: number; right: number; top: number; bottom: number } | { x: number; y: number; width: number; height: number };
+  getBounds(): { left: number; right: number; top: number; bottom: number };
   position: { x: number; y: number };
   size: { x: number; y: number };
   onCollision?(other: ICollidable, collisionType: CollisionType): void;
@@ -112,18 +112,18 @@ export interface IPhysicsObject {
 /**
  * Interface for objects that can be serialized
  */
-export interface ISerializable {
-  serialize(): any;
-  deserialize(data: any): void;
+export interface ISerializable<T = unknown> {
+  serialize(): T;
+  deserialize(data: T): void;
 }
 
 /**
  * Interface for event emitters
  */
 export interface IEventEmitter {
-  on(event: string, callback: (...args: any[]) => void): void;
-  off(event: string, callback: (...args: any[]) => void): void;
-  emit(event: string, ...args: any[]): void;
+  on(event: string, callback: (...args: unknown[]) => void): void;
+  off(event: string, callback: (...args: unknown[]) => void): void;
+  emit(event: string, ...args: unknown[]): void;
 }
 
 /**
@@ -228,7 +228,7 @@ export enum CollisionType {
   PLAYER_ITEM = "player_item",
   ENEMY_PLATFORM = "enemy_platform",
   PROJECTILE_ENEMY = "projectile_enemy",
-  PROJECTILE_PLATFORM = "projectile_platform"
+  PROJECTILE_PLATFORM = "projectile_platform",
 }
 
 /**
@@ -240,7 +240,7 @@ export enum GameObjectState {
   ATTACKING = "attacking",
   HURT = "hurt",
   DYING = "dying",
-  DEAD = "dead"
+  DEAD = "dead",
 }
 
 /**
@@ -253,5 +253,5 @@ export enum GameEvent {
   ITEM_COLLECTED = "item_collected",
   PLAYER_LEVEL_UP = "player_level_up",
   GAME_PAUSE = "game_pause",
-  GAME_RESUME = "game_resume"
+  GAME_RESUME = "game_resume",
 }

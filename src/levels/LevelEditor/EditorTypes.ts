@@ -1,8 +1,8 @@
 import type { Vector2 } from "@/engine/Vector2";
-import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import type { Ghost } from "@/objects/Ghost";
-import type { LandGhost } from "@/objects/LandGhost";
+import type { Ghost } from "@/objects/enemies/Ghost";
+import type { LandGhost } from "@/objects/enemies/LandGhost";
+import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { Platform } from "@/objects/platform";
 import type { SolidBlock } from "@/objects/solidBlock";
 

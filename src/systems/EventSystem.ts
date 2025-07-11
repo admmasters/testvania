@@ -1,6 +1,8 @@
-import type { IEventEmitter } from "../interfaces/GameInterfaces";
+import type { Enemy } from "@/objects/enemies/enemy";
+import type { ICollidable, IEventEmitter } from "../interfaces/GameInterfaces";
+import type { Player } from "../objects/players/player";
 
-export type EventCallback = (...args: any[]) => void;
+export type EventCallback = (...args: unknown[]) => void;
 
 export class EventSystem implements IEventEmitter {
   private eventListeners: Map<string, EventCallback[]> = new Map();
@@ -26,7 +28,10 @@ export class EventSystem implements IEventEmitter {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
-    this.eventListeners.get(event)!.push(callback);
+    const listeners = this.eventListeners.get(event);
+    if (listeners) {
+      listeners.push(callback);
+    }
   }
 
   /**
@@ -51,7 +56,7 @@ export class EventSystem implements IEventEmitter {
    * Subscribe to an event only once
    */
   once(event: string, callback: EventCallback): void {
-    const onceWrapper = (...args: any[]) => {
+    const onceWrapper = (...args: unknown[]) => {
       callback(...args);
       this.off(event, onceWrapper);
     };
@@ -61,7 +66,7 @@ export class EventSystem implements IEventEmitter {
   /**
    * Emit an event
    */
-  emit(event: string, ...args: any[]): void {
+  emit(event: string, ...args: unknown[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       // Create a copy of the listeners array to avoid issues if listeners are modified during emission
@@ -106,7 +111,8 @@ export class EventSystem implements IEventEmitter {
    * Check if an event has listeners
    */
   hasListeners(event: string): boolean {
-    return this.eventListeners.has(event) && this.eventListeners.get(event)!.length > 0;
+    const listeners = this.eventListeners.get(event);
+    return this.eventListeners.has(event) && !!listeners && listeners.length > 0;
   }
 }
 
@@ -164,8 +170,9 @@ export const GAME_EVENTS = {
 } as const;
 
 // Event data types
+
 export interface PlayerEventData {
-  player: any;
+  player: Player;
   position: { x: number; y: number };
   health?: number;
   level?: number;
@@ -173,14 +180,15 @@ export interface PlayerEventData {
 }
 
 export interface EnemyEventData {
-  enemy: any;
+  enemy: Enemy;
   position: { x: number; y: number };
   health?: number;
   damage?: number;
 }
 
+// If you have a specific Item class, import and use it here. Otherwise, use unknown or a more specific type if available.
 export interface ItemEventData {
-  item: any;
+  item: unknown;
   position: { x: number; y: number };
   type: string;
   value?: number;
@@ -192,8 +200,8 @@ export interface LevelEventData {
 }
 
 export interface CollisionEventData {
-  objectA: any;
-  objectB: any;
+  objectA: ICollidable;
+  objectB: ICollidable;
   collisionType: string;
   position: { x: number; y: number };
 }

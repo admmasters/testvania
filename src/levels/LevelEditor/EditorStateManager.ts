@@ -1,9 +1,9 @@
 import type { GameState } from "@/engine/GameState";
 import type { Vector2 } from "@/engine/Vector2";
-import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import { Ghost } from "@/objects/Ghost";
-import { LandGhost } from "@/objects/LandGhost";
+import { Ghost } from "@/objects/enemies/Ghost";
+import { LandGhost } from "@/objects/enemies/LandGhost";
+import { MemoryCrystal } from "@/objects/memoryCrystal";
 import { Platform } from "@/objects/platform";
 import { SolidBlock } from "@/objects/solidBlock";
 import type { EditorState } from "./EditorTypes";
@@ -147,7 +147,9 @@ export class EditorStateManager {
     );
 
     // Restore memory crystals
-    this.gameState.memoryCrystals = state.memoryCrystals.map((c) => new MemoryCrystal(c.position.x, c.position.y, c.type as any));
+    this.gameState.memoryCrystals = state.memoryCrystals.map(
+      (c) => new MemoryCrystal(c.position.x, c.position.y, c.type as any),
+    );
 
     // Restore enemies
     this.gameState.enemies = state.enemies.map((e) => {

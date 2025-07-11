@@ -1,12 +1,12 @@
 import { HUD } from "@/hud/HUD";
 import { LevelManager } from "@/levels/LevelManager";
 import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
-import type { Enemy } from "@/objects/enemy";
+import type { Enemy } from "@/objects/enemies/enemy";
 import type { Experience } from "@/objects/experience";
 import { HitSpark, PoofEffect } from "@/objects/hitSpark";
 import type { MemoryCrystal } from "@/objects/memoryCrystal";
 import type { Platform } from "@/objects/platform";
-import { Player } from "@/objects/player";
+import { Player } from "@/objects/players/player";
 import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
