@@ -1,3 +1,4 @@
+import type { GameState } from "../engine/GameState";
 import { Vector2 } from "../engine/Vector2.js";
 import type { ChainReactionTarget } from "./crystal/ChainReactionManager.js";
 import { ChainReactionManager } from "./crystal/ChainReactionManager.js";
@@ -8,6 +9,7 @@ import { CrystalTypeConfig } from "./crystal/CrystalTypeConfig.js";
 import { CrystalVisualEffects } from "./crystal/CrystalVisualEffects.js";
 import { ParticleSystem } from "./crystal/ParticleSystem.js";
 import { Experience } from "./experience.js";
+import type { Player } from "./player";
 
 const vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);
 
@@ -20,7 +22,7 @@ export class MemoryCrystal implements ChainReactionTarget {
   breakTimer: number;
   pieces: CrystalPiece[];
   crystalType: CrystalType;
-  private _gameState: unknown;
+  private _gameState: GameState | undefined;
 
   private particleSystem: ParticleSystem;
   private visualEffects: CrystalVisualEffects;
@@ -43,12 +45,12 @@ export class MemoryCrystal implements ChainReactionTarget {
     this.renderer = new CrystalRenderer(this.position, this.size);
   }
 
-  update(deltaTime: number, gameState: unknown): void {
+  update(deltaTime: number, gameState: GameState): void {
     if (!this.isActive) return;
 
     this._gameState = gameState;
 
-    const playerPosition = (gameState as any)?.player?.position;
+    const playerPosition = gameState.player?.position;
     this.visualEffects.update(deltaTime, playerPosition, this.position);
     this.particleSystem.update(deltaTime);
 
@@ -129,18 +131,21 @@ export class MemoryCrystal implements ChainReactionTarget {
   private generateDrops(): { experience: Experience[] } {
     const experience: Experience[] = [];
 
-    const gameState = this._gameState as any;
+    const gameState = this._gameState;
     if (gameState?.player) {
       const memoryData = {
         id: `memory_${Date.now()}`,
         type: this.crystalType,
         discovered: new Date().toISOString(),
+        text: "", // Add text if needed
       };
 
-      if (typeof gameState.player.addMemory === "function") {
-        gameState.player.addMemory(memoryData);
-      } else if (Array.isArray(gameState.player.memories)) {
-        gameState.player.memories.push(memoryData);
+      // Prefer addMemory if available, fallback to direct push
+      const player = gameState.player as Player;
+      if (typeof player.addMemory === "function") {
+        player.addMemory(memoryData);
+      } else if (Array.isArray(player.memories)) {
+        player.memories.push(memoryData);
       } else {
         console.log(
           "Player cannot store memories - need to implement memories array or addMemory method",
@@ -190,12 +195,12 @@ export class MemoryCrystal implements ChainReactionTarget {
     );
   }
 
-  getBounds(): { x: number; y: number; width: number; height: number } {
+  getBounds(): { left: number; right: number; top: number; bottom: number } {
     return {
-      x: this.position.x,
-      y: this.position.y,
-      width: this.size.x,
-      height: this.size.y,
+      left: this.position.x,
+      right: this.position.x + this.size.x,
+      top: this.position.y,
+      bottom: this.position.y + this.size.y,
     };
   }
 }

@@ -1,3 +1,8 @@
+import type { DiagonalPlatform } from "@/objects/diagonalPlatform";
+import type { Enemy } from "@/objects/enemy";
+import type { Platform } from "@/objects/platform";
+import type { Player } from "@/objects/player";
+import type { SolidBlock } from "@/objects/solidBlock";
 import {
   checkCollision,
   checkDiagonalPlatformCollision,
@@ -38,10 +43,10 @@ export class CollisionSystem implements ISystem {
       if (crystal.isActive && !crystal.isBreaking) {
         const crystalBounds = crystal.getBounds();
 
-        const crystalLeft = crystalBounds.x;
-        const crystalRight = crystalBounds.x + crystalBounds.width;
-        const crystalTop = crystalBounds.y;
-        const crystalBottom = crystalBounds.y + crystalBounds.height;
+        const crystalLeft = crystalBounds.left;
+        const crystalRight = crystalBounds.right;
+        const crystalTop = crystalBounds.top;
+        const crystalBottom = crystalBounds.bottom;
 
         const isColliding =
           attackBounds.left < crystalRight &&
@@ -173,7 +178,7 @@ export class CollisionSystem implements ISystem {
     }
   }
 
-  private handlePlayerPlatformCollision(player: any, platform: any): void {
+  private handlePlayerPlatformCollision(player: Player, platform: Platform): void {
     const playerBounds = player.getBounds();
     const platformBounds = platform.getBounds();
 
@@ -184,15 +189,15 @@ export class CollisionSystem implements ISystem {
       )
     ) {
       // Player is on top of platform
-      if (player.velocity.y >= 0 && player.position.y < platformBounds.y) {
-        player.position.y = platformBounds.y - player.size.y;
+      if (player.velocity.y >= 0 && player.position.y < platformBounds.top) {
+        player.position.y = platformBounds.top - player.size.y;
         player.velocity.y = 0;
         player.grounded = true;
       }
     }
   }
 
-  private handlePlayerSolidBlockCollision(player: any, solidBlock: any): void {
+  private handlePlayerSolidBlockCollision(player: Player, solidBlock: SolidBlock): void {
     const playerBounds = player.getBounds();
     const solidBlockBounds = solidBlock.getBounds();
 
@@ -211,7 +216,10 @@ export class CollisionSystem implements ISystem {
     }
   }
 
-  private handlePlayerDiagonalPlatformCollision(player: any, diagonalPlatform: any): void {
+  private handlePlayerDiagonalPlatformCollision(
+    player: Player,
+    diagonalPlatform: DiagonalPlatform,
+  ): void {
     const collision = checkDiagonalPlatformCollision(
       player.position.x,
       player.position.y,
@@ -230,7 +238,7 @@ export class CollisionSystem implements ISystem {
     }
   }
 
-  private wouldEnemyCollideHorizontally(enemy: any, solidBlock: any): boolean {
+  private wouldEnemyCollideHorizontally(enemy: Enemy, solidBlock: SolidBlock): boolean {
     if (!enemy.direction || !enemy.speed) return false;
 
     const nextX = enemy.position.x + enemy.direction * enemy.speed * 0.016; // Approximate deltaTime
@@ -243,7 +251,7 @@ export class CollisionSystem implements ISystem {
     );
   }
 
-  private damagePlayer(gameState: GameState, source: any): void {
+  private damagePlayer(gameState: GameState, source: Enemy): void {
     if (gameState.player.invulnerable) return;
 
     const damage = source.damage || 1;
@@ -260,7 +268,7 @@ export class CollisionSystem implements ISystem {
     this.applyKnockback(gameState.player, source);
   }
 
-  private damageEnemy(gameState: GameState, enemy: any): void {
+  private damageEnemy(gameState: GameState, enemy: Enemy): void {
     if (enemy.isHit || enemy.isDying) return;
 
     const damage = gameState.player.strength || 1;
@@ -282,7 +290,7 @@ export class CollisionSystem implements ISystem {
     }
   }
 
-  private applyKnockback(target: any, source: any): void {
+  private applyKnockback(target: Player, source: Enemy): void {
     const knockbackForce = 200;
     const direction = target.position.x < source.position.x ? -1 : 1;
 

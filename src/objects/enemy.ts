@@ -2,6 +2,7 @@ import { GameObject } from "../engine/GameObject";
 import type { GameState } from "../engine/GameState";
 
 export abstract class Enemy extends GameObject {
+  damage: number = 1;
   type: string;
   speed: number;
   direction: number;
