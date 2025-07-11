@@ -189,7 +189,13 @@ export class CollisionSystem implements ISystem {
       )
     ) {
       // Player is on top of platform
-      if (player.velocity.y >= 0 && player.position.y < platformBounds.top) {
+      const snapThreshold = 8; // pixels
+      const playerBottom = player.position.y + player.size.y;
+      if (
+        player.velocity.y >= 0 &&
+        player.position.y < platformBounds.top &&
+        Math.abs(playerBottom - platformBounds.top) <= snapThreshold
+      ) {
         player.position.y = platformBounds.top - player.size.y;
         player.velocity.y = 0;
         player.grounded = true;
