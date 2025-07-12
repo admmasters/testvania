@@ -5,7 +5,7 @@ const vec2 = (x: number, y: number): Vector2 => new Vector2(x, y);
 
 export const tutorial: LevelData = {
   id: "tutorial",
-  name: "🎓 Quick Training",
+  name: "Custom Level 1",
   width: 1216,
   height: 600,
   background: {
@@ -29,6 +29,12 @@ export const tutorial: LevelData = {
     { position: vec2(824, 504), type: "azure" },
     { position: vec2(952, 504), type: "azure" },
     { position: vec2(1080, 504), type: "azure" },
+    { position: vec2(376, 408), type: "azure" },
+    { position: vec2(504, 408), type: "azure" },
+    { position: vec2(568, 344), type: "azure" },
+    { position: vec2(696, 344), type: "azure" },
+    { position: vec2(760, 344), type: "azure" },
+    { position: vec2(888, 344), type: "azure" },
   ],
   enemies: [{ position: vec2(1012, 512), type: "landghost", direction: 1 }],
   player: {

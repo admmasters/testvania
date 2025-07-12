@@ -231,6 +231,13 @@ export class GameState {
 
     // Update weather system for coordination
     this.weatherSystem.update(deltaTime);
+
+    // Debug controls
+    if (this.input.isKeyPressed("F2")) {
+      // Import needs to be done this way to avoid circular dependency
+      const MemoryCrystal = require("../objects/memoryCrystal").MemoryCrystal;
+      MemoryCrystal.toggleDebugChainReaction();
+    }
   }
 
   /**
