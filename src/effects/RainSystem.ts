@@ -28,7 +28,7 @@ export class RainSystem {
   private rainDrops: RainDrop[] = [];
   private splashes: RainSplash[] = [];
   private maxRainDrops: number = 150;
-  private spawnRate: number = 0.04;
+  private spawnRate: number = 0.02;
   private spawnTimer: number = 0;
   private windForce: number = 0.5;
   private gravity: number = 500;
