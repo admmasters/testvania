@@ -345,6 +345,9 @@ export class GameState {
       }
     }
 
+    // Draw rain effect (in front of crystals, player, enemies)
+    this.rainSystem.render(ctx);
+
     // Draw hit sparks (on top of other game objects)
     for (const spark of this.hitSparks) {
       if (spark.active) {
@@ -365,9 +368,6 @@ export class GameState {
         blast.render(ctx);
       }
     }
-
-    // Draw rain effect (behind floating indicators)
-    this.rainSystem.render(ctx);
 
     // Draw floating exp indicators (on top of everything else)
     for (const exp of this.floatingExpIndicators) {
