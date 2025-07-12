@@ -12,12 +12,12 @@ import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
 import { GameObjectManager } from "@/systems/GameObjectManager";
 import { TutorialSystem } from "@/systems/TutorialSystem";
+import { LightningSystem } from "../effects/LightningSystem";
+import { RainSystem } from "../effects/RainSystem";
+import { WeatherSystem } from "../effects/WeatherSystem";
 import { Camera } from "./Camera";
 import { Input } from "./Input";
 import { ParallaxBackground } from "./ParallaxBackground";
-import { RainSystem } from "../effects/RainSystem";
-import { LightningSystem } from "../effects/LightningSystem";
-import { WeatherSystem } from "../effects/WeatherSystem";
 
 export class GameState {
   levelManager: LevelManager;
@@ -99,6 +99,9 @@ export class GameState {
     // Initialize weather system to coordinate rain and lightning
     this.weatherSystem = new WeatherSystem(this.rainSystem, this.lightningSystem);
 
+    // Populate raindrops immediately so rain is visible at game start
+    this.rainSystem.seedInitialRain(this);
+
     // Initialize default player (will be overwritten by level)
     this.player = new Player(100, 330);
 
@@ -124,6 +127,11 @@ export class GameState {
 
       // Pause game updates when tutorial modal is showing
       if (this.tutorialSystem.isGamePaused()) {
+        // Continue ambient weather effects while gameplay is paused
+        this.rainSystem.update(deltaTime, this);
+        this.lightningSystem.update(deltaTime, this);
+        this.weatherSystem.update(deltaTime);
+
         // Clear input at the end when paused so X key can be detected next frame
         this.input.update();
         return; // Don't update game objects when tutorial is paused
@@ -283,24 +291,32 @@ export class GameState {
     // Draw platforms with lightning effects
     for (const platform of this.platforms) {
       platform.render(ctx);
-      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, platform.position, platform.size);
+      this.lightningSystem
+        .getLightingEffects()
+        .renderObjectLighting(ctx, platform.position, platform.size);
     }
 
     // Draw solid blocks with lightning effects
     for (const solidBlock of this.solidBlocks) {
       solidBlock.render(ctx);
-      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, solidBlock.position, solidBlock.size);
+      this.lightningSystem
+        .getLightingEffects()
+        .renderObjectLighting(ctx, solidBlock.position, solidBlock.size);
     }
 
     // Draw diagonal platforms with lightning effects
     for (const diagonalPlatform of this.diagonalPlatforms) {
       diagonalPlatform.render(ctx);
-      this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, diagonalPlatform.position, diagonalPlatform.size);
+      this.lightningSystem
+        .getLightingEffects()
+        .renderObjectLighting(ctx, diagonalPlatform.position, diagonalPlatform.size);
     }
 
     // Draw game objects with lightning effects
     this.player.render(ctx);
-    this.lightningSystem.getLightingEffects().renderObjectLighting(ctx, this.player.position, this.player.size);
+    this.lightningSystem
+      .getLightingEffects()
+      .renderObjectLighting(ctx, this.player.position, this.player.size);
 
     // Draw memory crystals
     for (const crystal of this.memoryCrystals) {

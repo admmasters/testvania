@@ -1,8 +1,8 @@
-import { Vector2 } from "../engine/Vector2";
 import type { GameState } from "../engine/GameState";
+import { Vector2 } from "../engine/Vector2";
+import type { DiagonalPlatform } from "../objects/diagonalPlatform";
 import type { Platform } from "../objects/platform";
 import type { SolidBlock } from "../objects/solidBlock";
-import type { DiagonalPlatform } from "../objects/diagonalPlatform";
 
 interface RainDrop {
   position: Vector2;
@@ -288,5 +288,17 @@ export class RainSystem {
     });
     this.rainDrops = [];
     this.splashes = [];
+  }
+
+  // Adds initial raindrops so the effect is visible as soon as the game starts.
+  seedInitialRain(gameState: GameState, fillRatio: number = 0.7): void {
+    // Ensure ratio is clamped between 0 and 1
+    const ratio = Math.max(0, Math.min(1, fillRatio));
+    const initialCount = Math.floor(this.maxRainDrops * ratio);
+
+    for (let i = 0; i < initialCount; i++) {
+      // Spawn drops using the existing spawn helper so all normal rules apply
+      this.spawnRainDrop(gameState);
+    }
   }
 }
