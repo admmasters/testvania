@@ -2,13 +2,13 @@ import { GameObject } from "../../engine/GameObject";
 
 import type { GameState } from "../../engine/GameState";
 import type { DiagonalPlatform } from "../diagonalPlatform";
-import type { Memory, PlayerInput } from "./PlayerTypes";
-import { PlayerStats } from "./PlayerStats";
 import * as PlayerAttack from "./PlayerAttack";
+import { PlayerMovement } from "./PlayerMovement";
 import { PlayerPhysics } from "./PlayerPhysics";
 import { PlayerRenderer } from "./PlayerRenderer";
+import { PlayerStats } from "./PlayerStats";
 import { PlayerTimers } from "./PlayerTimers";
-import { PlayerMovement } from "./PlayerMovement";
+import type { Memory, PlayerInput } from "./PlayerTypes";
 
 export class Player extends GameObject {
   speed: number;
@@ -173,6 +173,45 @@ export class Player extends GameObject {
       ) {
         canMoveHorizontally = false;
         break;
+      }
+    }
+
+    // Additional check: Prevent walking through a platform that sits on top of a solid block
+    if (canMoveHorizontally) {
+      for (const platform of gameState.platforms) {
+        if (
+          PlayerPhysics.wouldCollideHorizontally(
+            nextX,
+            this.position.y,
+            this.size.x,
+            this.size.y,
+            platform,
+          )
+        ) {
+          // Is there a solid block directly below this platform at the same X range?
+          const platformBottom = platform.position.y + platform.size.y;
+          const platformLeft = platform.position.x;
+          const platformRight = platform.position.x + platform.size.x;
+          let solidBelow = false;
+          for (const solidBlock of gameState.solidBlocks) {
+            const solidTop = solidBlock.position.y;
+            const solidLeft = solidBlock.position.x;
+            const solidRight = solidBlock.position.x + solidBlock.size.x;
+            // Solid block must be directly below platform, horizontally overlapping, and touching
+            if (
+              Math.abs(solidTop - platformBottom) < 0.5 && // Allow for float rounding
+              solidLeft < platformRight &&
+              solidRight > platformLeft
+            ) {
+              solidBelow = true;
+              break;
+            }
+          }
+          if (solidBelow) {
+            canMoveHorizontally = false;
+            break;
+          }
+        }
       }
     }
 
