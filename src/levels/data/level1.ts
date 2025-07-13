@@ -57,6 +57,7 @@ export const level1: LevelData = {
     { position: vec2(1720, 504), type: "azure" },
     { position: vec2(1784, 504), type: "azure" },
     { position: vec2(1848, 504), type: "azure" },
+    { position: vec2(1912, 216), type: "amethyst" },
   ],
   enemies: [
     { position: vec2(532, 512), type: "landghost", direction: -1 },
@@ -64,6 +65,11 @@ export const level1: LevelData = {
     { position: vec2(756, 352), type: "landghost", direction: 1 },
     { position: vec2(1748, 496), type: "ghost", direction: 1 },
     { position: vec2(1364, 496), type: "ghost", direction: 1 },
+    { position: vec2(1396, 224), type: "landghost", direction: 1 },
+    { position: vec2(1524, 224), type: "landghost", direction: 1 },
+    { position: vec2(1652, 224), type: "landghost", direction: 1 },
+    { position: vec2(1780, 224), type: "landghost", direction: 1 },
+    { position: vec2(1908, 512), type: "landghost", direction: -1 },
   ],
   player: {
     position: vec2(64, 496),

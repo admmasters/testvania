@@ -62,6 +62,10 @@ export class Ghost extends Enemy {
       this.showDamage(1);
       this.isHit = true;
       this.hitTimer = this.hitDuration;
+      // Increment combo meter (chain reaction)
+      if (gameState && gameState.comboSystem) {
+        gameState.comboSystem.addHit();
+      }
       // Knockback (ghosts float, so just a little push)
       const direction = this.position.x < player.position.x ? -1 : 1;
       this.position.x += direction * 10;
