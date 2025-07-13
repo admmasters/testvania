@@ -10,6 +10,7 @@ import { Player } from "@/objects/players/player";
 import { EnergyBlast } from "@/objects/projectile";
 import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
+import { ComboSystem } from "@/systems/ComboSystem";
 import { GameObjectManager } from "@/systems/GameObjectManager";
 import { TutorialSystem } from "@/systems/TutorialSystem";
 import { LightningSystem } from "../effects/LightningSystem";
@@ -54,6 +55,9 @@ export class GameState {
   rainSystem: RainSystem;
   lightningSystem: LightningSystem;
   weatherSystem: WeatherSystem;
+  comboSystem: ComboSystem;
+  // Standardised hit pause duration (seconds)
+  static readonly STANDARD_HIT_PAUSE = 0.06;
 
   constructor(levelId: string = "tutorial") {
     // Initialize the level manager
@@ -89,6 +93,9 @@ export class GameState {
 
     // Initialize HUD
     this.hud = new HUD();
+
+    // Initialize combo system
+    this.comboSystem = new ComboSystem();
 
     // Initialize rain system
     this.rainSystem = new RainSystem();
@@ -136,6 +143,19 @@ export class GameState {
         this.input.update();
         return; // Don't update game objects when tutorial is paused
       }
+    }
+
+    // Global hit-pause: freeze player & UI while active
+    if (this.hitPauseTimer > 0) {
+      this.hitPauseTimer -= deltaTime;
+
+      // Keep shake animations for enemies only (avoid jiggling the player sprite)
+      for (const enemy of this.enemies) {
+        if (enemy.active) enemy.updateShake(deltaTime, true);
+      }
+
+      this.input.update(); // still accept inputs
+      return; // Skip rest of updates to create freeze effect
     }
 
     // Update memory crystals
@@ -232,6 +252,9 @@ export class GameState {
     // Update weather system for coordination
     this.weatherSystem.update(deltaTime);
 
+    // Update combo system timers
+    this.comboSystem.update(deltaTime);
+
     // Debug controls
     if (this.input.isKeyPressed("F2")) {
       // Import needs to be done this way to avoid circular dependency
@@ -244,7 +267,15 @@ export class GameState {
    * Apply shake effects to specific enemies and the player without freezing the game.
    * If no targets are provided, all active enemies will shake (legacy behaviour).
    */
-  hitPause(duration: number, targetEnemies?: Enemy[]): void {
+  hitPause(_duration: number = GameState.STANDARD_HIT_PAUSE, targetEnemies?: Enemy[]): void {
+    const duration = GameState.STANDARD_HIT_PAUSE;
+
+    // Only initiate hit-pause if one is not already running to avoid janky stacking
+    if (this.hitPauseTimer <= 0) {
+      this.hitPauseTimer = duration;
+      this.hitPauseDuration = duration;
+    }
+
     const shakeIntensity = 6; // pixels - increased for more impact
     // Always shake the player so feedback is clear
     this.player.startShake(shakeIntensity, duration);
@@ -404,6 +435,8 @@ export class GameState {
 
   drawUI(ctx: CanvasRenderingContext2D): void {
     this.hud.render(ctx, this.player);
+    // Render combo meter on top of HUD
+    this.comboSystem.render(ctx);
   }
 
   awardExp(amount: number, x: number, y: number): void {

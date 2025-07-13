@@ -87,6 +87,11 @@ export abstract class Enemy extends GameObject {
       this.hitTimer = this.hitDuration;
       this.showDamage(1);
 
+      // Increment combo meter
+      if (gameState?.comboSystem) {
+        gameState.comboSystem.addHit();
+      }
+
       // Knockback - increased for more dramatic impact
       const direction = this.position.x < player.position.x ? -1 : 1;
       this.velocity.x = direction * 300;
@@ -98,7 +103,7 @@ export abstract class Enemy extends GameObject {
       gameState.createHitSpark(sparkX, sparkY);
 
       // Hit pause effect (shake only player and this enemy) - increased duration for more impact
-      gameState.hitPause(0.15, [this]);
+      gameState.hitPause(0.06, [this]);
     }
   }
 

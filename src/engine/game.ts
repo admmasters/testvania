@@ -120,6 +120,8 @@ export class Game {
 
       button.addEventListener("click", () => {
         this.gameState.loadLevel(levelId);
+        // Remove focus from the button after click
+        button.blur();
       });
 
       uiContainer.appendChild(button);

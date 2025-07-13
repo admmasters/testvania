@@ -31,6 +31,11 @@ export class MemoryCrystal implements ChainReactionTarget {
   private chainReactionManager: ChainReactionManager;
   private renderer: CrystalRenderer;
 
+  // Shake effect properties to emphasize impact when crystal is hit
+  private shakeOffset: Vector2 = vec2(0, 0);
+  private shakeIntensity: number = 0;
+  private shakeTimer: number = 0;
+
   constructor(x: number, y: number, type: CrystalType = "azure") {
     this.position = vec2(x, y);
     this.size = vec2(20, 24);
@@ -45,12 +50,20 @@ export class MemoryCrystal implements ChainReactionTarget {
     this.visualEffects = new CrystalVisualEffects();
     this.chainReactionManager = new ChainReactionManager();
     this.renderer = new CrystalRenderer(this.position, this.size);
+
+    // Initialise shake parameters
+    this.shakeOffset = vec2(0, 0);
+    this.shakeIntensity = 0;
+    this.shakeTimer = 0;
   }
 
   update(deltaTime: number, gameState: GameState): void {
     if (!this.isActive) return;
 
     this._gameState = gameState;
+
+    // Update local shake effect each frame
+    this.updateShake(deltaTime);
 
     const playerPosition = gameState.player?.position;
     this.visualEffects.update(deltaTime, playerPosition, this.position);
@@ -136,6 +149,16 @@ export class MemoryCrystal implements ChainReactionTarget {
 
     this.isBreaking = true;
     this.breakTimer = 0;
+
+    // Shorter, snappier pause
+    if (this._gameState && !this.chainReactionManager.wasTriggeredByChain()) {
+      this._gameState.hitPause(0.06);
+    }
+
+    // Increment combo meter for satisfying chain reactions
+    if (this._gameState?.comboSystem) {
+      this._gameState.comboSystem.addHit();
+    }
 
     // Create crystal pieces
     const numPieces = 6;
@@ -242,6 +265,10 @@ export class MemoryCrystal implements ChainReactionTarget {
   render(ctx: CanvasRenderingContext2D): void {
     if (!this.isActive) return;
 
+    // Apply shake translation for more impactful visual feedback
+    ctx.save();
+    ctx.translate(this.shakeOffset.x, this.shakeOffset.y);
+
     const colors = CrystalTypeConfig.getColors(this.crystalType);
     const pulseIntensity = this.visualEffects.getPulseIntensity();
     const resonanceGlow = this.visualEffects.getResonanceLevel() * 0.5;
@@ -289,6 +316,8 @@ export class MemoryCrystal implements ChainReactionTarget {
 
       ctx.restore();
     }
+
+    ctx.restore();
   }
 
   getBounds(): { left: number; right: number; top: number; bottom: number } {
@@ -298,5 +327,33 @@ export class MemoryCrystal implements ChainReactionTarget {
       top: this.position.y,
       bottom: this.position.y + this.size.y,
     };
+  }
+
+  /**
+   * Begin a shake effect on this crystal.
+   */
+  startShake(intensity: number, duration: number): void {
+    this.shakeIntensity = intensity;
+    this.shakeTimer = duration;
+  }
+
+  /**
+   * Update the current shake effect, if any.
+   */
+  private updateShake(deltaTime: number): void {
+    if (this.shakeTimer > 0) {
+      this.shakeTimer -= deltaTime;
+
+      const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+      const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+      this.shakeOffset.x = shakeX;
+      this.shakeOffset.y = shakeY;
+
+      if (this.shakeTimer <= 0) {
+        this.shakeOffset.x = 0;
+        this.shakeOffset.y = 0;
+        this.shakeIntensity = 0;
+      }
+    }
   }
 }
