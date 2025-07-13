@@ -23,11 +23,18 @@ export class MemoryCrystal implements ChainReactionTarget {
   pieces: CrystalPiece[];
   crystalType: CrystalType;
   private _gameState: GameState | undefined;
+  // Add debug flag for chain reaction area
+  static debugChainReaction: boolean = false;
 
   private particleSystem: ParticleSystem;
   private visualEffects: CrystalVisualEffects;
   private chainReactionManager: ChainReactionManager;
   private renderer: CrystalRenderer;
+
+  // Shake effect properties to emphasize impact when crystal is hit
+  private shakeOffset: Vector2 = vec2(0, 0);
+  private shakeIntensity: number = 0;
+  private shakeTimer: number = 0;
 
   constructor(x: number, y: number, type: CrystalType = "azure") {
     this.position = vec2(x, y);
@@ -43,12 +50,20 @@ export class MemoryCrystal implements ChainReactionTarget {
     this.visualEffects = new CrystalVisualEffects();
     this.chainReactionManager = new ChainReactionManager();
     this.renderer = new CrystalRenderer(this.position, this.size);
+
+    // Initialise shake parameters
+    this.shakeOffset = vec2(0, 0);
+    this.shakeIntensity = 0;
+    this.shakeTimer = 0;
   }
 
   update(deltaTime: number, gameState: GameState): void {
     if (!this.isActive) return;
 
     this._gameState = gameState;
+
+    // Update local shake effect each frame
+    this.updateShake(deltaTime);
 
     const playerPosition = gameState.player?.position;
     this.visualEffects.update(deltaTime, playerPosition, this.position);
@@ -78,10 +93,39 @@ export class MemoryCrystal implements ChainReactionTarget {
   }
 
   canTriggerChainReaction(otherCrystal: MemoryCrystal): boolean {
-    return (
-      this.isBreaking &&
-      this.chainReactionManager.canTriggerChainReaction(this.position, otherCrystal)
-    );
+    if (!this.isBreaking || !otherCrystal.isActive) return false;
+
+    // Get center positions of both crystals
+    const thisCenterX = this.position.x + this.size.x / 2;
+    const thisCenterY = this.position.y + this.size.y / 2;
+    const otherCenterX = otherCrystal.position.x + otherCrystal.size.x / 2;
+    const otherCenterY = otherCrystal.position.y + otherCrystal.size.y / 2;
+
+    const dx = otherCenterX - thisCenterX;
+    const dy = otherCenterY - thisCenterY;
+
+    // Make the trigger area much larger to match the debug cross
+    const horizontalRange = this.size.x * 3.5;
+    const verticalRange = this.size.y * 3.5;
+
+    // Check if the other crystal is horizontally aligned (with larger y tolerance)
+    const withinHorizontal = Math.abs(dx) <= horizontalRange && Math.abs(dy) <= this.size.y * 0.5;
+
+    // Check if the other crystal is directly above or below (with larger x tolerance)
+    const directlyAbove =
+      Math.abs(dx) <= this.size.x * 0.5 && dy < 0 && Math.abs(dy) <= verticalRange;
+    const directlyBelow =
+      Math.abs(dx) <= this.size.x * 0.5 && dy > 0 && Math.abs(dy) <= verticalRange;
+
+    // Log for debugging
+    if ((withinHorizontal || directlyAbove || directlyBelow) && MemoryCrystal.debugChainReaction) {
+      const dir = withinHorizontal ? "Horizontal" : directlyAbove ? "VerticalUp" : "VerticalDown";
+      console.log(
+        `Chain Reaction: ${dir} from (${this.position.x},${this.position.y}) to (${otherCrystal.position.x},${otherCrystal.position.y})`,
+      );
+    }
+
+    return withinHorizontal || directlyAbove || directlyBelow;
   }
 
   triggerChainReaction(delay: number = 0): void {
@@ -106,6 +150,16 @@ export class MemoryCrystal implements ChainReactionTarget {
     this.isBreaking = true;
     this.breakTimer = 0;
 
+    // Shorter, snappier pause
+    if (this._gameState && !this.chainReactionManager.wasTriggeredByChain()) {
+      this._gameState.hitPause(0.06);
+    }
+
+    // Increment combo meter for satisfying chain reactions
+    if (this._gameState?.comboSystem) {
+      this._gameState.comboSystem.addHit();
+    }
+
     // Create crystal pieces
     const numPieces = 6;
     for (let i = 0; i < numPieces; i++) {
@@ -120,6 +174,26 @@ export class MemoryCrystal implements ChainReactionTarget {
         size: 3 + Math.random() * 4,
         opacity: 1,
       });
+    }
+
+    // Trigger chain reactions in nearby crystals
+    if (this._gameState) {
+      for (const crystal of this._gameState.memoryCrystals) {
+        // Skip self and already breaking crystals
+        if (crystal === this || crystal.isBreaking || !crystal.isActive) continue;
+
+        // Check if this crystal can trigger a chain reaction in the other crystal
+        if (this.canTriggerChainReaction(crystal)) {
+          const delay = this.getChainReactionDelay();
+          crystal.triggerChainReaction(delay);
+
+          if (MemoryCrystal.debugChainReaction) {
+            console.log(
+              `Triggering chain reaction to crystal at (${crystal.position.x}, ${crystal.position.y}) with delay ${delay}`,
+            );
+          }
+        }
+      }
     }
 
     // Drop items based on crystal type
@@ -176,8 +250,24 @@ export class MemoryCrystal implements ChainReactionTarget {
     return this.chainReactionManager.getDelay();
   }
 
+  /**
+   * Toggles the debug visualization for chain reaction areas
+   * @returns The current state of the debug flag after toggling
+   */
+  static toggleDebugChainReaction(): boolean {
+    MemoryCrystal.debugChainReaction = !MemoryCrystal.debugChainReaction;
+    console.log(
+      `Chain reaction debug visualization: ${MemoryCrystal.debugChainReaction ? "ON" : "OFF"}`,
+    );
+    return MemoryCrystal.debugChainReaction;
+  }
+
   render(ctx: CanvasRenderingContext2D): void {
     if (!this.isActive) return;
+
+    // Apply shake translation for more impactful visual feedback
+    ctx.save();
+    ctx.translate(this.shakeOffset.x, this.shakeOffset.y);
 
     const colors = CrystalTypeConfig.getColors(this.crystalType);
     const pulseIntensity = this.visualEffects.getPulseIntensity();
@@ -193,6 +283,41 @@ export class MemoryCrystal implements ChainReactionTarget {
       this.particleSystem,
       this.pieces,
     );
+
+    // Draw debug cross overlay for chain reaction area if debug is enabled
+    if (MemoryCrystal.debugChainReaction && !this.isBreaking) {
+      const centerX = this.position.x + this.size.x / 2;
+      const centerY = this.position.y + this.size.y / 2;
+      const crossLengthX = this.size.x * 3.5;
+      const crossLengthY = this.size.y * 3.5;
+
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = "#FF0000";
+      ctx.lineWidth = 2;
+
+      // Horizontal line (left and right, much longer)
+      ctx.beginPath();
+      ctx.moveTo(centerX - crossLengthX, centerY);
+      ctx.lineTo(centerX + crossLengthX, centerY);
+      ctx.stroke();
+
+      // Vertical line (above, much longer)
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(centerX, centerY - crossLengthY);
+      ctx.stroke();
+
+      // Vertical line (below, much longer)
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(centerX, centerY + crossLengthY);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    ctx.restore();
   }
 
   getBounds(): { left: number; right: number; top: number; bottom: number } {
@@ -202,5 +327,33 @@ export class MemoryCrystal implements ChainReactionTarget {
       top: this.position.y,
       bottom: this.position.y + this.size.y,
     };
+  }
+
+  /**
+   * Begin a shake effect on this crystal.
+   */
+  startShake(intensity: number, duration: number): void {
+    this.shakeIntensity = intensity;
+    this.shakeTimer = duration;
+  }
+
+  /**
+   * Update the current shake effect, if any.
+   */
+  private updateShake(deltaTime: number): void {
+    if (this.shakeTimer > 0) {
+      this.shakeTimer -= deltaTime;
+
+      const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+      const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+      this.shakeOffset.x = shakeX;
+      this.shakeOffset.y = shakeY;
+
+      if (this.shakeTimer <= 0) {
+        this.shakeOffset.x = 0;
+        this.shakeOffset.y = 0;
+        this.shakeIntensity = 0;
+      }
+    }
   }
 }

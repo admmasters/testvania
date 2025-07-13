@@ -283,6 +283,10 @@ export class EditorObjectManager {
     return obj instanceof Platform;
   }
 
+  isSolidBlock(obj: EditorObject): boolean {
+    return obj instanceof SolidBlock;
+  }
+
   private isPointInObject(pos: Vector2, obj: EditorObject | null): boolean {
     if (!obj) return false;
     // Check if obj has position and size properties

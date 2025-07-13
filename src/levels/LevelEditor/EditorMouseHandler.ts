@@ -63,7 +63,7 @@ export class EditorMouseHandler {
   private canvas: HTMLCanvasElement;
   private objectManager: EditorObjectManager;
   private utils: EditorUtils;
-  private currentCrystalType: string = 'azure';
+  private currentCrystalType: string = "azure";
 
   private isScrolling: boolean = false;
   private scrollStart: Vector2 | null = null;
@@ -262,14 +262,15 @@ export class EditorMouseHandler {
     if (
       mode === EditorMode.SELECT &&
       selectedObject &&
-      this.objectManager.isPlatform(selectedObject)
+      (this.objectManager.isPlatform(selectedObject) ||
+        this.objectManager.isSolidBlock(selectedObject))
     ) {
-      const platform = selectedObject as EditorPlatform;
+      const obj = selectedObject as EditorPlatform;
       const rect = {
-        x: platform.position.x,
-        y: platform.position.y,
-        w: platform.size.x,
-        h: platform.size.y,
+        x: obj.position.x,
+        y: obj.position.y,
+        w: obj.size.x,
+        h: obj.size.y,
       };
       const handles = this.utils.getResizeHandles(rect);
 
@@ -295,7 +296,12 @@ export class EditorMouseHandler {
     scrollPosition: Vector2;
   }): boolean {
     const { resizing, selectedObject, pos, scrollPosition } = args;
-    if (resizing && selectedObject && this.objectManager.isPlatform(selectedObject)) {
+    if (
+      resizing &&
+      selectedObject &&
+      (this.objectManager.isPlatform(selectedObject) ||
+        this.objectManager.isSolidBlock(selectedObject))
+    ) {
       const mouse = new Vector2(pos.x + scrollPosition.x, pos.y + scrollPosition.y);
       this.utils.handleResize(resizing, selectedObject as EditorPlatform, mouse);
       return true;
@@ -470,13 +476,18 @@ export class EditorMouseHandler {
         onCurrentDiagonalPlatform(null);
         break;
       case EditorMode.SELECT:
-        if (selectedObject && this.objectManager.isPlatform(selectedObject) && currentPlatform) {
+        if (
+          selectedObject &&
+          (this.objectManager.isPlatform(selectedObject) ||
+            this.objectManager.isSolidBlock(selectedObject)) &&
+          currentPlatform
+        ) {
           onPushUndoState();
-          const platform = selectedObject as EditorPlatform;
-          platform.position.x = currentPlatform.position.x;
-          platform.position.y = currentPlatform.position.y;
-          platform.size.x = currentPlatform.size.x;
-          platform.size.y = currentPlatform.size.y;
+          const obj = selectedObject as EditorPlatform;
+          obj.position.x = currentPlatform.position.x;
+          obj.position.y = currentPlatform.position.y;
+          obj.size.x = currentPlatform.size.x;
+          obj.size.y = currentPlatform.size.y;
           onCurrentPlatform(null);
         }
         break;

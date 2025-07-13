@@ -69,7 +69,7 @@ export class EnergyBlast extends GameObject {
     }
 
     // Update shake effect
-    this.updateShake(deltaTime);
+    this.updateShake(deltaTime, false);
   }
 
   checkCollision(other: GameObject): boolean {

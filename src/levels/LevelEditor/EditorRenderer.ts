@@ -1,5 +1,6 @@
 import type { Vector2 } from "@/engine/Vector2";
 import { Platform } from "@/objects/platform";
+import { SolidBlock } from "@/objects/solidBlock";
 import { EditorMode } from "./EditorModes";
 import type {
   EditorDiagonalPlatform,
@@ -136,8 +137,8 @@ export class EditorRenderer {
       ctx.strokeRect(obj.position.x - 2, obj.position.y - 2, obj.size.x + 4, obj.size.y + 4);
       ctx.lineWidth = 1;
 
-      // Draw resize handles if it's a platform
-      if (selectedObject instanceof Platform) {
+      // Draw resize handles if it's a platform or solid block
+      if (selectedObject instanceof Platform || selectedObject instanceof SolidBlock) {
         this.drawResizeHandles(ctx, obj);
       }
     }

@@ -1,4 +1,4 @@
-import { Vector2 } from "../../engine/Vector2.js";
+import type { Vector2 } from "../../engine/Vector2.js";
 
 export interface ChainReactionTarget {
   position: Vector2;
@@ -8,22 +8,22 @@ export interface ChainReactionTarget {
 }
 
 export class ChainReactionManager {
-  private chainReactionRadius: number;
   private chainReactionDelay: number;
   private triggeredByChain: boolean = false;
 
-  constructor(radius: number = 60, delay: number = 0.2) {
-    this.chainReactionRadius = radius;
+  constructor(delay: number = 0.2) {
     this.chainReactionDelay = delay;
   }
 
-  canTriggerChainReaction(source: Vector2, target: ChainReactionTarget): boolean {
+  canTriggerChainReaction(_source: Vector2, target: ChainReactionTarget): boolean {
     if (!target.isActive || target.isBreaking) {
       return false;
     }
 
-    const distance = Vector2.distance(source, target.position);
-    return distance <= this.chainReactionRadius;
+    // We're now using cross-shaped area instead of radius
+    // This is handled by the MemoryCrystal.canTriggerChainReaction method
+    // This method is kept for backward compatibility
+    return true;
   }
 
   triggerChainReaction(target: ChainReactionTarget, delay: number = 0): void {
@@ -43,7 +43,7 @@ export class ChainReactionManager {
   }
 
   processChainReaction(sourcePosition: Vector2, targets: ChainReactionTarget[]): void {
-    targets.forEach(target => {
+    targets.forEach((target) => {
       if (this.canTriggerChainReaction(sourcePosition, target)) {
         this.triggerChainReaction(target, this.chainReactionDelay);
       }
@@ -58,16 +58,8 @@ export class ChainReactionManager {
     this.triggeredByChain = value;
   }
 
-  getRadius(): number {
-    return this.chainReactionRadius;
-  }
-
   getDelay(): number {
     return this.chainReactionDelay;
-  }
-
-  setRadius(radius: number): void {
-    this.chainReactionRadius = radius;
   }
 
   setDelay(delay: number): void {

@@ -68,7 +68,8 @@ export class GameObject {
     this.shakeTimer = duration;
   }
 
-  updateShake(deltaTime: number): void {
+  updateShake(deltaTime: number, isFrozen: boolean): void {
+    if (isFrozen) return;
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaTime;
 
