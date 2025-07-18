@@ -12,7 +12,12 @@ import type { SolidBlock } from "@/objects/solidBlock";
 import { CollisionSystem } from "@/systems/CollisionSystem";
 import { ComboSystem } from "@/systems/ComboSystem";
 import { GameObjectManager } from "@/systems/GameObjectManager";
+import { HitFeedbackManager } from "@/systems/HitFeedbackManager";
+import { MPManager } from "@/systems/MPManager";
+import { ChainReactionTracker } from "@/systems/ChainReactionTracker";
+import { MPAbilitySystem } from "@/systems/MPAbilitySystem";
 import { TutorialSystem } from "@/systems/TutorialSystem";
+import { PowerSurgeAbility } from "@/systems/abilities/PowerSurgeAbility";
 import { LightningSystem } from "../effects/LightningSystem";
 import { RainSystem } from "../effects/RainSystem";
 import { WeatherSystem } from "../effects/WeatherSystem";
@@ -56,21 +61,35 @@ export class GameState {
   lightningSystem: LightningSystem;
   weatherSystem: WeatherSystem;
   comboSystem: ComboSystem;
+  hitFeedbackManager: HitFeedbackManager;
+  mpManager: MPManager;
+  chainReactionTracker: ChainReactionTracker;
+  mpAbilitySystem: MPAbilitySystem;
   // Standardised hit pause duration (seconds)
   static readonly STANDARD_HIT_PAUSE = 0.06;
 
   constructor(levelId: string = "tutorial") {
+    console.log("GameState constructor started with levelId:", levelId);
+    
     // Initialize the level manager
+    console.log("Creating LevelManager...");
     this.levelManager = new LevelManager();
+    console.log("LevelManager created");
 
     // Initialize the game object manager
+    console.log("Creating GameObjectManager...");
     this.gameObjectManager = new GameObjectManager();
+    console.log("GameObjectManager created");
 
     // Initialize the collision system
+    console.log("Creating CollisionSystem...");
     this.collisionSystem = new CollisionSystem();
+    console.log("CollisionSystem created");
 
     // Initialize the tutorial system
+    console.log("Creating TutorialSystem...");
     this.tutorialSystem = new TutorialSystem();
+    console.log("TutorialSystem created");
 
     // Initialize empty arrays
     this.platforms = [];
@@ -97,6 +116,28 @@ export class GameState {
     // Initialize combo system
     this.comboSystem = new ComboSystem();
 
+    // Initialize hit feedback manager
+    this.hitFeedbackManager = new HitFeedbackManager();
+
+    // Initialize MP systems
+    this.mpManager = new MPManager();
+    this.chainReactionTracker = new ChainReactionTracker();
+    this.mpAbilitySystem = new MPAbilitySystem();
+
+    // Register MP abilities
+    this.registerMPAbilities();
+
+    // Set up chain reaction completion callback to award MP
+    this.chainReactionTracker.onChainComplete((result) => {
+      // Calculate MP reward based on chain length and bonuses
+      const mpReward = this.mpManager.calculateChainReward(result.chainLength, result.specialEffects);
+      
+      // Award MP for the completed chain
+      this.mpManager.awardMP(mpReward, 'chain', { x: 400, y: 300 }, result.chainLength);
+      
+      console.log(`Chain completed: ${result.chainLength} crystals, awarded ${mpReward} MP`);
+    });
+
     // Initialize rain system
     this.rainSystem = new RainSystem();
 
@@ -110,13 +151,19 @@ export class GameState {
     this.rainSystem.seedInitialRain(this);
 
     // Initialize default player (will be overwritten by level)
+    console.log("Creating Player...");
     this.player = new Player(100, 330);
+    console.log("Player created");
 
     // Load the level
-    this.loadLevel(levelId);
+    console.log("Loading level:", levelId);
+    const levelLoaded = this.loadLevel(levelId);
+    console.log("Level loaded:", levelLoaded);
 
     // Initialize the game object manager with current state
+    console.log("Initializing GameObjectManager...");
     this.gameObjectManager.initialize(this);
+    console.log("GameState constructor completed successfully");
   }
 
   loadLevel(levelId: string): boolean {
@@ -255,11 +302,19 @@ export class GameState {
     // Update combo system timers
     this.comboSystem.update(deltaTime);
 
+    // Update hit feedback manager
+    this.hitFeedbackManager.update(deltaTime);
+
+    // Update MP systems
+    this.chainReactionTracker.update(deltaTime);
+    this.mpAbilitySystem.update(deltaTime, this.player, this);
+
     // Debug controls
     if (this.input.isKeyPressed("F2")) {
-      // Import needs to be done this way to avoid circular dependency
-      const MemoryCrystal = require("../objects/memoryCrystal").MemoryCrystal;
-      MemoryCrystal.toggleDebugChainReaction();
+      // Dynamic import to avoid circular dependency
+      import("../objects/memoryCrystal").then(({ MemoryCrystal }) => {
+        MemoryCrystal.toggleDebugChainReaction();
+      });
     }
   }
 
@@ -276,25 +331,102 @@ export class GameState {
       this.hitPauseDuration = duration;
     }
 
-    const shakeIntensity = 6; // pixels - increased for more impact
-    // Always shake the player so feedback is clear
-    this.player.startShake(shakeIntensity, duration);
+    const shakeIntensity = 4; // pixels - reduced slightly for smoother side-to-side motion
+    const shakeFrequency = 25; // Hz - fast oscillation for emphasis
+    
+    // Always shake the player so feedback is clear (keep random shake for player)
+    this.player.startShake(shakeIntensity, duration, 'random');
 
-    // Determine which enemies to shake
+    // Determine which enemies to shake with horizontal motion
     if (targetEnemies && targetEnemies.length > 0) {
       for (const enemy of targetEnemies) {
-        if (enemy.active) enemy.startShake(shakeIntensity, duration);
+        if (enemy.active) {
+          // Use horizontal shake for hit stop effect - enemies shake side to side
+          enemy.startShake(shakeIntensity, duration, 'horizontal', shakeFrequency);
+        }
       }
     } else {
-      // Legacy: shake everyone
+      // Legacy: shake everyone with horizontal motion
       for (const enemy of this.enemies) {
-        if (enemy.active) enemy.startShake(shakeIntensity, duration);
+        if (enemy.active) {
+          enemy.startShake(shakeIntensity, duration, 'horizontal', shakeFrequency);
+        }
       }
     }
   }
 
   createHitSpark(x: number, y: number): void {
     this.hitSparks.push(new HitSpark(x, y));
+  }
+
+  /**
+   * Create enhanced hit feedback using the HitFeedbackManager
+   */
+  createEnhancedHitFeedback(
+    x: number, 
+    y: number, 
+    hitType: 'normal' | 'charged' | 'critical' | 'combo' = 'normal',
+    targetType: 'enemy' | 'crystal' | 'environment' = 'enemy',
+    intensity: number = 1.0
+  ): void {
+    // Get combo count for enhanced feedback
+    const comboCount = this.comboSystem.getComboCount();
+    
+    // Create feedback configuration
+    const config = {
+      intensity,
+      duration: 0.5,
+      hitType,
+      targetType,
+      comboMultiplier: comboCount > 1 ? comboCount : undefined
+    };
+    
+    // Trigger the enhanced feedback
+    const feedbackId = this.hitFeedbackManager.triggerHitFeedback(config, { x, y });
+    
+    if (feedbackId) {
+      // Get the calculated intensity for this hit
+      const feedbackIntensity = this.hitFeedbackManager.calculateFeedbackIntensity(config);
+      
+      // Create enhanced hit spark with variable intensity
+      this.createEnhancedHitSpark(x, y, feedbackIntensity.particles);
+      
+      // Apply enhanced screen shake
+      this.applyEnhancedScreenShake(feedbackIntensity.shake);
+      
+      // Apply enhanced hit pause
+      this.applyEnhancedHitPause(feedbackIntensity.pause);
+    } else {
+      // Fallback to basic hit spark if feedback was prevented
+      this.createHitSpark(x, y);
+    }
+  }
+
+  /**
+   * Create enhanced hit spark with variable intensity
+   */
+  private createEnhancedHitSpark(x: number, y: number, _intensity: number): void {
+    // For now, create a regular hit spark - we'll enhance this in the next task
+    this.hitSparks.push(new HitSpark(x, y));
+  }
+
+  /**
+   * Apply enhanced screen shake with variable intensity
+   */
+  private applyEnhancedScreenShake(intensity: number): void {
+    // Enhanced shake with variable intensity
+    const baseIntensity = 6;
+    const shakeDuration = GameState.STANDARD_HIT_PAUSE;
+    this.camera.shake(shakeDuration, baseIntensity * intensity);
+  }
+
+  /**
+   * Apply enhanced hit pause with variable duration
+   */
+  private applyEnhancedHitPause(intensity: number): void {
+    // Enhanced hit pause with variable duration
+    const baseDuration = GameState.STANDARD_HIT_PAUSE;
+    this.hitPause(baseDuration * intensity);
   }
 
   createPoofEffect(x: number, y: number): void {
@@ -313,9 +445,11 @@ export class GameState {
   } | null = null; // Will be set by the Game class
 
   render(ctx: CanvasRenderingContext2D): void {
+    console.log("GameState.render() called");
     // Clear screen
     ctx.fillStyle = "#2C1810";
     ctx.fillRect(0, 0, 800, 600);
+    console.log("Screen cleared with background color");
 
     // Draw parallax background (before applying camera)
     this.parallaxBackground.render(ctx, this.camera);
@@ -434,7 +568,7 @@ export class GameState {
   }
 
   drawUI(ctx: CanvasRenderingContext2D): void {
-    this.hud.render(ctx, this.player);
+    this.hud.render(ctx, this.player, this.mpManager);
     // Render combo meter on top of HUD
     this.comboSystem.render(ctx);
   }
@@ -449,5 +583,13 @@ export class GameState {
       vy: 32 + Math.random() * 16,
       time: 0,
     });
+  }
+
+  /**
+   * Register all MP abilities
+   */
+  private registerMPAbilities(): void {
+    // Register Power Surge ability
+    this.mpAbilitySystem.registerAbility(new PowerSurgeAbility());
   }
 }

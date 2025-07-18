@@ -132,10 +132,15 @@ export class Player extends GameObject {
       this.velocity.y *= 0.5; // Reduce upward velocity when jump key released
     }
 
-    // Attack system - X key handling
-    if (input.isKeyPressed("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+    // MP Ability system - Z+X key combination for Power Surge
+    if (input.isKeyPressed("KeyZ") && input.isKeyDown("KeyX") && gameState) {
+      // Try to activate Power Surge ability
+      gameState.mpAbilitySystem.activateAbility('power_surge', this, gameState);
+    }
+    // Attack system - X key handling (only if Z is not pressed)
+    else if (input.isKeyPressed("KeyX") && !input.isKeyDown("KeyZ") && !this.attacking && this.attackCooldownTimer <= 0) {
       PlayerAttack.performAttack(this, gameState);
-    } else if (input.isKeyDown("KeyX") && !this.attacking && this.attackCooldownTimer <= 0) {
+    } else if (input.isKeyDown("KeyX") && !input.isKeyDown("KeyZ") && !this.attacking && this.attackCooldownTimer <= 0) {
       if (!this.isChargingAttack) {
         this.isChargingAttack = true;
         this.chargeTime = 0;

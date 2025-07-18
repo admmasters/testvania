@@ -35,6 +35,11 @@ export class ComboSystem {
     this.scale = 1.8 + extra;
   }
 
+  /** Gets the current combo count */
+  getComboCount(): number {
+    return this.count;
+  }
+
   /** Updates timers and animations. */
   update(deltaTime: number): void {
     if (this.count === 0) return;

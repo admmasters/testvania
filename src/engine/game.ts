@@ -17,9 +17,26 @@ export class Game {
   running: boolean;
   scanlines: Scanlines;
 
-  constructor(initialLevelId: string = "tutorial") {
-    this.canvas = document.getElementById("gameCanvas") as HTMLCanvasElement;
-    this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+  constructor(canvasId: string = "gameCanvas", initialLevelId: string = "tutorial") {
+    // Validate canvas element exists and is actually a canvas
+    const canvasElement = document.getElementById(canvasId);
+    if (!canvasElement) {
+      throw new Error(`Canvas element with id "${canvasId}" not found`);
+    }
+    
+    if (!(canvasElement instanceof HTMLCanvasElement)) {
+      throw new Error(`Element with id "${canvasId}" is not a canvas element`);
+    }
+    
+    this.canvas = canvasElement;
+    
+    // Validate 2D context is available
+    const context = this.canvas.getContext("2d");
+    if (!context) {
+      throw new Error("2D rendering context not available");
+    }
+    
+    this.ctx = context;
 
     // Configure canvas for pixel-perfect rendering
     this.setupPixelPerfectCanvas();

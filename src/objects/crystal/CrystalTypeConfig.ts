@@ -32,22 +32,22 @@ export class CrystalTypeConfig {
   };
 
   static getColors(type: CrystalType): CrystalColors {
-    return this.CONFIG[type]?.colors || this.CONFIG.azure.colors;
+    return CrystalTypeConfig.CONFIG[type]?.colors || CrystalTypeConfig.CONFIG.azure.colors;
   }
 
   static getExperienceValue(type: CrystalType): number {
-    return this.CONFIG[type]?.experienceValue || this.CONFIG.azure.experienceValue;
+    return CrystalTypeConfig.CONFIG[type]?.experienceValue || CrystalTypeConfig.CONFIG.azure.experienceValue;
   }
 
   static getTypeData(type: CrystalType): CrystalTypeData {
-    return this.CONFIG[type] || this.CONFIG.azure;
+    return CrystalTypeConfig.CONFIG[type] || CrystalTypeConfig.CONFIG.azure;
   }
 
   static getAllTypes(): CrystalType[] {
-    return Object.keys(this.CONFIG) as CrystalType[];
+    return Object.keys(CrystalTypeConfig.CONFIG) as CrystalType[];
   }
 
   static isValidType(type: string): type is CrystalType {
-    return type in this.CONFIG;
+    return type in CrystalTypeConfig.CONFIG;
   }
 }

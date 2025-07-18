@@ -1,6 +1,8 @@
 import type { GameState } from "./GameState";
 import { Vector2 } from "./Vector2";
 
+export type ShakeType = 'random' | 'horizontal' | 'vertical';
+
 export class GameObject {
   position: Vector2;
   velocity: Vector2;
@@ -11,6 +13,8 @@ export class GameObject {
   shakeOffset: Vector2;
   shakeIntensity: number;
   shakeTimer: number;
+  shakeType: ShakeType;
+  shakeFrequency: number;
 
   constructor(args: {
     x: number;
@@ -28,6 +32,8 @@ export class GameObject {
     this.shakeOffset = new Vector2(0, 0);
     this.shakeIntensity = 0;
     this.shakeTimer = 0;
+    this.shakeType = 'random';
+    this.shakeFrequency = 15; // Hz - how fast the shake oscillates
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -63,9 +69,11 @@ export class GameObject {
     }
   }
 
-  startShake(intensity: number, duration: number): void {
+  startShake(intensity: number, duration: number, shakeType: ShakeType = 'random', frequency: number = 15): void {
     this.shakeIntensity = intensity;
     this.shakeTimer = duration;
+    this.shakeType = shakeType;
+    this.shakeFrequency = frequency;
   }
 
   updateShake(deltaTime: number, isFrozen: boolean): void {
@@ -73,11 +81,30 @@ export class GameObject {
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaTime;
 
-      // Generate random shake offset
-      const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      this.shakeOffset.x = shakeX;
-      this.shakeOffset.y = shakeY;
+      // Calculate shake offset based on shake type
+      switch (this.shakeType) {
+        case 'horizontal': {
+          // Side-to-side motion using sine wave for smooth oscillation
+          const time = Date.now() / 1000; // Convert to seconds
+          this.shakeOffset.x = Math.sin(time * this.shakeFrequency * Math.PI * 2) * this.shakeIntensity;
+          this.shakeOffset.y = 0;
+          break;
+        }
+        
+        case 'vertical': {
+          // Up-and-down motion
+          const timeV = Date.now() / 1000;
+          this.shakeOffset.x = 0;
+          this.shakeOffset.y = Math.sin(timeV * this.shakeFrequency * Math.PI * 2) * this.shakeIntensity;
+          break;
+        }
+        
+        default:
+          // Original random shake
+          this.shakeOffset.x = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+          this.shakeOffset.y = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+          break;
+      }
 
       if (this.shakeTimer <= 0) {
         this.shakeOffset.x = 0;

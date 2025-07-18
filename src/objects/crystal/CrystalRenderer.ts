@@ -1,6 +1,6 @@
-import { Vector2 } from "../../engine/Vector2.js";
-import { CrystalColors } from "./CrystalTypeConfig.js";
-import { ParticleSystem } from "./ParticleSystem.js";
+import type { Vector2 } from "../../engine/Vector2.js";
+import type { CrystalColors } from "./CrystalTypeConfig.js";
+import type { ParticleSystem } from "./ParticleSystem.js";
 
 export interface CrystalPiece {
   position: Vector2;

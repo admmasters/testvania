@@ -35,6 +35,8 @@ export class MemoryCrystal implements ChainReactionTarget {
   private shakeOffset: Vector2 = vec2(0, 0);
   private shakeIntensity: number = 0;
   private shakeTimer: number = 0;
+  private shakeType: 'random' | 'horizontal' | 'vertical' = 'horizontal';
+  private shakeFrequency: number = 25;
 
   constructor(x: number, y: number, type: CrystalType = "azure") {
     this.position = vec2(x, y);
@@ -158,6 +160,32 @@ export class MemoryCrystal implements ChainReactionTarget {
     // Increment combo meter for satisfying chain reactions
     if (this._gameState?.comboSystem) {
       this._gameState.comboSystem.addHit();
+    }
+
+    // Integrate with MP system - award MP for crystal breaking
+    if (this._gameState?.mpManager && this._gameState?.chainReactionTracker) {
+      const crystalTarget = {
+        id: `crystal_${this.position.x}_${this.position.y}`,
+        position: this.position,
+        crystalType: this.crystalType,
+        isActive: this.isActive,
+        isBreaking: this.isBreaking
+      };
+
+      if (this.chainReactionManager.wasTriggeredByChain()) {
+        // This crystal was triggered by a chain reaction
+        // Check if we can extend an existing chain or start a new one
+        const nearbyChains = this._gameState.chainReactionTracker.findNearbyChains(this.position);
+        const chainId = this._gameState.chainReactionTracker.processChainReaction(crystalTarget, nearbyChains);
+        console.log(`Chain crystal processed: ${chainId}`);
+      } else {
+        // Single crystal break - award base MP immediately
+        this._gameState.mpManager.awardMP(1, 'crystal', {
+          x: this.position.x + this.size.x / 2,
+          y: this.position.y + this.size.y / 2
+        });
+        console.log(`Single crystal break: awarded 1 MP`);
+      }
     }
 
     // Create crystal pieces
@@ -332,9 +360,11 @@ export class MemoryCrystal implements ChainReactionTarget {
   /**
    * Begin a shake effect on this crystal.
    */
-  startShake(intensity: number, duration: number): void {
+  startShake(intensity: number, duration: number, shakeType: 'random' | 'horizontal' | 'vertical' = 'horizontal', frequency: number = 25): void {
     this.shakeIntensity = intensity;
     this.shakeTimer = duration;
+    this.shakeType = shakeType;
+    this.shakeFrequency = frequency;
   }
 
   /**
@@ -344,10 +374,30 @@ export class MemoryCrystal implements ChainReactionTarget {
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaTime;
 
-      const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
-      this.shakeOffset.x = shakeX;
-      this.shakeOffset.y = shakeY;
+      // Calculate shake offset based on shake type
+      switch (this.shakeType) {
+        case 'horizontal': {
+          // Side-to-side motion using sine wave for smooth oscillation
+          const time = Date.now() / 1000; // Convert to seconds
+          this.shakeOffset.x = Math.sin(time * this.shakeFrequency * Math.PI * 2) * this.shakeIntensity;
+          this.shakeOffset.y = 0;
+          break;
+        }
+        
+        case 'vertical': {
+          // Up-and-down motion
+          const timeV = Date.now() / 1000;
+          this.shakeOffset.x = 0;
+          this.shakeOffset.y = Math.sin(timeV * this.shakeFrequency * Math.PI * 2) * this.shakeIntensity;
+          break;
+        }
+        
+        default:
+          // Original random shake
+          this.shakeOffset.x = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+          this.shakeOffset.y = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+          break;
+      }
 
       if (this.shakeTimer <= 0) {
         this.shakeOffset.x = 0;

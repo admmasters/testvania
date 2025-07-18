@@ -1,6 +1,6 @@
 import type { GameState } from "../engine/GameState";
-import { RainSystem } from "./RainSystem";
-import { LightningSystem } from "./LightningSystem";
+import type { RainSystem } from "./RainSystem";
+import type { LightningSystem } from "./LightningSystem";
 
 export class WeatherSystem {
   private rainSystem: RainSystem;

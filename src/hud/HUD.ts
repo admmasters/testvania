@@ -1,22 +1,92 @@
 import type { Player } from "@/objects/players/player";
+import type { MPManager } from "@/systems/MPManager";
+
+/**
+ * Formats numeric values for display in the HUD
+ * Handles abbreviation of large numbers to prevent overflow
+ */
+interface ValueFormattingOptions {
+  abbreviateThreshold?: number; // When to start abbreviating (default: 1000)
+  useKMBNotation?: boolean; // Use K, M, B notation for large numbers
+  maxDecimalPlaces?: number; // Maximum decimal places for abbreviated values
+  forceAbbreviate?: boolean; // Force abbreviation regardless of threshold
+}
+
+/**
+ * Formats a numeric value for display in the HUD
+ * Abbreviates large numbers to prevent overflow
+ */
+function formatHUDValue(value: number, options: ValueFormattingOptions = {}): string {
+  const {
+    abbreviateThreshold = 1000,
+    useKMBNotation = true,
+    maxDecimalPlaces = 1,
+    forceAbbreviate = false,
+  } = options;
+
+  // Don't abbreviate small numbers unless forced
+  if (value < abbreviateThreshold && !forceAbbreviate) {
+    return value.toString();
+  }
+
+  // Abbreviate large numbers
+  if (useKMBNotation) {
+    if (value >= 1000000000) {
+      return `${(value / 1000000000).toFixed(maxDecimalPlaces).replace(/\.0$/, "")}B`;
+    }
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(maxDecimalPlaces).replace(/\.0$/, "")}M`;
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(maxDecimalPlaces).replace(/\.0$/, "")}K`;
+    }
+  } else {
+    // Use H (hundred) notation for smaller abbreviation
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(maxDecimalPlaces).replace(/\.0$/, "")}K`;
+    }
+    if (value >= 100 && forceAbbreviate) {
+      return `${(value / 100).toFixed(maxDecimalPlaces).replace(/\.0$/, "")}H`;
+    }
+  }
+
+  return value.toString();
+}
+
+/**
+ * Formats MP values for display in the HUD
+ * Shows only current MP value to save space
+ */
+function formatMPValue(current: number, _max: number, _boxWidth: number): string {
+  // For very large values, use abbreviated format
+  if (current >= 1000) {
+    return formatHUDValue(current, { forceAbbreviate: true });
+  }
+
+  // For normal values, show just the current MP
+  return current.toString();
+}
 
 interface HUDPanelConfig {
   ctx: CanvasRenderingContext2D;
   player: Player;
+  mpManager: MPManager;
   panelX: number;
   panelY: number;
   panelWidth: number;
   panelHeight: number;
 }
+
 export class HUD {
-  render(ctx: CanvasRenderingContext2D, player: Player): void {
+  render(ctx: CanvasRenderingContext2D, player: Player, mpManager: MPManager): void {
     ctx.save();
     const config: HUDPanelConfig = {
       ctx,
       player,
+      mpManager,
       panelX: 12,
       panelY: 12,
-      panelWidth: 110,
+      panelWidth: 120, // Increased from 110 to 120 to accommodate wider MP box
       panelHeight: 108,
     };
     drawMainUIPanel(config);
@@ -29,15 +99,34 @@ export class HUD {
 
 function drawMainUIPanel(config: HUDPanelConfig): void {
   const { ctx, panelX, panelY, panelWidth, panelHeight } = config;
-  // Sophisticated multi-layer background with depth
-  const mainGradient = ctx.createLinearGradient(0, 0, 0, 95);
+  // Enhanced multi-layer background with horizontal gradient for wider panel
+  const mainGradient = ctx.createLinearGradient(panelX, 0, panelX + panelWidth, 0);
   mainGradient.addColorStop(0, "rgba(15, 5, 25, 0.98)");
   mainGradient.addColorStop(0.3, "rgba(25, 15, 40, 0.98)");
   mainGradient.addColorStop(0.7, "rgba(20, 10, 35, 0.98)");
-  mainGradient.addColorStop(1, "rgba(10, 5, 20, 0.98)");
+  mainGradient.addColorStop(1, "rgba(15, 5, 25, 0.98)");
+
+  // Apply a subtle shadow for depth
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
 
   ctx.fillStyle = mainGradient;
   ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+  // Add subtle highlight at the top for depth
+  const highlightGradient = ctx.createLinearGradient(0, panelY, 0, panelY + 5);
+  highlightGradient.addColorStop(0, "rgba(255, 255, 255, 0.1)");
+  highlightGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = highlightGradient;
+  ctx.fillRect(panelX + 1, panelY + 1, panelWidth - 2, 5);
+
+  // Reset shadow for other elements
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 
   drawUIBorderDecoration(config);
 }
@@ -62,34 +151,35 @@ function drawUIBorderDecoration(config: HUDPanelConfig): void {
 }
 
 function drawPlayerLevelDisplay(config: HUDPanelConfig): void {
-  const { ctx, panelX, panelY, player } = config;
-  // Player level with enhanced styling - with proper padding
+  const { ctx, panelX, panelY, panelWidth, player } = config;
+  // Player level with enhanced styling - centered in the wider panel
   ctx.font = "bold 14px 'Orbitron', monospace";
   ctx.fillStyle = "#FFD700";
   ctx.strokeStyle = "#8B4513";
   ctx.lineWidth = 2;
-  ctx.textAlign = "left";
-  const levelX = panelX + 8;
+  ctx.textAlign = "center";
+  const levelX = panelX + panelWidth / 2; // Center in the panel
   const levelY = panelY + 22;
   ctx.strokeText(`LEVEL ${player.level}`, levelX, levelY);
   ctx.fillText(`LEVEL ${player.level}`, levelX, levelY);
 }
 
 function drawHealthAndManaBoxes(config: HUDPanelConfig): void {
-  const { ctx, panelX, panelY, player } = config;
+  const { ctx, panelX, panelY, player, mpManager } = config;
   const contentPadding = 8;
   const hpBoxX = panelX + contentPadding;
   const hpBoxY = panelY + 32;
-  const boxWidth = 42;
+  const hpBoxWidth = 42;
+  const mpBoxWidth = 46; // Increased from 42 to 46 for better MP display
   const boxHeight = 32;
 
   // Health box
-  drawHealthBox(ctx, hpBoxX, hpBoxY, boxWidth, boxHeight, player);
+  drawHealthBox(ctx, hpBoxX, hpBoxY, hpBoxWidth, boxHeight, player);
 
   // Mana box - with proper spacing
-  const mpBoxX = hpBoxX + boxWidth + 8;
+  const mpBoxX = hpBoxX + hpBoxWidth + 8;
   const mpBoxY = hpBoxY;
-  drawManaBox(ctx, mpBoxX, mpBoxY, boxWidth, boxHeight, player);
+  drawManaBox(ctx, mpBoxX, mpBoxY, mpBoxWidth, boxHeight, player, mpManager);
 }
 
 function drawHealthBox(
@@ -109,10 +199,30 @@ function drawManaBox(
   y: number,
   width: number,
   height: number,
-  player: Player,
+  _player: Player,
+  mpManager: MPManager,
 ): void {
-  const currentMP = player.level * 5;
-  drawOrnateStatBox(ctx, x, y, width, height, "MP", String(currentMP), "#000080", "#4444FF");
+  const currentMP = mpManager.getCurrentMP();
+  const maxMP = mpManager.getMaxMP();
+
+  // Format MP text to prevent overflow
+  const mpText = formatMPValue(currentMP, maxMP, width);
+
+  // Use different colors based on MP percentage for visual feedback
+  const mpPercentage = mpManager.getMPPercentage();
+  let accentColor = "#4444FF"; // Default blue
+
+  if (mpPercentage >= 0.75) {
+    accentColor = "#00FFFF"; // Cyan when high MP
+  } else if (mpPercentage >= 0.5) {
+    accentColor = "#4444FF"; // Blue when medium MP
+  } else if (mpPercentage >= 0.25) {
+    accentColor = "#8888FF"; // Light blue when low MP
+  } else {
+    accentColor = "#AAAAFF"; // Very light blue when very low MP
+  }
+
+  drawOrnateStatBox(ctx, x, y, width, height, "MP", mpText, "#000080", accentColor);
 }
 
 function drawPowerBar(config: HUDPanelConfig): void {
@@ -120,13 +230,14 @@ function drawPowerBar(config: HUDPanelConfig): void {
   const contentPadding = 8;
   const hpBoxX = panelX + contentPadding;
   const hpBoxY = panelY + 48;
-  const boxWidth = 42;
+  const hpBoxWidth = 42;
+  const mpBoxWidth = 46;
   const boxHeight = 32;
 
   // Sophisticated Energy Bar with multiple visual layers - with padding
   const powerBarX = hpBoxX;
   const powerBarY = hpBoxY + boxHeight + 6;
-  const powerBarWidth = boxWidth * 2 + 8;
+  const powerBarWidth = hpBoxWidth + mpBoxWidth + 8; // Adjusted to match the combined width of HP and MP boxes
   const powerBarHeight = 12;
 
   // Calculate power percentage
@@ -232,18 +343,32 @@ function drawStatBoxValue(
   y: number,
   width: number,
   value: string,
-  accentColor: string,
+  _accentColor: string,
 ): void {
   // Value with glow effect
-  ctx.font = "bold 16px 'Orbitron', monospace";
-  ctx.fillStyle = "#FFFFFF";
-  ctx.strokeStyle = accentColor;
-  ctx.lineWidth = 2;
-  ctx.shadowColor = accentColor;
-  ctx.shadowBlur = 4;
+  // Dynamically adjust font size based on text length to prevent overflow
+  const baseFontSize = 16;
+  const fontSize =
+    value.length > 5 ? Math.max(10, baseFontSize - (value.length - 5) * 1.5) : baseFontSize;
+
+  ctx.font = `bold ${fontSize}px 'Orbitron', monospace`;
   ctx.textAlign = "center";
-  ctx.strokeText(value, x + width / 2, y + 28);
-  ctx.fillText(value, x + width / 2, y + 28);
+  const textX = x + width / 2;
+  const textY = y + 28;
+
+  // Draw black outline for better contrast
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = Math.max(2, fontSize / 6); // Thicker outline for better readability
+  ctx.strokeText(value, textX, textY);
+
+  // Draw white text fill
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText(value, textX, textY);
+
+  // Add subtle glow effect
+  ctx.shadowColor = "#FFFFFF";
+  ctx.shadowBlur = 2;
+  ctx.fillText(value, textX, textY);
   ctx.shadowBlur = 0;
 }
 
@@ -276,7 +401,7 @@ function drawOrnatePowerBar(
   drawEnergyBarBorder(ctx, x, y, width, height, chargingEffect);
   drawEnergyBarFill(ctx, x, y, width, height, percent, chargingEffect);
   drawEnergyBarParticles(ctx, x, y, width, height, percent);
-  drawPowerBarLabel(ctx, x, y);
+  drawPowerBarLabel(ctx, x, y, width);
 }
 
 function drawEnergyBarBackground(
@@ -375,13 +500,18 @@ function drawEnergyBarParticles(
   }
 }
 
-function drawPowerBarLabel(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-  // Energy label with enhanced styling
+function drawPowerBarLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+): void {
+  // Energy label with enhanced styling - centered for better visual balance
   ctx.font = "bold 8px 'Orbitron', monospace";
   ctx.fillStyle = "#FFD700";
   ctx.strokeStyle = "#8B4513";
   ctx.lineWidth = 1;
-  ctx.textAlign = "left";
-  ctx.strokeText("POWER", x, y - 3);
-  ctx.fillText("POWER", x, y - 3);
+  ctx.textAlign = "center";
+  ctx.strokeText("POWER", x + width / 2, y - 3);
+  ctx.fillText("POWER", x + width / 2, y - 3);
 }

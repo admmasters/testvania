@@ -52,10 +52,28 @@ export class CollisionSystem implements ISystem {
             gameState.experiences.push(exp);
           });
 
-          this.createHitSpark(
-            gameState,
+          // Determine hit type for crystal breaking
+          let hitType: 'normal' | 'charged' | 'critical' | 'combo' = 'normal';
+          let intensity = 1.2; // Crystals are more satisfying to break
+
+          // Check if this is a charged attack
+          if (gameState.player.isChargingAttack && gameState.player.chargeLevel >= 2) {
+            hitType = 'charged';
+            intensity = 1.6;
+          }
+          // Check if this is a combo hit
+          else if (gameState.comboSystem.getComboCount() > 1) {
+            hitType = 'combo';
+            intensity = 1.2 + (gameState.comboSystem.getComboCount() * 0.1);
+          }
+
+          // Create enhanced hit effect for crystal
+          gameState.createEnhancedHitFeedback(
             crystal.position.x + crystal.size.x / 2,
             crystal.position.y,
+            hitType,
+            'crystal',
+            intensity
           );
         }
       }
@@ -271,11 +289,34 @@ export class CollisionSystem implements ISystem {
     const damage = gameState.player.strength || 1;
     enemy.takeDamage(damage);
 
-    // Create hit effect
-    this.createHitSpark(gameState, enemy.position.x + enemy.size.x / 2, enemy.position.y);
+    // Determine hit type based on player state
+    let hitType: 'normal' | 'charged' | 'critical' | 'combo' = 'normal';
+    let intensity = 1.0;
 
-    // Apply hit pause effect
-    gameState.hitPause(0.1, [enemy]);
+    // Check if this is a charged attack
+    if (gameState.player.isChargingAttack && gameState.player.chargeLevel >= 2) {
+      hitType = 'charged';
+      intensity = 1.4;
+    }
+    // Check if this is a combo hit
+    else if (gameState.comboSystem.getComboCount() > 1) {
+      hitType = 'combo';
+      intensity = 1.0 + (gameState.comboSystem.getComboCount() * 0.1);
+    }
+    // Check for critical hit (low enemy health)
+    else if (enemy.health <= 1) {
+      hitType = 'critical';
+      intensity = 1.3;
+    }
+
+    // Create enhanced hit effect
+    gameState.createEnhancedHitFeedback(
+      enemy.position.x + enemy.size.x / 2,
+      enemy.position.y + enemy.size.y / 2,
+      hitType,
+      'enemy',
+      intensity
+    );
 
     // Award experience if enemy dies
     if (enemy.health <= 0) {
