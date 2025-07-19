@@ -63,7 +63,7 @@ export class Ghost extends Enemy {
       this.isHit = true;
       this.hitTimer = this.hitDuration;
       // Increment combo meter (chain reaction)
-      if (gameState && gameState.comboSystem) {
+      if (gameState?.comboSystem) {
         gameState.comboSystem.addHit();
       }
       // Knockback (ghosts float, so just a little push)

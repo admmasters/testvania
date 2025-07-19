@@ -5,7 +5,7 @@ import { ChainReactionManager } from "./crystal/ChainReactionManager.js";
 import type { CrystalPiece } from "./crystal/CrystalRenderer.js";
 import { CrystalRenderer } from "./crystal/CrystalRenderer.js";
 import type { CrystalType } from "./crystal/CrystalTypeConfig.js";
-import { CrystalTypeConfig } from "./crystal/CrystalTypeConfig.js";
+import { getCrystalColors, getCrystalExperienceValue, toCrystalType } from "./crystal/CrystalTypeConfig.js";
 import { CrystalVisualEffects } from "./crystal/CrystalVisualEffects.js";
 import { ParticleSystem } from "./crystal/ParticleSystem.js";
 import { Experience } from "./experience.js";
@@ -38,7 +38,7 @@ export class MemoryCrystal implements ChainReactionTarget {
   private shakeType: 'random' | 'horizontal' | 'vertical' = 'horizontal';
   private shakeFrequency: number = 25;
 
-  constructor(x: number, y: number, type: CrystalType = "azure") {
+  constructor(x: number, y: number, type: string | CrystalType = "azure") {
     this.position = vec2(x, y);
     this.size = vec2(20, 24);
     this.isActive = true;
@@ -46,7 +46,7 @@ export class MemoryCrystal implements ChainReactionTarget {
     this.isBreaking = false;
     this.breakTimer = 0;
     this.pieces = [];
-    this.crystalType = type;
+    this.crystalType = toCrystalType(type);
 
     this.particleSystem = new ParticleSystem(this.position, this.size);
     this.visualEffects = new CrystalVisualEffects();
@@ -271,7 +271,7 @@ export class MemoryCrystal implements ChainReactionTarget {
   }
 
   private getExperienceValue(): number {
-    return CrystalTypeConfig.getExperienceValue(this.crystalType);
+    return getCrystalExperienceValue(this.crystalType);
   }
 
   getChainReactionDelay(): number {
@@ -297,7 +297,7 @@ export class MemoryCrystal implements ChainReactionTarget {
     ctx.save();
     ctx.translate(this.shakeOffset.x, this.shakeOffset.y);
 
-    const colors = CrystalTypeConfig.getColors(this.crystalType);
+    const colors = getCrystalColors(this.crystalType);
     const pulseIntensity = this.visualEffects.getPulseIntensity();
     const resonanceGlow = this.visualEffects.getResonanceLevel() * 0.5;
 

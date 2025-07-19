@@ -148,7 +148,7 @@ export class EditorStateManager {
 
     // Restore memory crystals
     this.gameState.memoryCrystals = state.memoryCrystals.map(
-      (c) => new MemoryCrystal(c.position.x, c.position.y, c.type as any),
+      (c) => new MemoryCrystal(c.position.x, c.position.y, c.type),
     );
 
     // Restore enemies

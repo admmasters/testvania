@@ -193,7 +193,7 @@ export class EditorObjectManager {
   placeMemoryCrystal(pos: Vector2, type: string = "azure"): void {
     const snapped = this.utils.snapToCenter(pos);
     // Create new memory crystal at position (position is the actual position, not adjusted)
-    this.gameState.memoryCrystals.push(new MemoryCrystal(snapped.x, snapped.y, type as any));
+    this.gameState.memoryCrystals.push(new MemoryCrystal(snapped.x, snapped.y, type));
   }
 
   placeGhost(pos: Vector2): void {

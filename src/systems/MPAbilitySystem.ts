@@ -55,7 +55,7 @@ export abstract class BaseMPAbility implements MPAbility {
     }
 
     // Check cooldown
-    if (gameState.mpAbilitySystem && gameState.mpAbilitySystem.isOnCooldown(this.id)) {
+    if (gameState.mpAbilitySystem?.isOnCooldown(this.id)) {
       return false;
     }
 

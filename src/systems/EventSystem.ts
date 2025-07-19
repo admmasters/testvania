@@ -213,47 +213,45 @@ export interface EffectEventData {
   duration?: number;
 }
 
-// Event dispatcher utility
-export class EventDispatcher {
-  /**
-   * Dispatch a player event
-   */
-  static dispatchPlayerEvent(eventName: string, data: PlayerEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+// Event dispatcher utilities
+/**
+ * Dispatch a player event
+ */
+export function dispatchPlayerEvent(eventName: string, data: PlayerEventData): void {
+  gameEvents.emit(eventName, data);
+}
 
-  /**
-   * Dispatch an enemy event
-   */
-  static dispatchEnemyEvent(eventName: string, data: EnemyEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+/**
+ * Dispatch an enemy event
+ */
+export function dispatchEnemyEvent(eventName: string, data: EnemyEventData): void {
+  gameEvents.emit(eventName, data);
+}
 
-  /**
-   * Dispatch an item event
-   */
-  static dispatchItemEvent(eventName: string, data: ItemEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+/**
+ * Dispatch an item event
+ */
+export function dispatchItemEvent(eventName: string, data: ItemEventData): void {
+  gameEvents.emit(eventName, data);
+}
 
-  /**
-   * Dispatch a level event
-   */
-  static dispatchLevelEvent(eventName: string, data: LevelEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+/**
+ * Dispatch a level event
+ */
+export function dispatchLevelEvent(eventName: string, data: LevelEventData): void {
+  gameEvents.emit(eventName, data);
+}
 
-  /**
-   * Dispatch a collision event
-   */
-  static dispatchCollisionEvent(eventName: string, data: CollisionEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+/**
+ * Dispatch a collision event
+ */
+export function dispatchCollisionEvent(eventName: string, data: CollisionEventData): void {
+  gameEvents.emit(eventName, data);
+}
 
-  /**
-   * Dispatch an effect event
-   */
-  static dispatchEffectEvent(eventName: string, data: EffectEventData): void {
-    gameEvents.emit(eventName, data);
-  }
+/**
+ * Dispatch an effect event
+ */
+export function dispatchEffectEvent(eventName: string, data: EffectEventData): void {
+  gameEvents.emit(eventName, data);
 }
